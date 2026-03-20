@@ -1,0 +1,181 @@
+Run a final launch-hardening pass on Sentrix to tighten UX, remove friction, and ensure all core flows feel fast, clear, and intentional.
+
+IMPORTANT:
+- Do NOT add new major features
+- Do NOT redesign the UI
+- Do NOT change the product identity
+- Do NOT introduce fake data or systems
+
+This pass is about polish, clarity, and reliability.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. CLICK RELIABILITY + FEEDBACK
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Ensure EVERY interactive element gives immediate feedback:
+
+- buttons → hover + active states
+- Save → instant state change + “Saved!” flash
+- Collect → instant + “Added!” flash
+- Inspect → smooth open, no delay
+- Investigation attach → visible count update immediately
+
+Fix any:
+- dead clicks
+- delayed reactions
+- unclear states
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. LOADING STATES (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add clean loading states where needed:
+
+Search:
+- show skeleton or “Searching…” state immediately
+- no blank screen
+
+Inspect:
+- show quick loading shimmer if needed
+
+Investigation:
+- no flicker or empty state on load
+
+Never leave UI blank while waiting.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. EMPTY + ERROR STATES
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Handle all edge cases cleanly:
+
+Search:
+- “No results found” → clear message + suggestion
+
+API fail:
+- “Unable to fetch results” + Retry button
+
+Investigations:
+- empty → “No sources yet — start by saving results”
+
+Collections:
+- empty → clear onboarding message
+
+Make every empty state feel intentional, not broken.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. TEXT + LABEL CLEANUP
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Tighten all wording:
+
+- remove awkward phrasing
+- shorten long sentences
+- ensure consistent tone
+
+Examples:
+- “User-generated content — verify claims”
+- “High-authority reference source”
+- “Use caution — unverified source”
+
+Keep everything:
+- sharp
+- short
+- confident
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. SEARCH FLOW SMOOTHNESS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Ensure:
+
+- typing → instant response
+- Enter → triggers search immediately
+- URL detection → no hesitation
+- no double-trigger or flicker
+
+Debounce correctly but do NOT delay intentional searches.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. INVESTIGATION MODE POLISH
+━━━━━━━━━━━━━━━━━━━━━━━
+
+- toggle → instant visual change
+- banner → always accurate (name + count)
+- saving → updates counts immediately
+- investigation view → no stale data
+
+Ensure:
+- no mismatch between saved items and counts
+- notes save reliably
+- rename works cleanly
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. EXPORT RELIABILITY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Test and ensure:
+
+- export text works every time
+- export JSON works every time
+- file downloads correctly
+- no undefined fields
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. PERFORMANCE + CLEANUP
+━━━━━━━━━━━━━━━━━━━━━━━
+
+- remove unused console logs
+- ensure no excessive re-renders
+- confirm search cache works
+- confirm no duplicate API calls
+
+App should feel:
+- fast
+- light
+- responsive
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. FINAL VISUAL ALIGNMENT
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Fix any small visual issues:
+
+- spacing inconsistencies
+- misaligned elements
+- overflow text
+- clipped cards
+- inconsistent padding
+
+No redesign — just tighten.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. FINAL INTEGRITY CHECK
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Verify:
+
+- no fake BLACKDOG data
+- no placeholder text
+- no broken links
+- no debug UI
+- no “temporary” labels left
+
+Everything should feel:
+real
+intentional
+production-ready
+
+━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Sentrix should:
+
+- feel smooth and responsive
+- have zero confusing interactions
+- handle all edge cases cleanly
+- present information clearly and confidently
+- feel like a real, usable product ready for launch
+
+This is the final polish before deployment.

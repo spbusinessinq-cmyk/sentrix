@@ -283,6 +283,7 @@ interface BrowserState {
   unsaveItem: (id: string) => void;
   isSaved: (url: string) => boolean;
   addToCollection: (itemId: string, collectionId: string) => void;
+  saveItemToCollection: (item: Omit<SavedItem, 'id' | 'savedAt'>, collectionId: string) => void;
 
   collections: Collection[];
   createCollection: (name: string, description?: string, color?: string) => Collection;
@@ -299,6 +300,7 @@ interface BrowserState {
   clearInvestigationItems: (id: string) => void;
   deleteInvestigation: (id: string) => void;
   attachToInvestigation: (savedItemId: string) => void;
+  detachFromInvestigation: (invId: string, savedItemId: string) => void;
   exportInvestigation: (id: string, fmt: 'text' | 'json') => void;
 
   logs: LogEntry[];
@@ -537,11 +539,28 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
 
   const addToCollection = useCallback((itemId: string, collectionId: string) => {
     setSavedItems(prev => prev.map(s => s.id === itemId ? { ...s, collectionId } : s));
-    setCollections(prev => prev.map(c => {
-      if (c.id !== collectionId) return c;
-      return { ...c, itemCount: prev.find(p => p.id === collectionId)?.itemCount ?? 0 };
-    }));
     addLog(`Added to collection`, 'info');
+  }, [addLog]);
+
+  const saveItemToCollection = useCallback((item: Omit<SavedItem, 'id' | 'savedAt'>, collectionId: string) => {
+    setSavedItems(prev => {
+      const existing = prev.find(s => s.url === item.url);
+      if (existing) {
+        return prev.map(s => s.id === existing.id ? { ...s, collectionId } : s);
+      }
+      const newId = Math.random().toString(36).slice(2);
+      const newItem: SavedItem = { ...item, id: newId, savedAt: new Date(), collectionId };
+      addLog(`Saved to collection: ${item.domain}`, 'info');
+      if (investigationModeRef.current && activeInvestigationIdRef.current) {
+        const invId = activeInvestigationIdRef.current;
+        setInvestigations(invs => invs.map(inv =>
+          inv.id === invId
+            ? { ...inv, savedItemIds: [...inv.savedItemIds, newId], updatedAt: new Date() }
+            : inv
+        ));
+      }
+      return [newItem, ...prev].slice(0, 200);
+    });
   }, [addLog]);
 
   const createCollection = useCallback((name: string, description = '', color = '#22c55e'): Collection => {
@@ -630,46 +649,58 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
     addLog('Item attached to investigation', 'info');
   }, [addLog]);
 
+  const detachFromInvestigation = useCallback((invId: string, savedItemId: string) => {
+    setInvestigations(prev => prev.map(inv =>
+      inv.id === invId
+        ? { ...inv, savedItemIds: inv.savedItemIds.filter(id => id !== savedItemId), updatedAt: new Date() }
+        : inv
+    ));
+    addLog('Item removed from investigation', 'info');
+  }, [addLog]);
+
   const exportInvestigation = useCallback((id: string, fmt: 'text' | 'json') => {
-    setInvestigations(invs => {
-      const inv = invs.find(i => i.id === id);
-      if (!inv) return invs;
-      setSavedItems(items => {
-        const invItems = items.filter(s => inv.savedItemIds.includes(s.id));
-        const ts = new Date().toISOString();
-        if (fmt === 'json') {
-          const payload = {
-            investigation: { id: inv.id, name: inv.name, querySeed: inv.querySeed, createdAt: inv.createdAt, updatedAt: inv.updatedAt, notes: inv.notes },
-            sources: invItems.map(s => ({ title: s.title, url: s.url, domain: s.domain, posture: s.posture, sourceType: s.sourceType, reasoning: s.reasoning, savedAt: s.savedAt })),
-            exportedAt: ts,
-          };
-          downloadText(`${inv.name}.json`, JSON.stringify(payload, null, 2), 'application/json');
-        } else {
-          const lines = [
-            `SENTRIX INVESTIGATION EXPORT`,
-            `===============================`,
-            `Name:       ${inv.name}`,
-            `Started:    ${inv.createdAt.toLocaleString()}`,
-            `Exported:   ${new Date(ts).toLocaleString()}`,
-            `Query seed: ${inv.querySeed || '(none)'}`,
-            ``,
-            `NOTES`,
-            `-----`,
-            inv.notes || '(none)',
-            ``,
-            `SOURCES (${invItems.length})`,
-            `-------`,
-            ...invItems.map((s, i) =>
-              [`[${i + 1}] ${s.title}`, `    URL:     ${s.url}`, `    Domain:  ${s.domain}`, `    Posture: ${s.posture.toUpperCase()}`, `    Type:    ${s.sourceType}`, `    Reason:  ${s.reasoning}`, ``].join('\n')
-            ),
-          ];
-          downloadText(`${inv.name}.txt`, lines.join('\n'), 'text/plain');
-        }
-        return items;
-      });
-      return invs;
-    });
-  }, []);
+    const inv = investigations.find(i => i.id === id);
+    if (!inv) return;
+    const invItems = savedItems.filter(s => inv.savedItemIds.includes(s.id));
+    const ts = new Date().toISOString();
+    if (fmt === 'json') {
+      const payload = {
+        investigation: {
+          id: inv.id, name: inv.name, querySeed: inv.querySeed,
+          createdAt: inv.createdAt, updatedAt: inv.updatedAt, notes: inv.notes,
+        },
+        sources: invItems.map(s => ({
+          title: s.title, url: s.url, domain: s.domain,
+          posture: s.posture, sourceType: s.sourceType,
+          reasoning: s.reasoning, savedAt: s.savedAt,
+        })),
+        exportedAt: ts,
+      };
+      downloadText(`${inv.name}.json`, JSON.stringify(payload, null, 2), 'application/json');
+    } else {
+      const lines = [
+        `SENTRIX INVESTIGATION EXPORT`,
+        `===============================`,
+        `Name:       ${inv.name}`,
+        `Started:    ${inv.createdAt.toLocaleString()}`,
+        `Exported:   ${new Date(ts).toLocaleString()}`,
+        `Query seed: ${inv.querySeed || '(none)'}`,
+        ``,
+        `NOTES`,
+        `-----`,
+        inv.notes || '(none)',
+        ``,
+        `SOURCES (${invItems.length})`,
+        `-------`,
+        ...invItems.map((s, i) =>
+          [`[${i + 1}] ${s.title}`, `    URL:     ${s.url}`, `    Domain:  ${s.domain}`,
+           `    Posture: ${s.posture.toUpperCase()}`, `    Type:    ${s.sourceType}`,
+           `    Reason:  ${s.reasoning}`, ``].join('\n')
+        ),
+      ];
+      downloadText(`${inv.name}.txt`, lines.join('\n'), 'text/plain');
+    }
+  }, [investigations, savedItems]);
 
   const burnSession = useCallback(() => {
     if (navTimerRef.current) clearTimeout(navTimerRef.current);
@@ -729,12 +760,12 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
       history, clearHistory,
       bookmarks, addBookmark, removeBookmark, isBookmarked,
       downloads, clearDownloads,
-      savedItems, saveItem, unsaveItem, isSaved, addToCollection,
+      savedItems, saveItem, unsaveItem, isSaved, addToCollection, saveItemToCollection,
       collections: collectionsWithCounts, createCollection, deleteCollection,
       investigations, activeInvestigationId, investigationMode,
       toggleInvestigationMode, startInvestigation, setActiveInvestigation,
       renameInvestigation, updateInvestigationNotes, clearInvestigationItems,
-      deleteInvestigation, attachToInvestigation, exportInvestigation,
+      deleteInvestigation, attachToInvestigation, detachFromInvestigation, exportInvestigation,
       logs, addLog, clearLogs,
       blackdogPanelOpen, setBlackdogPanelOpen, blackdogStatus,
       settings, updateSettings,

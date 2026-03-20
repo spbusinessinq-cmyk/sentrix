@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Crosshair, Plus, Pencil, Check, X, Trash2, ExternalLink,
   FileText, FileJson, ChevronDown, ChevronRight, Layers,
@@ -9,9 +9,10 @@ import { format } from 'date-fns';
 // ─── Posture + Source helpers ──────────────────────────────────────────────────
 
 function postureColor(p: string) {
-  if (p === 'safe')    return '#22c55e';
-  if (p === 'caution') return '#f59e0b';
-  if (p === 'danger')  return '#ef4444';
+  const up = p?.toUpperCase();
+  if (up === 'SAFE')    return '#22c55e';
+  if (up === 'CAUTION') return '#f59e0b';
+  if (up === 'DANGER')  return '#ef4444';
   return 'rgba(148,163,184,0.5)';
 }
 
@@ -35,9 +36,9 @@ function buildSummary(items: SavedItem[]): string {
     ? types.slice(0, -1).join(', ') + ' and ' + types[types.length - 1]
     : types[0] ?? 'various';
 
-  const safe    = items.filter(s => s.posture === 'safe').length;
-  const caution = items.filter(s => s.posture === 'caution').length;
-  const danger  = items.filter(s => s.posture === 'danger').length;
+  const safe    = items.filter(s => s.posture?.toUpperCase() === 'SAFE').length;
+  const caution = items.filter(s => s.posture?.toUpperCase() === 'CAUTION').length;
+  const danger  = items.filter(s => s.posture?.toUpperCase() === 'DANGER').length;
 
   const parts: string[] = [];
   if (safe > 0)    parts.push(`${safe} low-risk`);
@@ -135,15 +136,21 @@ function SourceRow({ item, onRemove, onOpen }: {
 
 function InvestigationPanel({ inv }: { inv: Investigation }) {
   const {
-    savedItems, unsaveItem,
+    savedItems,
     renameInvestigation, updateInvestigationNotes,
     clearInvestigationItems, deleteInvestigation, exportInvestigation,
+    detachFromInvestigation,
     activeInvestigationId, setActiveInvestigation, investigations,
     investigationMode,
   } = useBrowserState();
 
   const [renaming, setRenaming] = useState(false);
   const [renameVal, setRenameVal] = useState(inv.name);
+
+  useEffect(() => {
+    if (!renaming) setRenameVal(inv.name);
+  }, [inv.name, renaming]);
+
   const [showSwitcher, setShowSwitcher] = useState(false);
 
   const invItems = useMemo(
@@ -152,10 +159,10 @@ function InvestigationPanel({ inv }: { inv: Investigation }) {
   );
 
   const postureCounts = useMemo(() => ({
-    safe:    invItems.filter(s => s.posture === 'safe').length,
-    caution: invItems.filter(s => s.posture === 'caution').length,
-    danger:  invItems.filter(s => s.posture === 'danger').length,
-    unknown: invItems.filter(s => s.posture !== 'safe' && s.posture !== 'caution' && s.posture !== 'danger').length,
+    safe:    invItems.filter(s => s.posture?.toUpperCase() === 'SAFE').length,
+    caution: invItems.filter(s => s.posture?.toUpperCase() === 'CAUTION').length,
+    danger:  invItems.filter(s => s.posture?.toUpperCase() === 'DANGER').length,
+    unknown: invItems.filter(s => !['SAFE','CAUTION','DANGER'].includes(s.posture?.toUpperCase() ?? '')).length,
   }), [invItems]);
 
   const typeCounts = useMemo(() => {
@@ -175,17 +182,7 @@ function InvestigationPanel({ inv }: { inv: Investigation }) {
   };
 
   const handleRemoveFromInv = (itemId: string) => {
-    // We don't unsave the item globally — just detach it from the investigation
-    // by rebuilding savedItemIds without this ID
-    // The cleanest hook for this is to call clearInvestigationItems approach,
-    // but we only want to remove one. We'll use a workaround via updateInvestigationNotes
-    // to trigger a re-render, but actually we need a specific removeFromInvestigation.
-    // For now, use unsaveItem since items saved to an investigation are investigation-scoped.
-    // The user can always re-save it from results.
-    // Actually let's just filter it — we'll update the investigation's savedItemIds via
-    // the notes update pattern. A proper removeFromInvestigation was not exposed,
-    // but we can use the fact that unsaveItem removes from savedItems, making it invisible.
-    unsaveItem(itemId);
+    detachFromInvestigation(inv.id, itemId);
   };
 
   const isActive = activeInvestigationId === inv.id;

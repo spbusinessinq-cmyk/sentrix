@@ -161,9 +161,9 @@ function ResultCard({
   onInspect: () => void;
 }) {
   const {
-    saveItem, isSaved, unsaveItem, savedItems,
+    isSaved, savedItems,
     addBookmark, isBookmarked, bookmarks, removeBookmark,
-    addToCollection, createCollection, collections,
+    addToCollection, saveItemToCollection, createCollection, collections,
   } = useBrowserState();
 
   const saved = isSaved(result.url);
@@ -174,16 +174,8 @@ function ResultCard({
   const c = postureColor(result.posture);
 
   const [colPickerOpen, setColPickerOpen] = useState(false);
-  const saveFlash = useFlash();
   const bookmarkFlash = useFlash();
   const collectFlash = useFlash();
-
-  const handleSaveItem = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (saved && savedObj) { unsaveItem(savedObj.id); return; }
-    saveItem({ title: result.title, url: result.url, domain: result.domain, posture: result.posture, sourceType: result.sourceType, reasoning: result.reasoning });
-    saveFlash.trigger();
-  };
 
   const handleBookmark = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -192,20 +184,27 @@ function ResultCard({
     bookmarkFlash.trigger();
   };
 
+  const itemPayload = { title: result.title, url: result.url, domain: result.domain, posture: result.posture, sourceType: result.sourceType, reasoning: result.reasoning };
+
   const handleAddToCollection = (colId: string) => {
-    if (!saved) {
-      saveItem({ title: result.title, url: result.url, domain: result.domain, posture: result.posture, sourceType: result.sourceType, reasoning: result.reasoning });
+    if (saved && savedObj) {
+      addToCollection(savedObj.id, colId);
+    } else {
+      saveItemToCollection(itemPayload, colId);
     }
-    setTimeout(() => {
-      const si = savedItems.find(s => s.url === result.url);
-      if (si) addToCollection(si.id, colId);
-    }, 30);
     collectFlash.trigger();
+    setColPickerOpen(false);
   };
 
   const handleCreateAndAddToCollection = (name: string) => {
     const col = createCollection(name);
-    handleAddToCollection(col.id);
+    if (saved && savedObj) {
+      addToCollection(savedObj.id, col.id);
+    } else {
+      saveItemToCollection(itemPayload, col.id);
+    }
+    collectFlash.trigger();
+    setColPickerOpen(false);
   };
 
   const accentColor =
@@ -370,7 +369,7 @@ function FooterAction({
 const PAGE_SIZE = 10;
 
 export function SearchResultsView() {
-  const { searchQuery, investigationMode, investigations, activeInvestigationId, navigate } = useBrowserState();
+  const { searchQuery, investigationMode, investigations, activeInvestigationId, savedItems, navigate } = useBrowserState();
   const [allResults, setAllResults] = useState<EnrichedItem[]>([]);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loading, setLoading] = useState(false);
@@ -482,6 +481,9 @@ export function SearchResultsView() {
       {/* Investigation Mode banner */}
       {investigationMode && (() => {
         const activeInv = investigations.find(i => i.id === activeInvestigationId);
+        const invSourceCount = activeInv
+          ? savedItems.filter(s => activeInv.savedItemIds.includes(s.id)).length
+          : 0;
         return (
           <button
             onClick={() => navigate('sentrix://investigations')}
@@ -497,7 +499,7 @@ export function SearchResultsView() {
             </span>
             {activeInv && (
               <span className="text-[10px] font-mono" style={{ color: 'rgba(148,163,184,0.5)' }}>
-                · {activeInv.name} ({activeInv.savedItemIds.length} sources)
+                · {activeInv.name} ({invSourceCount} source{invSourceCount !== 1 ? 's' : ''})
               </span>
             )}
             <span className="text-[9px] font-mono ml-auto" style={{ color: 'rgba(148,163,184,0.3)' }}>
