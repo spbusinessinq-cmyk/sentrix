@@ -1,0 +1,109 @@
+Apply a major UI systems refinement pass to the current functional Vero beta.
+
+IMPORTANT:
+Do not change app architecture.
+Do not remove working features.
+Do not redesign from scratch.
+This pass is for high-end polish, glass depth, glow, collapse behavior, tactical refinement, and premium browser feel only.
+
+MISSION:
+Turn the current functional Vero build into a more premium, professional, tactical browser beta with stronger visual hierarchy, better collapse behavior, more refined glow, sharper browser chrome, and cleaner overall product polish.
+
+KEEP:
+- dark tactical browser aesthetic
+- controlled green glow
+- glassy layered panels
+- BLACKDOG side panel
+- compact tactical information structure
+- current search and website flow
+- current page behavior and logic
+
+REFINE THESE SYSTEMS:
+
+1. TOP BROWSER CHROME
+- improve tab bar polish
+- better active tab highlight
+- stronger spacing and alignment
+- more believable premium desktop browser feel
+- keep Vero identity clean and sharp
+
+2. ADDRESS BAR SYSTEM
+- improve depth, contrast, focus state, and polish
+- preserve minimal, sleek look
+- subtle glow on active/focused state
+- make it feel more high-end and browser-native
+
+3. LEFT SIDEBAR
+- refine active state
+- improve hover behavior
+- improve collapsed appearance
+- add smoother collapse/expand transitions if supported
+- make icon states feel more deliberate and premium
+
+4. RIGHT BLACKDOG PANEL
+- stronger section hierarchy
+- improved separation between engine status, page analysis, vault, and telemetry
+- cleaner density and readability
+- more premium glass feel
+- keep it tactical, not dashboard-generic
+
+5. GLOBAL GLOW SYSTEM
+- keep the green glow
+- make it more disciplined and premium
+- apply it selectively to active/high-value elements only
+- avoid neon overload
+- create more ambient, expensive-feeling glow rather than flashy glow
+
+6. GLASS / DEPTH SYSTEM
+- improve panel layering and backdrop treatment
+- use blur and transparency more intentionally
+- keep borders thin and sharp
+- make the app feel expensive, slick, and polished
+- add more believable depth between shell, content, and side panels
+
+7. QUICK TOOL MODULES / UI MODULES
+- tighten spacing and proportions
+- improve hover states
+- reduce any lingering homepage-card feel
+- make all utility blocks feel like tactical browser modules
+
+8. MICRO-INTERACTIONS
+- smooth transitions
+- subtle hover shifts
+- soft active pulses
+- clean panel animation
+- tasteful fade/slide motion for interactive regions
+- keep motion restrained and premium
+
+9. COLLAPSE / EXPAND POLISH
+- make all collapsible regions feel intentional and high-end
+- improve animation timing and state transitions
+- preserve readability in collapsed state
+- make expanded state feel more immersive
+
+10. CONSISTENCY
+- align paddings, borders, label sizes, status tags, icon sizes, and module heights across the app
+- make SAFE / CAUTION / DANGER / UNKNOWN styling fully consistent everywhere
+- remove any awkward spacing or mismatched component proportions
+
+11. FINAL FEEL
+The app should now feel like a premium tactical browser beta:
+- slick
+- glassy
+- sharp
+- controlled
+- immersive
+- professional
+- believable
+
+DO NOT:
+- redesign the app
+- flatten the aesthetic
+- remove the green glow
+- add unnecessary colors
+- over-round components
+- overuse blur
+- make it look like a SaaS dashboard or a game UI
+
+OUTPUT GOAL:
+Return a more premium, tactical, glassy Vero beta with stronger glow discipline, better glass depth, cleaner collapse behavior, and sharper overall product polish.

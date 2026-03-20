@@ -7,22 +7,33 @@ export function VeroTabBar() {
   const { tabs, activeTabId, setActiveTabId, closeTab, addTab } = useBrowserState();
 
   return (
-    <div className="flex items-stretch h-9 bg-black/60 border-b border-white/[0.05] select-none relative z-20 shrink-0">
-
-      {/* Window controls + brand */}
-      <div className="flex items-center gap-4 px-3 border-r border-white/[0.05] shrink-0">
-        <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />
-          <div className="w-2.5 h-2.5 rounded-full bg-[#FEBC2E]" />
-          <div className="w-2.5 h-2.5 rounded-full bg-[#28C840]" />
+    <div
+      className="flex items-stretch h-9 select-none relative z-20 shrink-0"
+      style={{
+        background: 'linear-gradient(180deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.55) 100%)',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        boxShadow: '0 1px 0 rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.025)',
+      }}
+    >
+      {/* Window controls + VERO brand */}
+      <div className="flex items-center gap-4 px-3.5 border-r border-white/[0.05] shrink-0">
+        <div className="flex items-center gap-[5px]">
+          <div className="w-[11px] h-[11px] rounded-full bg-[#FF5F57] hover:brightness-110 transition-[filter] cursor-default" />
+          <div className="w-[11px] h-[11px] rounded-full bg-[#FEBC2E] hover:brightness-110 transition-[filter] cursor-default" />
+          <div className="w-[11px] h-[11px] rounded-full bg-[#28C840] hover:brightness-110 transition-[filter] cursor-default" />
         </div>
         <div className="flex items-center gap-1.5">
-          <Shield className="w-3.5 h-3.5 text-primary opacity-80" />
-          <span className="text-[11px] font-bold tracking-[0.15em] text-primary/90">VERO</span>
+          <Shield className="w-3.5 h-3.5" style={{ color: 'hsl(142 72% 38%)', opacity: 0.85 }} />
+          <span
+            className="text-[10.5px] font-bold tracking-[0.18em] uppercase"
+            style={{ color: 'hsl(142 72% 42%)', opacity: 0.9 }}
+          >
+            VERO
+          </span>
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tab strip */}
       <div className="flex items-stretch flex-1 overflow-x-auto overflow-y-hidden">
         {tabs.map(tab => {
           const isActive = activeTabId === tab.id;
@@ -31,21 +42,36 @@ export function VeroTabBar() {
               key={tab.id}
               onClick={() => setActiveTabId(tab.id)}
               className={twMerge(
-                'group relative flex items-center gap-2 h-full min-w-[130px] max-w-[200px] px-3 border-r border-white/[0.04] cursor-default transition-all duration-150 shrink-0',
+                'group relative flex items-center gap-2 h-full min-w-[140px] max-w-[210px] px-3.5 border-r border-white/[0.04] cursor-default transition-all duration-150 shrink-0',
                 isActive
-                  ? 'bg-[#0d0d0f] text-foreground/90'
-                  : 'text-muted-foreground/50 hover:bg-white/[0.03] hover:text-muted-foreground/80'
+                  ? 'text-foreground/92'
+                  : 'text-muted-foreground/45 hover:text-muted-foreground/75 hover:bg-white/[0.025]'
               )}
+              style={isActive ? {
+                background: 'linear-gradient(180deg, rgba(22,163,74,0.04) 0%, rgba(0,0,0,0.55) 40%)',
+                boxShadow: 'inset 0 -1px 0 rgba(22,163,74,0.08)',
+              } : {}}
             >
+              {/* Top accent line */}
               {isActive && (
-                <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-primary/80" />
+                <div
+                  className="absolute top-0 left-0 right-0 h-[1.5px] rounded-b-full"
+                  style={{
+                    background: 'linear-gradient(90deg, transparent 0%, hsl(142 72% 38%) 20%, hsl(142 72% 42%) 50%, hsl(142 72% 38%) 80%, transparent 100%)',
+                    boxShadow: '0 1px 6px rgba(22,163,74,0.35)',
+                  }}
+                />
               )}
-              <span className="text-[12px] flex-1 truncate leading-none">{tab.title}</span>
+
+              <span className="text-[12px] font-medium flex-1 truncate leading-none">{tab.title}</span>
+
               <button
                 onClick={e => { e.stopPropagation(); closeTab(tab.id); }}
                 className={twMerge(
-                  'w-4 h-4 flex items-center justify-center rounded-sm hover:bg-white/10 transition-all shrink-0',
-                  isActive ? 'opacity-30 hover:opacity-70' : 'opacity-0 group-hover:opacity-30'
+                  'w-4 h-4 flex items-center justify-center rounded-sm transition-all shrink-0',
+                  isActive
+                    ? 'opacity-25 hover:opacity-60 hover:bg-white/10'
+                    : 'opacity-0 group-hover:opacity-25 hover:opacity-50 hover:bg-white/10'
                 )}
               >
                 <X className="w-2.5 h-2.5" />
@@ -57,19 +83,34 @@ export function VeroTabBar() {
         {/* Add tab */}
         <button
           onClick={addTab}
-          className="flex items-center justify-center w-8 h-full text-muted-foreground/30 hover:text-muted-foreground/60 hover:bg-white/[0.04] transition-colors shrink-0"
           title="New Tab"
+          className="flex items-center justify-center w-8 h-full shrink-0 transition-colors duration-150"
+          style={{ color: 'rgba(148,163,184,0.3)' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'rgba(148,163,184,0.65)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'rgba(148,163,184,0.3)')}
         >
           <Plus className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* BLACKDOG pill */}
-      <div className="flex items-center px-3 border-l border-white/[0.05] shrink-0">
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-primary/20 bg-primary/[0.06]">
-          <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_4px_rgba(22,163,74,0.8)] animate-pulse" />
-          <Activity className="w-2.5 h-2.5 text-primary/80" />
-          <span className="text-[9px] font-bold tracking-[0.16em] text-primary/80 uppercase">BLACKDOG ACTIVE</span>
+      {/* BLACKDOG status pill */}
+      <div className="flex items-center px-3.5 border-l border-white/[0.05] shrink-0">
+        <div
+          className="flex items-center gap-1.5 px-2.5 py-[5px] rounded-full"
+          style={{
+            background: 'rgba(22,163,74,0.07)',
+            border: '1px solid rgba(22,163,74,0.18)',
+            boxShadow: '0 0 10px rgba(22,163,74,0.08)',
+          }}
+        >
+          <div
+            className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"
+            style={{ boxShadow: '0 0 5px rgba(22,163,74,0.8), 0 0 10px rgba(22,163,74,0.3)' }}
+          />
+          <Activity className="w-2.5 h-2.5" style={{ color: 'hsl(142 72% 40%)', opacity: 0.85 }} />
+          <span className="text-[9px] font-bold tracking-[0.18em] uppercase" style={{ color: 'hsl(142 72% 42%)', opacity: 0.85 }}>
+            BLACKDOG ACTIVE
+          </span>
         </div>
       </div>
     </div>
