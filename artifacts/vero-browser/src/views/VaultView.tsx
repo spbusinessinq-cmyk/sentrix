@@ -3,10 +3,10 @@ import { LockKeyhole, Key, CreditCard, Globe, User, Plus, Eye, EyeOff } from 'lu
 import { twMerge } from 'tailwind-merge';
 
 const MOCK_ITEMS = [
-  { id: '1', type: 'login',    label: 'sentra.browser',         username: 'user@sentra.io',   icon: Globe },
-  { id: '2', type: 'login',    label: 'github.com',             username: 'dev@example.com',  icon: Globe },
-  { id: '3', type: 'identity', label: 'Primary Identity',       username: 'J. Smith',         icon: User },
-  { id: '4', type: 'card',     label: 'Secure Card •••• 4821',  username: 'Visa',             icon: CreditCard },
+  { id: '1', type: 'login',    label: 'sentrix.live',          username: 'user@sentrix.io',  icon: Globe },
+  { id: '2', type: 'login',    label: 'github.com',            username: 'dev@example.com',  icon: Globe },
+  { id: '3', type: 'identity', label: 'Primary Identity',      username: 'J. Smith',         icon: User },
+  { id: '4', type: 'card',     label: 'Secure Card •••• 4821', username: 'Visa',             icon: CreditCard },
 ];
 
 export function VaultView() {
@@ -24,10 +24,9 @@ export function VaultView() {
 
   return (
     <div className="h-full overflow-y-auto bg-background">
-      {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] bg-black/20">
         <div>
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">sentra://vault</div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">sentrix://vault</div>
           <h2 className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
             <LockKeyhole className="w-4 h-4 text-primary/70" />
             Secure Vault

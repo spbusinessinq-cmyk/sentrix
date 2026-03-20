@@ -25,7 +25,7 @@ export function HistoryView() {
     <div className="h-full overflow-y-auto bg-background">
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] bg-black/20">
         <div>
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">sentra://history</div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">sentrix://history</div>
           <h2 className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
             <Clock className="w-4 h-4 text-muted-foreground/50" />
             Session History

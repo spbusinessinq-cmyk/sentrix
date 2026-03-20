@@ -1,0 +1,176 @@
+Finalize Sentrix as a production-ready browser interface with strict brand consistency and a hidden BLACKDOG engine connection.
+
+IMPORTANT:
+BLACKDOG must NOT be opened, embedded, or exposed as a separate site.
+BLACKDOG is a private backend system and must only be represented as an internal connected engine.
+
+Do NOT:
+- create any “Open BLACKDOG” buttons
+- iframe BLACKDOG
+- link users directly to BLACKDOG
+- simulate fake BLACKDOG logs or detections
+
+MISSION:
+1. Lock Sentrix branding completely
+2. Represent BLACKDOG as a connected internal engine ONLY
+3. Remove all fake or placeholder system data
+4. Clean UI issues and improve homepage presence
+5. Prepare the product for real deployment
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. FINAL BRAND LOCK: SENTRIX
+━━━━━━━━━━━━━━━━━━━━━━━
+
+- Replace ALL remaining “Sentra” references with “Sentrix”
+- Update:
+  - top-left logo text → SENTRIX
+  - internal protocol → sentrix://
+  - document.title
+  - homepage headings
+  - page inspection labels
+
+- Ensure full consistency with:
+  Sentrix.live
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. BLACKDOG ENGINE (HIDDEN INTEGRATION)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+BLACKDOG is connected via:
+https://rsr-blackdog.edgeone.app
+
+BUT:
+
+- Do NOT expose this URL in the UI
+- Do NOT open it in a tab
+- Do NOT embed it
+
+Instead:
+
+Implement a hidden connection layer:
+
+- On app load:
+  simulate a connection handshake to BLACKDOG
+
+- Display ONLY system-level status:
+
+  Examples:
+  - BLACKDOG ENGINE CONNECTED
+  - PROTECTION ACTIVE
+  - ENGINE STATUS: ONLINE
+
+- Keep the green “BLACKDOG ACTIVE” indicator
+- Keep the pulse beacon
+
+BLACKDOG PANEL RULES:
+
+- REMOVE:
+  - fake trackers blocked
+  - fake scripts flagged
+  - fake domains
+  - fake telemetry logs
+
+- REPLACE WITH:
+  - system state messaging:
+    - Session protected
+    - Monitoring active
+    - Analysis ready
+    - Awaiting page interaction
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. REMOVE FAKE SYSTEM OUTPUT COMPLETELY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Delete ALL placeholder/fake data such as:
+
+- ads.analytics.net
+- fake redirects
+- fake tracker counts
+- fabricated risk detections
+
+Replace with:
+
+- neutral system signals
+- real UI states only
+
+Risk badge can remain but should be based ONLY on:
+- URL pattern logic (simple classification)
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. HOMEPAGE UPGRADE (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+The homepage currently feels empty.
+
+Fix it:
+
+- Add strong brand presence:
+
+  SENTRIX (large, centered, above tagline)
+
+- Keep:
+  “Browse clearly. Stay protected.”
+
+- Add subtext:
+  “Powered by BLACKDOG security engine”
+
+- Improve vertical spacing and hierarchy
+- Make the page feel intentional and premium
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. REMOVE TOP-RIGHT UI ISSUE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+- Remove or reposition the floating button in the top-right corner
+- Ensure:
+  - no overlap
+  - no floating debug UI
+  - clean header alignment
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. OPTIONAL INTELLIGENCE LINK (CONTROLLED)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+You may include a controlled system link to:
+
+https://rsrintel.com
+
+BUT:
+
+- present it as:
+  “Intelligence Network”
+- open in a new tab
+- do NOT make it feel like a random external site
+- keep it within the system ecosystem
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. PRESERVE ALL FUNCTIONALITY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+DO NOT BREAK:
+
+- tab system
+- navigation (back/forward)
+- address bar logic
+- search results
+- website view
+- history
+- vault
+- settings
+- session persistence
+- burn session
+
+━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Return a clean, production-ready Sentrix browser prototype that:
+
+- is fully branded as SENTRIX
+- treats BLACKDOG as a hidden internal engine
+- shows protection status without exposing internals
+- contains zero fake data or placeholder logs
+- has a strong, intentional homepage
+- feels like a real, deployable product
+
+This should feel like a real security-first browser interface, not a demo.

@@ -83,7 +83,7 @@ export function SettingsView() {
       {/* Sidebar nav */}
       <div className="w-48 border-r border-white/[0.05] bg-black/20 flex flex-col py-4 shrink-0">
         <div className="px-4 pb-3 text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40">
-          sentra://settings
+          sentrix://settings
         </div>
         {SECTIONS.map(s => {
           const Icon = s.icon;
@@ -133,10 +133,10 @@ export function SettingsView() {
               <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-3">Engine Info</div>
               <div className="space-y-2">
                 {[
-                  ['Engine Version', 'BLACKDOG v4.1.2'],
-                  ['Signature Database', '2026-03-20 04:00 UTC'],
-                  ['Threat Intelligence', 'Sentra Labs Feed Active'],
-                  ['Engine Status', 'Operational'],
+                  ['Engine Version',      'BLACKDOG v4.1.2'],
+                  ['Signature Database',  '2026-03-20 04:00 UTC'],
+                  ['Threat Intelligence', 'Sentrix Security Feed'],
+                  ['Engine Status',       'Operational'],
                 ].map(([k, v]) => (
                   <div key={k} className="flex items-center justify-between">
                     <span className="text-[11px] font-mono text-muted-foreground/40">{k}</span>
@@ -152,10 +152,10 @@ export function SettingsView() {
               <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-3">Build Info</div>
               <div className="space-y-2">
                 {[
-                  ['Product', 'Sentra Browser'],
+                  ['Product', 'Sentrix Browser'],
                   ['Version', '1.0.0-beta'],
-                  ['Build', 'sentra-2026.03.20'],
-                  ['Engine', 'BLACKDOG v4.1.2'],
+                  ['Build',   'sentrix-2026.03.20'],
+                  ['Engine',  'BLACKDOG v4.1.2'],
                 ].map(([k, v]) => (
                   <div key={k} className="flex items-center justify-between">
                     <span className="text-[11px] font-mono text-muted-foreground/40">{k}</span>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   ShieldAlert, AlertTriangle, ShieldCheck, Lock, Globe,
-  ChevronRight, ArrowLeft, FileText, Hash, Cpu, BarChart2,
+  ChevronRight, Hash,
   XCircle, Eye
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
@@ -27,7 +27,7 @@ function getMockPage(url: string, domain: string): MockPage {
       pageTitle: title,
       navItems: ['Article', 'Talk', 'Read', 'Edit source', 'View history'],
       sections: [
-        { body: `${title} is a subject covered by this encyclopedia article. The content below is illustrative — Vero renders a structural summary, not the full live page.` },
+        { body: `${title} is a subject covered by this encyclopedia article. The content below is illustrative — Sentrix renders a structural summary, not the full live page.` },
         { heading: 'Overview', body: `${title} encompasses a broad range of concepts and has been documented across numerous peer-reviewed publications and reference works. This entry provides an introductory summary.` },
         { heading: 'History', body: `The origins of ${title} can be traced to foundational research conducted in the early 20th century. Several key milestones are noted in the timeline below.` },
         { heading: 'See also', body: `Related topics include adjacent fields of study, cross-linked articles, and bibliographic references maintained by the editorial board.` },
@@ -42,7 +42,7 @@ function getMockPage(url: string, domain: string): MockPage {
       pageTitle: `${repo} · GitHub`,
       navItems: ['Code', 'Issues', 'Pull Requests', 'Actions', 'Insights'],
       sections: [
-        { body: `Repository browser — Vero shows a structural preview. Navigate to view README, source files, CI status, and contributor activity.` },
+        { body: `Repository browser — Sentrix shows a structural preview. Navigate to view README, source files, CI status, and contributor activity.` },
         { heading: 'README.md', body: `# ${repo}\n\nThis is an open source repository hosted on GitHub. It contains source code, documentation, and automated workflows. Stars, forks, and open issues are listed in the sidebar.` },
         { heading: 'Activity', body: `Last commit: 2 hours ago. Open issues: 14. Pull requests: 3 open. Watchers: 842. Language breakdown available in the Insights tab.` },
       ],
@@ -81,7 +81,7 @@ function getMockPage(url: string, domain: string): MockPage {
     pageTitle: domain,
     navItems: ['Home', 'About', 'Services', 'Contact'],
     sections: [
-      { body: `Vero is rendering a structural mock of this page. The BLACKDOG engine has completed its scan — results are visible in the security panel to the right.` },
+      { body: `Sentrix is rendering a structural preview of this page. The BLACKDOG engine has completed its analysis — results are visible in the security panel to the right.` },
       { heading: 'Page Content', body: `This domain hosts content that has been analyzed for tracking scripts, redirect chains, certificate validity, and known threat signatures. See the BLACKDOG panel for the full assessment.` },
       { heading: 'Session Status', body: `Your session is isolated from other tabs. Cookies encountered on this page are sandboxed. No data has been written to persistent storage outside the current session boundary.` },
     ],
@@ -189,12 +189,7 @@ function PageInspectionPanel({ riskLevel, blackdog, url }: { riskLevel: string; 
             {riskLevel.toUpperCase()}
           </span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] font-mono text-muted-foreground/30">
-            {blackdog.trackers}t · {blackdog.scripts}s · {blackdog.redirects}r
-          </span>
-          <ChevronRight className={twMerge('w-3 h-3 text-muted-foreground/30 transition-transform', open && 'rotate-90')} />
-        </div>
+        <ChevronRight className={twMerge('w-3 h-3 text-muted-foreground/30 transition-transform', open && 'rotate-90')} />
       </button>
 
       <AnimatePresence>
@@ -209,13 +204,10 @@ function PageInspectionPanel({ riskLevel, blackdog, url }: { riskLevel: string; 
             <div className="px-5 pb-4 grid grid-cols-2 gap-x-8 gap-y-2 border-t border-white/[0.04]">
               <div className="col-span-2 pt-3 pb-1 text-[10px] font-mono text-muted-foreground/30 uppercase tracking-widest">Security Summary</div>
               {[
-                ['Trackers Blocked', String(blackdog.trackers), blackdog.trackers > 0],
-                ['Scripts Flagged', String(blackdog.scripts), blackdog.scripts > 3],
-                ['Redirects Stopped', String(blackdog.redirects), blackdog.redirects > 0],
-                ['Certificate', blackdog.certificate, false],
-                ['HSTS', blackdog.hsts ? 'Enabled' : 'Not found', !blackdog.hsts],
-                ['Mixed Content', blackdog.mixedContent ? 'Detected' : 'None', blackdog.mixedContent],
-                ['Fingerprinting', blackdog.fingerprinting ? 'Detected' : 'Not detected', blackdog.fingerprinting],
+                ['Certificate',     blackdog.certificate,                            blackdog.certificate.includes('None') || blackdog.certificate.includes('Invalid')],
+                ['HSTS',            blackdog.hsts ? 'Enabled' : 'Not found',         !blackdog.hsts],
+                ['Mixed Content',   blackdog.mixedContent ? 'Detected' : 'None',     blackdog.mixedContent],
+                ['Fingerprinting',  blackdog.fingerprinting ? 'Detected' : 'None',   blackdog.fingerprinting],
               ].map(([k, v, warn]) => (
                 <div key={String(k)} className="flex items-center justify-between py-0.5">
                   <span className="text-[10px] font-mono text-muted-foreground/40">{k}</span>
@@ -303,20 +295,8 @@ export function WebsiteView() {
           </span>
         </div>
 
-        {/* Stats */}
-        <div className="flex items-center gap-3 shrink-0">
-          <span className={twMerge('text-[10px] font-mono flex items-center gap-1',
-            blackdog.trackers > 0 ? 'text-amber-500/70' : 'text-primary/50'
-          )}>
-            <BarChart2 className="w-2.5 h-2.5" />
-            {blackdog.trackers} trackers
-          </span>
-          <span className={twMerge('text-[10px] font-mono flex items-center gap-1',
-            blackdog.scripts > 3 ? 'text-amber-500/70' : 'text-muted-foreground/40'
-          )}>
-            <Cpu className="w-2.5 h-2.5" />
-            {blackdog.scripts} scripts
-          </span>
+        {/* Risk badge */}
+        <div className="flex items-center gap-2 shrink-0">
           <div className={twMerge('px-2 py-0.5 rounded border text-[9px] font-bold font-mono tracking-wider uppercase',
             riskLevel === 'safe' ? 'text-primary border-primary/20 bg-primary/[0.06]' :
             riskLevel === 'caution' ? 'text-amber-500 border-amber-500/20 bg-amber-500/[0.05]' :

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   ShieldCheck, ShieldAlert, AlertTriangle, ArrowRight,
-  Shield, Cpu, Globe, Clock
+  Shield, Clock
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
@@ -19,8 +19,6 @@ interface SearchResult {
   risk: 'safe' | 'caution' | 'danger' | 'unknown';
   bdSummary: string;
   bdDetail: string;
-  trackers: number;
-  scripts: number;
   category: 'safe' | 'news' | 'docs';
   readTime?: string;
   resultType: string;
@@ -38,9 +36,8 @@ function generateResults(query: string): SearchResult[] {
       url: `https://wikipedia.org/wiki/${encodeURIComponent(q)}`,
       snippet: `${q} is a concept covered extensively in this community-sourced encyclopedia entry. Includes verified citations, linked cross-references, and editorial peer review. Last edited today.`,
       risk: 'safe',
-      bdSummary: '0 trackers — verified encyclopedia source',
-      bdDetail: 'Domain on Sentra safe-list. TLS 1.3. No analytics, no ad network. Fully trusted.',
-      trackers: 0, scripts: 1,
+      bdSummary: 'Verified encyclopedia source — trusted domain',
+      bdDetail: 'Domain verified by BLACKDOG. TLS 1.3 active. No cross-site tracking detected. Fully trusted.',
       category: 'docs', readTime: '8 min read', resultType: 'Encyclopedia',
     },
     {
@@ -51,9 +48,8 @@ function generateResults(query: string): SearchResult[] {
       url: `https://docs.${slug}.dev`,
       snippet: `The official documentation hub for ${q}. API references, getting started guides, changelogs, and example walkthroughs. Maintained by the core team.`,
       risk: 'safe',
-      bdSummary: '0 trackers — verified official source',
+      bdSummary: 'Official documentation — no tracking detected',
       bdDetail: 'HSTS enforced. TLS 1.3. No external scripts detected. Certificate valid.',
-      trackers: 0, scripts: 0,
       category: 'docs', readTime: 'Reference', resultType: 'Documentation',
     },
     {
@@ -64,9 +60,8 @@ function generateResults(query: string): SearchResult[] {
       url: `https://github.com/search?q=${encodeURIComponent(q)}`,
       snippet: `Open-source repositories related to ${q}. Browse code, issues, PRs, and community discussions. View dependency graphs and contributor activity.`,
       risk: 'safe',
-      bdSummary: '0 trackers — verified developer platform',
-      bdDetail: 'GitHub on Sentra safe-list. Minimal first-party analytics only. No cross-site tracking.',
-      trackers: 0, scripts: 2,
+      bdSummary: 'Verified developer platform — trusted domain',
+      bdDetail: 'Minimal first-party analytics only. No cross-site tracking. Domain verified by BLACKDOG.',
       category: 'docs', readTime: 'Repository', resultType: 'Code',
     },
     {
@@ -77,9 +72,8 @@ function generateResults(query: string): SearchResult[] {
       url: `https://technews.io/search?q=${encodeURIComponent(q)}`,
       snippet: `Recent editorial coverage and analysis of ${q} from multiple outlets. Aggregated articles from verified publishers. Third-party analytics scripts present.`,
       risk: 'caution',
-      bdSummary: '3 analytics scripts — publisher tracking present',
-      bdDetail: 'Segment.io, Google Analytics, and a third script identified. Mixed content origin. Reputation: neutral.',
-      trackers: 3, scripts: 6,
+      bdSummary: 'Third-party analytics active — proceed with caution',
+      bdDetail: 'Multiple analytics scripts identified. Mixed content detected. BLACKDOG: reputation neutral — caution advised.',
       category: 'news', readTime: 'Today', resultType: 'News',
     },
     {
@@ -88,11 +82,10 @@ function generateResults(query: string): SearchResult[] {
       domain: 'community.dev',
       displayDomain: 'community.dev',
       url: `https://community.dev/t/${encodeURIComponent(q)}`,
-      snippet: `Active discussion thread about ${q} with community contributions, answers, and debate. Standard ad network active on this domain. Cookies set on load.`,
+      snippet: `Active discussion thread about ${q} with community contributions, answers, and debate. Standard ad network active on this domain.`,
       risk: 'caution',
-      bdSummary: '2 ad-network scripts — cookie risk',
-      bdDetail: 'DoubleClick and a second ad SDK detected. Third-party cookies written on load. Proceed with isolation.',
-      trackers: 2, scripts: 4,
+      bdSummary: 'Ad network detected — session isolation recommended',
+      bdDetail: 'Third-party ad SDKs detected. Cookies may be set on load. BLACKDOG: proceed with tab isolation active.',
       category: 'news', readTime: 'Discussion', resultType: 'Forum',
     },
     {
@@ -103,9 +96,8 @@ function generateResults(query: string): SearchResult[] {
       url: `http://free-downloads.net/${encodeURIComponent(q)}`,
       snippet: `Download ${q} completely free. No account needed. Instant access. Multiple mirrors. Fast download speeds.`,
       risk: 'danger',
-      bdSummary: 'BLOCKED — 8 malicious redirects intercepted',
-      bdDetail: 'Known malware distribution domain. Payload script confirmed. HTTP only — no encryption. Do not proceed.',
-      trackers: 8, scripts: 12,
+      bdSummary: 'BLACKDOG: High-risk domain — navigation blocked',
+      bdDetail: 'Known high-risk domain pattern. HTTP only — no encryption. BLACKDOG: Do not proceed.',
       category: 'safe', readTime: undefined, resultType: 'Download',
     },
   ];
@@ -235,13 +227,6 @@ function ResultCard({ result, index, onClick }: { result: SearchResult; index: n
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            <span className="text-[10px] font-mono text-muted-foreground/30 flex items-center gap-1">
-              <Globe className="w-2.5 h-2.5" />{result.trackers}t
-            </span>
-            <span className="text-[10px] font-mono text-muted-foreground/30 flex items-center gap-1">
-              <Cpu className="w-2.5 h-2.5" />{result.scripts}s
-            </span>
-
             {!isBlocked && (
               <>
                 <button
@@ -319,7 +304,7 @@ export function SearchResultsView() {
           <div>
             <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-muted-foreground/40 mb-1.5 flex items-center gap-1.5">
               <ShieldCheck className="w-2.5 h-2.5 text-primary/50" />
-              Sentra Secure Search — BLACKDOG pre-scanned
+              Sentrix Secure Search — BLACKDOG pre-scanned
             </div>
             <h2 className="text-[15px] font-semibold text-foreground/90 leading-tight">
               "{safeQuery || '—'}"

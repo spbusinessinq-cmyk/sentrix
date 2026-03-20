@@ -14,26 +14,20 @@ interface NavItem {
 }
 
 const MAIN_ITEMS: NavItem[] = [
-  { id: 'home',      icon: Home,       label: 'Home',       target: 'sentra://newtab',    matchPageType: 'newtab' },
-  { id: 'search',    icon: Search,     label: 'Search',     target: 'sentra://search',    matchPageType: 'search' },
-  { id: 'history',   icon: Clock,      label: 'History',    target: 'sentra://history',   matchPageType: 'history' },
-  { id: 'downloads', icon: Download,   label: 'Downloads',  target: 'sentra://downloads', matchPageType: 'downloads' },
-  { id: 'bookmarks', icon: BookOpen,   label: 'Bookmarks',  target: 'sentra://newtab',    matchPageType: 'newtab' },
+  { id: 'home',      icon: Home,       label: 'Home',       target: 'sentrix://newtab',    matchPageType: 'newtab' },
+  { id: 'search',    icon: Search,     label: 'Search',     target: 'sentrix://search',    matchPageType: 'search' },
+  { id: 'history',   icon: Clock,      label: 'History',    target: 'sentrix://history',   matchPageType: 'history' },
+  { id: 'downloads', icon: Download,   label: 'Downloads',  target: 'sentrix://downloads', matchPageType: 'downloads' },
+  { id: 'bookmarks', icon: BookOpen,   label: 'Bookmarks',  target: 'sentrix://newtab',    matchPageType: 'newtab' },
 ];
 
 const SECURITY_ITEMS: NavItem[] = [
-  { id: 'privacy', icon: Shield,      label: 'Privacy Report', target: 'sentra://privacy', matchPageType: 'privacy' },
-  { id: 'vault',   icon: LockKeyhole, label: 'Secure Vault',   target: 'sentra://vault',   matchPageType: 'vault' },
+  { id: 'privacy', icon: Shield,      label: 'Privacy Report', target: 'sentrix://privacy', matchPageType: 'privacy' },
+  { id: 'vault',   icon: LockKeyhole, label: 'Secure Vault',   target: 'sentrix://vault',   matchPageType: 'vault' },
 ];
 
-function SidebarBtn({
-  item,
-  isActive,
-  onNavigate,
-}: {
-  item: NavItem;
-  isActive: boolean;
-  onNavigate: (target: string) => void;
+function SidebarBtn({ item, isActive, onNavigate }: {
+  item: NavItem; isActive: boolean; onNavigate: (target: string) => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const Icon = item.icon;
@@ -47,31 +41,17 @@ function SidebarBtn({
           onMouseLeave={() => setHovered(false)}
           className="relative flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200"
           style={{
-            background: isActive
-              ? 'rgba(22,163,74,0.1)'
-              : hovered
-              ? 'rgba(255,255,255,0.05)'
-              : 'transparent',
-            border: isActive
-              ? '1px solid rgba(22,163,74,0.2)'
-              : '1px solid transparent',
-            color: isActive
-              ? 'hsl(142 72% 42%)'
-              : hovered
-              ? 'rgba(148,163,184,0.82)'
-              : 'rgba(148,163,184,0.36)',
+            background: isActive ? 'rgba(22,163,74,0.1)' : hovered ? 'rgba(255,255,255,0.05)' : 'transparent',
+            border: isActive ? '1px solid rgba(22,163,74,0.2)' : '1px solid transparent',
+            color: isActive ? 'hsl(142 72% 42%)' : hovered ? 'rgba(148,163,184,0.82)' : 'rgba(148,163,184,0.36)',
             boxShadow: isActive ? '0 0 10px rgba(22,163,74,0.1)' : 'none',
             transition: 'all 0.18s ease',
           }}
         >
-          {/* Active indicator */}
           {isActive && (
             <div
               className="absolute left-[-1px] top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-r-full"
-              style={{
-                background: 'hsl(142 72% 38%)',
-                boxShadow: '0 0 6px rgba(22,163,74,0.6)',
-              }}
+              style={{ background: 'hsl(142 72% 38%)', boxShadow: '0 0 6px rgba(22,163,74,0.6)' }}
             />
           )}
           <Icon className="w-4 h-4" strokeWidth={isActive ? 2 : 1.5} />
@@ -95,7 +75,6 @@ function SidebarBtn({
 
 export function TacticalSidebar() {
   const { pageType, navigate } = useBrowserState();
-
   const isSettingsActive = pageType === 'settings';
   const [settingsHovered, setSettingsHovered] = useState(false);
 
@@ -108,7 +87,6 @@ export function TacticalSidebar() {
         boxShadow: '1px 0 0 rgba(255,255,255,0.02)',
       }}
     >
-      {/* Main nav */}
       {MAIN_ITEMS.map(item => (
         <SidebarBtn
           key={item.id}
@@ -118,10 +96,8 @@ export function TacticalSidebar() {
         />
       ))}
 
-      {/* Divider */}
       <div className="w-5 h-px my-2" style={{ background: 'rgba(255,255,255,0.07)' }} />
 
-      {/* Security nav */}
       {SECURITY_ITEMS.map(item => (
         <SidebarBtn
           key={item.id}
@@ -131,29 +107,18 @@ export function TacticalSidebar() {
         />
       ))}
 
-      {/* Settings - pinned to bottom */}
       <div className="mt-auto">
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={() => navigate('sentra://settings')}
+              onClick={() => navigate('sentrix://settings')}
               onMouseEnter={() => setSettingsHovered(true)}
               onMouseLeave={() => setSettingsHovered(false)}
               className="relative flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200"
               style={{
-                background: isSettingsActive
-                  ? 'rgba(22,163,74,0.1)'
-                  : settingsHovered
-                  ? 'rgba(255,255,255,0.05)'
-                  : 'transparent',
-                border: isSettingsActive
-                  ? '1px solid rgba(22,163,74,0.2)'
-                  : '1px solid transparent',
-                color: isSettingsActive
-                  ? 'hsl(142 72% 42%)'
-                  : settingsHovered
-                  ? 'rgba(148,163,184,0.82)'
-                  : 'rgba(148,163,184,0.36)',
+                background: isSettingsActive ? 'rgba(22,163,74,0.1)' : settingsHovered ? 'rgba(255,255,255,0.05)' : 'transparent',
+                border: isSettingsActive ? '1px solid rgba(22,163,74,0.2)' : '1px solid transparent',
+                color: isSettingsActive ? 'hsl(142 72% 42%)' : settingsHovered ? 'rgba(148,163,184,0.82)' : 'rgba(148,163,184,0.36)',
                 boxShadow: isSettingsActive ? '0 0 10px rgba(22,163,74,0.1)' : 'none',
               }}
             >

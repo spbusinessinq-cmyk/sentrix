@@ -4,13 +4,13 @@ import { twMerge } from 'tailwind-merge';
 
 const MOCK_DOWNLOADS = [
   {
-    id: '1', name: 'sentra-browser-1.0.0.dmg', size: '94.2 MB',
-    status: 'complete', source: 'sentra.browser', risk: 'safe',
+    id: '1', name: 'sentrix-browser-1.0.0.dmg', size: '94.2 MB',
+    status: 'complete', source: 'sentrix.live', risk: 'safe',
     date: 'Today, 04:51',
   },
   {
     id: '2', name: 'blackdog-security-report-q1.pdf', size: '2.1 MB',
-    status: 'complete', source: 'docs.sentra.browser', risk: 'safe',
+    status: 'complete', source: 'docs.sentrix.live', risk: 'safe',
     date: 'Today, 03:12',
   },
   {
@@ -24,8 +24,8 @@ const MOCK_DOWNLOADS = [
     date: 'Yesterday, 14:02',
   },
   {
-    id: '5', name: 'analytics-update.js', size: '340 KB',
-    status: 'blocked', source: 'track.unknown-source.net', risk: 'caution',
+    id: '5', name: 'suspicious-update.js', size: '340 KB',
+    status: 'blocked', source: 'unknown-domain.net', risk: 'caution',
     date: '3 days ago',
   },
 ];
@@ -35,7 +35,7 @@ export function DownloadsView() {
     <div className="h-full overflow-y-auto bg-background">
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] bg-black/20">
         <div>
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">sentra://downloads</div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">sentrix://downloads</div>
           <h2 className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
             <Download className="w-4 h-4 text-muted-foreground/50" />
             Downloads

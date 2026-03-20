@@ -1,10 +1,11 @@
 import React from 'react';
-import { Shield, Plus, X, Activity } from 'lucide-react';
+import { Shield, Plus, X, Activity, Loader2 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
 
 export function VeroTabBar() {
-  const { tabs, activeTabId, setActiveTabId, closeTab, addTab } = useBrowserState();
+  const { tabs, activeTabId, setActiveTabId, closeTab, addTab, blackdogStatus } = useBrowserState();
+  const isConnected = blackdogStatus === 'connected';
 
   return (
     <div
@@ -15,7 +16,7 @@ export function VeroTabBar() {
         boxShadow: '0 1px 0 rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.025)',
       }}
     >
-      {/* Window controls + SENTRA brand */}
+      {/* Window controls + SENTRIX brand */}
       <div className="flex items-center gap-4 px-3.5 border-r border-white/[0.05] shrink-0">
         <div className="flex items-center gap-[5px]">
           <div className="w-[11px] h-[11px] rounded-full bg-[#FF5F57] hover:brightness-110 transition-[filter] cursor-default" />
@@ -28,7 +29,7 @@ export function VeroTabBar() {
             className="text-[10.5px] font-bold tracking-[0.2em] uppercase"
             style={{ color: 'hsl(142 72% 42%)', opacity: 0.9 }}
           >
-            SENTRA
+            SENTRIX
           </span>
         </div>
       </div>
@@ -94,19 +95,31 @@ export function VeroTabBar() {
         <div
           className="flex items-center gap-1.5 px-2.5 py-[5px] rounded-full"
           style={{
-            background: 'rgba(22,163,74,0.07)',
-            border: '1px solid rgba(22,163,74,0.18)',
-            boxShadow: '0 0 10px rgba(22,163,74,0.08)',
+            background: isConnected ? 'rgba(22,163,74,0.07)' : 'rgba(245,158,11,0.07)',
+            border: `1px solid ${isConnected ? 'rgba(22,163,74,0.18)' : 'rgba(245,158,11,0.2)'}`,
+            boxShadow: isConnected ? '0 0 10px rgba(22,163,74,0.08)' : 'none',
+            transition: 'all 0.4s ease',
           }}
         >
-          <div
-            className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"
-            style={{ boxShadow: '0 0 5px rgba(22,163,74,0.8), 0 0 10px rgba(22,163,74,0.3)' }}
-          />
-          <Activity className="w-2.5 h-2.5" style={{ color: 'hsl(142 72% 40%)', opacity: 0.85 }} />
-          <span className="text-[9px] font-bold tracking-[0.18em] uppercase" style={{ color: 'hsl(142 72% 42%)', opacity: 0.85 }}>
-            BLACKDOG ACTIVE
-          </span>
+          {isConnected ? (
+            <>
+              <div
+                className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"
+                style={{ boxShadow: '0 0 5px rgba(22,163,74,0.8), 0 0 10px rgba(22,163,74,0.3)' }}
+              />
+              <Activity className="w-2.5 h-2.5" style={{ color: 'hsl(142 72% 40%)', opacity: 0.85 }} />
+              <span className="text-[9px] font-bold tracking-[0.18em] uppercase" style={{ color: 'hsl(142 72% 42%)', opacity: 0.85 }}>
+                BLACKDOG ACTIVE
+              </span>
+            </>
+          ) : (
+            <>
+              <Loader2 className="w-2.5 h-2.5 animate-spin" style={{ color: 'rgba(245,158,11,0.7)' }} />
+              <span className="text-[9px] font-bold tracking-[0.18em] uppercase" style={{ color: 'rgba(245,158,11,0.65)' }}>
+                CONNECTING
+              </span>
+            </>
+          )}
         </div>
       </div>
     </div>

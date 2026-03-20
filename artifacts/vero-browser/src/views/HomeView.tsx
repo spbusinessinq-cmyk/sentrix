@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Flame, Link as LinkIcon, FileText, LockKeyhole, RotateCcw, Plus, Clock, Search } from 'lucide-react';
+import { Shield, Flame, Link as LinkIcon, FileText, LockKeyhole, RotateCcw, Plus, Clock, Search, ExternalLink } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -57,36 +57,55 @@ export function HomeView() {
       </div>
 
       {/* Content column */}
-      <div className="flex-1 flex flex-col items-center justify-start px-6 pt-10 pb-10 w-full max-w-xl mx-auto">
+      <div className="flex-1 flex flex-col items-center justify-start px-6 pt-12 pb-10 w-full max-w-xl mx-auto">
 
-        {/* Brand */}
-        <div className="flex flex-col items-center mb-9 text-center">
-          <div className="flex items-center gap-3 mb-2">
+        {/* Brand hero */}
+        <div className="flex flex-col items-center mb-10 text-center">
+          {/* Wordmark */}
+          <div className="flex items-center gap-3 mb-3">
             <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
               style={{
-                background: 'rgba(22,163,74,0.1)',
-                border: '1px solid rgba(22,163,74,0.2)',
-                boxShadow: '0 0 16px rgba(22,163,74,0.12)',
+                background: 'rgba(22,163,74,0.08)',
+                border: '1px solid rgba(22,163,74,0.18)',
+                boxShadow: '0 0 24px rgba(22,163,74,0.1), inset 0 1px 0 rgba(22,163,74,0.12)',
               }}
             >
-              <Shield className="w-5 h-5" style={{ color: 'hsl(142 72% 42%)' }} />
+              <Shield className="w-6 h-6" style={{ color: 'hsl(142 72% 42%)' }} />
             </div>
-            <div className="text-left">
-              <h1 className="text-[18px] font-semibold text-foreground/88 tracking-tight leading-none">
-                Browse clearly.{' '}
-                <span style={{ color: 'hsl(142 72% 44%)' }}>Stay protected.</span>
-              </h1>
-              <p className="text-[9px] font-mono uppercase tracking-[0.18em] mt-1 flex items-center gap-1.5" style={{ color: 'rgba(148,163,184,0.4)' }}>
-                <span className="w-1 h-1 rounded-full inline-block" style={{ background: 'hsl(142 72% 38%)', boxShadow: '0 0 4px rgba(22,163,74,0.7)' }} />
-                Protected by BLACKDOG Engine v4.1.2
-              </p>
+            <div
+              className="text-[32px] font-bold tracking-[0.18em] uppercase leading-none"
+              style={{
+                color: 'hsl(142 72% 44%)',
+                textShadow: '0 0 40px rgba(22,163,74,0.25), 0 0 80px rgba(22,163,74,0.1)',
+                fontFamily: "'JetBrains Mono', monospace",
+              }}
+            >
+              SENTRIX
             </div>
           </div>
+
+          {/* Tagline */}
+          <h1 className="text-[17px] font-semibold text-foreground/85 tracking-tight leading-snug mb-1.5">
+            Browse clearly.{' '}
+            <span style={{ color: 'hsl(142 72% 44%)' }}>Stay protected.</span>
+          </h1>
+
+          {/* Engine attribution */}
+          <p
+            className="text-[10px] font-mono uppercase tracking-[0.18em] flex items-center gap-2"
+            style={{ color: 'rgba(148,163,184,0.38)' }}
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full inline-block shrink-0"
+              style={{ background: 'hsl(142 72% 38%)', boxShadow: '0 0 5px rgba(22,163,74,0.7)' }}
+            />
+            Powered by BLACKDOG security engine
+          </p>
         </div>
 
         {/* Search bar */}
-        <form onSubmit={handleSearch} className="w-full mb-7">
+        <form onSubmit={handleSearch} className="w-full mb-8">
           <div
             className="flex items-center h-11 rounded-xl overflow-hidden"
             style={{
@@ -146,60 +165,25 @@ export function HomeView() {
             />
             <UtilBlock
               icon={<FileText className="w-3.5 h-3.5" style={{ color: '#a78bfa' }} />}
-              label="Privacy Report" sub="Tracker summary"
-              onClick={() => navigate('sentra://privacy')}
+              label="Privacy Report" sub="Protection status"
+              onClick={() => navigate('sentrix://privacy')}
             />
             <UtilBlock
               icon={<LockKeyhole className="w-3.5 h-3.5" style={{ color: 'hsl(142 72% 42%)' }} />}
               label="Vault Access" sub="Credentials locked"
-              onClick={() => navigate('sentra://vault')}
+              onClick={() => navigate('sentrix://vault')}
             />
             <UtilBlock
               icon={<RotateCcw className="w-3.5 h-3.5" />}
               label="Session Controls" sub="Manage isolation"
-              onClick={() => navigate('sentra://settings')}
+              onClick={() => navigate('sentrix://settings')}
             />
-          </div>
-        </div>
-
-        {/* Page inspection */}
-        <div
-          className="w-full rounded-xl overflow-hidden mb-5"
-          style={{
-            background: 'rgba(0,0,0,0.3)',
-            border: '1px solid rgba(255,255,255,0.055)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
-          }}
-        >
-          <div
-            className="flex items-center justify-between px-4 py-2.5"
-            style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-          >
-            <span className="section-label">Page Inspection — sentra://newtab</span>
-            <span className="text-[9px] font-mono font-bold tracking-widest" style={{ color: 'hsl(142 72% 42%)', opacity: 0.7 }}>CLEAN</span>
-          </div>
-          <div className="grid grid-cols-4" style={{ borderTop: '1px solid transparent' }}>
-            {[['TRACKERS', '0', true], ['SCRIPTS', '0', false], ['REDIRECTS', '0', false], ['RISK', 'LOW', true]].map(([label, value, green], i) => (
-              <div
-                key={label as string}
-                className="px-4 py-3 flex flex-col gap-[5px]"
-                style={{ borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
-              >
-                <span className="section-label">{label}</span>
-                <span
-                  className="text-[13px] font-bold font-mono"
-                  style={{ color: green ? 'hsl(142 72% 42%)' : 'rgba(148,163,184,0.6)' }}
-                >
-                  {value}
-                </span>
-              </div>
-            ))}
           </div>
         </div>
 
         {/* Recent history */}
         {history.length > 0 && (
-          <div className="w-full">
+          <div className="w-full mb-6">
             <div className="section-label mb-2.5 flex items-center gap-1.5">
               <Clock className="w-3 h-3" />
               Recent
@@ -229,6 +213,53 @@ export function HomeView() {
             </div>
           </div>
         )}
+
+        {/* Intelligence Network link */}
+        <div
+          className="w-full"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '16px' }}
+        >
+          <a
+            href="https://rsrintel.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-150 group"
+            style={{
+              background: 'rgba(0,0,0,0.25)',
+              border: '1px solid rgba(255,255,255,0.055)',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(22,163,74,0.04)';
+              e.currentTarget.style.borderColor = 'rgba(22,163,74,0.15)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(0,0,0,0.25)';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.055)';
+            }}
+          >
+            <div className="flex items-center gap-2.5">
+              <div
+                className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+                style={{
+                  background: 'rgba(22,163,74,0.08)',
+                  border: '1px solid rgba(22,163,74,0.15)',
+                }}
+              >
+                <Shield className="w-3 h-3" style={{ color: 'hsl(142 72% 42%)', opacity: 0.7 }} />
+              </div>
+              <div>
+                <div className="text-[11px] font-mono font-medium" style={{ color: 'rgba(148,163,184,0.7)' }}>
+                  Intelligence Network
+                </div>
+                <div className="text-[9px] font-mono" style={{ color: 'rgba(148,163,184,0.3)' }}>
+                  rsrintel.com — threat intelligence platform
+                </div>
+              </div>
+            </div>
+            <ExternalLink className="w-3 h-3 shrink-0" style={{ color: 'rgba(148,163,184,0.25)' }} />
+          </a>
+        </div>
+
       </div>
     </div>
   );
