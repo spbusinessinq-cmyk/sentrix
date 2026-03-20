@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: sage
+    description: Sage AI intelligence analysis
 paths:
   /healthz:
     get:
@@ -24,8 +26,69 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /sage/query:
+    post:
+      operationId: sageChatQuery
+      tags: [sage]
+      summary: Ask Sage — stream AI intelligence analysis grounded in search results
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SageQueryBody"
+      responses:
+        "200":
+          description: SSE stream of Sage response chunks
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "400":
+          description: Bad request
 components:
   schemas:
+    SageQueryBody:
+      type: object
+      required: [query, results]
+      properties:
+        query:
+          type: string
+          description: The user search query
+        results:
+          type: array
+          items:
+            type: object
+            required: [title, domain, snippet]
+            properties:
+              title:
+                type: string
+              domain:
+                type: string
+              snippet:
+                type: string
+              score:
+                type: number
+              confidence:
+                type: string
+        context:
+          type: string
+          description: Intelligence summary context
+        messages:
+          type: array
+          description: Prior conversation messages
+          items:
+            type: object
+            required: [role, content]
+            properties:
+              role:
+                type: string
+                enum: [user, assistant]
+              content:
+                type: string
+        userMessage:
+          type: string
+          description: The current user message to Sage
     HealthStatus:
       type: object
       properties:

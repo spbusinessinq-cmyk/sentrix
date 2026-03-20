@@ -35,30 +35,53 @@ interface DomainRule {
 }
 
 const DOMAIN_RULES: DomainRule[] = [
-  { pattern: 'wikipedia.org',         risk: 'safe',    category: 'web',  scoreBoost: 30, whyReason: 'High-authority reference source',                    bdSummary: 'Known trusted domain' },
-  { pattern: 'github.com',            risk: 'safe',    category: 'web',  scoreBoost: 25, whyReason: 'Open source repository — low risk',                  bdSummary: 'Recognized developer domain' },
-  { pattern: 'stackoverflow.com',     risk: 'safe',    category: 'docs', scoreBoost: 20, whyReason: 'Developer Q&A — peer-reviewed answers',              bdSummary: 'Recognized developer domain' },
-  { pattern: 'reuters.com',           risk: 'safe',    category: 'news', scoreBoost: 25, whyReason: 'Established news source — international standard',   bdSummary: 'Known trusted domain' },
-  { pattern: 'apnews.com',            risk: 'safe',    category: 'news', scoreBoost: 25, whyReason: 'Associated Press — primary news wire',               bdSummary: 'Known trusted domain' },
-  { pattern: 'bbc.com',              risk: 'safe',    category: 'news', scoreBoost: 25, whyReason: 'Established news source — BBC editorial standards',  bdSummary: 'Known trusted domain' },
-  { pattern: 'bbc.co.uk',           risk: 'safe',    category: 'news', scoreBoost: 25, whyReason: 'Established news source — BBC editorial standards',  bdSummary: 'Known trusted domain' },
-  { pattern: 'developer.mozilla.org', risk: 'safe',    category: 'docs', scoreBoost: 25, whyReason: 'Developer documentation — low risk',                 bdSummary: 'Recognized documentation domain' },
-  { pattern: 'npmjs.com',             risk: 'safe',    category: 'docs', scoreBoost: 20, whyReason: 'Package registry — official Node.js ecosystem',      bdSummary: 'Recognized documentation domain' },
-  { pattern: 'nodejs.org',            risk: 'safe',    category: 'docs', scoreBoost: 20, whyReason: 'Official Node.js documentation',                     bdSummary: 'Recognized documentation domain' },
-  { pattern: 'react.dev',             risk: 'safe',    category: 'docs', scoreBoost: 20, whyReason: 'Official React documentation',                       bdSummary: 'Recognized documentation domain' },
-  { pattern: 'docs.',                 risk: 'safe',    category: 'docs', scoreBoost: 20, whyReason: 'Developer documentation — low risk',                 bdSummary: 'Recognized documentation domain' },
-  { pattern: 'pkg.go.dev',            risk: 'safe',    category: 'docs', scoreBoost: 20, whyReason: 'Official Go package documentation',                  bdSummary: 'Recognized documentation domain' },
-  { pattern: 'microsoft.com',         risk: 'safe',    category: 'web',  scoreBoost: 15, whyReason: 'Official Microsoft resource',                        bdSummary: 'Known trusted domain' },
-  { pattern: 'apple.com',             risk: 'safe',    category: 'web',  scoreBoost: 15, whyReason: 'Official Apple resource',                            bdSummary: 'Known trusted domain' },
-  { pattern: 'cloudflare.com',        risk: 'safe',    category: 'web',  scoreBoost: 15, whyReason: 'Known infrastructure provider',                      bdSummary: 'Known trusted domain' },
-  { pattern: 'google.com',            risk: 'safe',    category: 'web',  scoreBoost: 10, whyReason: 'Search aggregation page — indirect source',          bdSummary: 'Known trusted domain' },
-  { pattern: 'duckduckgo.com',        risk: 'safe',    category: 'web',  scoreBoost:  5, whyReason: 'Privacy-first search engine',                        bdSummary: 'Known trusted domain' },
-  { pattern: 'news.ycombinator',      risk: 'caution', category: 'news', scoreBoost:  5, whyReason: 'Tech community discussion — apply judgment',          bdSummary: 'User-generated content' },
-  { pattern: 'youtube.com',           risk: 'caution', category: 'web',  scoreBoost: -5, whyReason: 'Video content — indirect source',                   bdSummary: 'User-generated content — verify' },
-  { pattern: 'reddit.com',            risk: 'caution', category: 'web',  scoreBoost:-10, whyReason: 'User-generated content — verify claims',             bdSummary: 'User-generated content' },
-  { pattern: 'quora.com',             risk: 'caution', category: 'web',  scoreBoost:-10, whyReason: 'User-generated content — verify claims',             bdSummary: 'User-generated content' },
-  { pattern: 'x.com',                 risk: 'caution', category: 'web',  scoreBoost:-15, whyReason: 'Social media post — unverified claims',              bdSummary: 'Social media — unverified' },
-  { pattern: 'twitter.com',           risk: 'caution', category: 'web',  scoreBoost:-15, whyReason: 'Social media post — unverified claims',              bdSummary: 'Social media — unverified' },
+  // ── Tier 1: Primary reference & authoritative ─────────────────────────────
+  { pattern: 'wikipedia.org',         risk: 'safe',    category: 'web',  scoreBoost: 32, whyReason: 'High-authority reference source',                       bdSummary: 'Known trusted domain' },
+  { pattern: 'britannica.com',        risk: 'safe',    category: 'web',  scoreBoost: 30, whyReason: 'Authoritative encyclopedia — editorial standards',       bdSummary: 'Known trusted domain' },
+  // ── Tier 1: Primary news wires ────────────────────────────────────────────
+  { pattern: 'reuters.com',           risk: 'safe',    category: 'news', scoreBoost: 30, whyReason: 'Reuters — primary international news wire',              bdSummary: 'Known trusted domain' },
+  { pattern: 'apnews.com',            risk: 'safe',    category: 'news', scoreBoost: 30, whyReason: 'Associated Press — primary news wire',                  bdSummary: 'Known trusted domain' },
+  { pattern: 'bbc.com',              risk: 'safe',    category: 'news', scoreBoost: 28, whyReason: 'BBC — established international broadcaster',            bdSummary: 'Known trusted domain' },
+  { pattern: 'bbc.co.uk',           risk: 'safe',    category: 'news', scoreBoost: 28, whyReason: 'BBC — established international broadcaster',            bdSummary: 'Known trusted domain' },
+  { pattern: 'nytimes.com',           risk: 'safe',    category: 'news', scoreBoost: 26, whyReason: 'New York Times — established news source',               bdSummary: 'Known trusted domain' },
+  { pattern: 'washingtonpost.com',    risk: 'safe',    category: 'news', scoreBoost: 26, whyReason: 'Washington Post — established news source',              bdSummary: 'Known trusted domain' },
+  { pattern: 'theguardian.com',       risk: 'safe',    category: 'news', scoreBoost: 25, whyReason: 'The Guardian — established international news source',   bdSummary: 'Known trusted domain' },
+  { pattern: 'npr.org',               risk: 'safe',    category: 'news', scoreBoost: 26, whyReason: 'NPR — public broadcast, editorial standards',            bdSummary: 'Known trusted domain' },
+  { pattern: 'pbs.org',               risk: 'safe',    category: 'news', scoreBoost: 24, whyReason: 'PBS — public broadcast, editorial standards',            bdSummary: 'Known trusted domain' },
+  { pattern: 'politico.com',          risk: 'safe',    category: 'news', scoreBoost: 22, whyReason: 'Politico — political reporting, editorial standards',    bdSummary: 'Known trusted domain' },
+  { pattern: 'ft.com',                risk: 'safe',    category: 'news', scoreBoost: 25, whyReason: 'Financial Times — established financial news',           bdSummary: 'Known trusted domain' },
+  { pattern: 'wsj.com',               risk: 'safe',    category: 'news', scoreBoost: 25, whyReason: 'Wall Street Journal — established financial news',       bdSummary: 'Known trusted domain' },
+  { pattern: 'economist.com',         risk: 'safe',    category: 'news', scoreBoost: 25, whyReason: 'The Economist — editorial standards',                   bdSummary: 'Known trusted domain' },
+  // ── Tier 2: Developer documentation ──────────────────────────────────────
+  { pattern: 'developer.mozilla.org', risk: 'safe',    category: 'docs', scoreBoost: 28, whyReason: 'MDN — authoritative web developer reference',           bdSummary: 'Recognized documentation domain' },
+  { pattern: 'stackoverflow.com',     risk: 'safe',    category: 'docs', scoreBoost: 18, whyReason: 'Stack Overflow — peer-reviewed developer Q&A',          bdSummary: 'Recognized developer domain' },
+  { pattern: 'npmjs.com',             risk: 'safe',    category: 'docs', scoreBoost: 20, whyReason: 'npm — official Node.js package registry',               bdSummary: 'Recognized documentation domain' },
+  { pattern: 'nodejs.org',            risk: 'safe',    category: 'docs', scoreBoost: 22, whyReason: 'Official Node.js documentation',                        bdSummary: 'Recognized documentation domain' },
+  { pattern: 'react.dev',             risk: 'safe',    category: 'docs', scoreBoost: 22, whyReason: 'Official React documentation',                          bdSummary: 'Recognized documentation domain' },
+  { pattern: 'pkg.go.dev',            risk: 'safe',    category: 'docs', scoreBoost: 22, whyReason: 'Official Go package documentation',                     bdSummary: 'Recognized documentation domain' },
+  { pattern: 'docs.',                 risk: 'safe',    category: 'docs', scoreBoost: 18, whyReason: 'Developer documentation',                               bdSummary: 'Recognized documentation domain' },
+  // ── Tier 2: Official government & academic ────────────────────────────────
+  { pattern: '.gov',                  risk: 'safe',    category: 'web',  scoreBoost: 35, whyReason: 'Official government source — high authority',            bdSummary: 'Government source' },
+  { pattern: '.edu',                  risk: 'safe',    category: 'web',  scoreBoost: 30, whyReason: 'Academic institution — high authority',                  bdSummary: 'Academic source' },
+  { pattern: 'who.int',               risk: 'safe',    category: 'web',  scoreBoost: 32, whyReason: 'World Health Organization — authoritative health data',  bdSummary: 'International authority' },
+  { pattern: 'un.org',                risk: 'safe',    category: 'web',  scoreBoost: 30, whyReason: 'United Nations — international authority',               bdSummary: 'International authority' },
+  // ── Tier 3: Official tech companies ──────────────────────────────────────
+  { pattern: 'microsoft.com',         risk: 'safe',    category: 'web',  scoreBoost: 18, whyReason: 'Official Microsoft resource',                           bdSummary: 'Known trusted domain' },
+  { pattern: 'apple.com',             risk: 'safe',    category: 'web',  scoreBoost: 18, whyReason: 'Official Apple resource',                               bdSummary: 'Known trusted domain' },
+  { pattern: 'cloudflare.com',        risk: 'safe',    category: 'web',  scoreBoost: 16, whyReason: 'Known infrastructure provider',                         bdSummary: 'Known trusted domain' },
+  { pattern: 'google.com',            risk: 'safe',    category: 'web',  scoreBoost:  8, whyReason: 'Search aggregation page — indirect source',             bdSummary: 'Known trusted domain' },
+  { pattern: 'duckduckgo.com',        risk: 'safe',    category: 'web',  scoreBoost:  5, whyReason: 'Privacy-first search engine',                           bdSummary: 'Known trusted domain' },
+  // ── GitHub: only relevant for developer queries ───────────────────────────
+  { pattern: 'github.com',            risk: 'safe',    category: 'web',  scoreBoost:  6, whyReason: 'Open source repository — relevance varies by query',    bdSummary: 'Recognized developer domain' },
+  // ── Community / social (lower trust) ─────────────────────────────────────
+  { pattern: 'news.ycombinator',      risk: 'caution', category: 'news', scoreBoost:  3, whyReason: 'Hacker News — tech community discussion, apply judgment', bdSummary: 'User-generated content' },
+  { pattern: 'youtube.com',           risk: 'caution', category: 'web',  scoreBoost: -8, whyReason: 'Video platform — verify via primary sources',           bdSummary: 'User-generated content — verify' },
+  { pattern: 'reddit.com',            risk: 'caution', category: 'web',  scoreBoost:-15, whyReason: 'User-generated content — verify all claims',            bdSummary: 'User-generated content' },
+  { pattern: 'quora.com',             risk: 'caution', category: 'web',  scoreBoost:-15, whyReason: 'User-generated content — verify claims',                bdSummary: 'User-generated content' },
+  { pattern: 'medium.com',            risk: 'caution', category: 'web',  scoreBoost: -8, whyReason: 'Self-published blog — editorial standards vary',        bdSummary: 'Self-published content' },
+  { pattern: 'substack.com',          risk: 'caution', category: 'web',  scoreBoost:-10, whyReason: 'Newsletter platform — editorial standards vary',        bdSummary: 'Self-published content' },
+  { pattern: 'x.com',                 risk: 'caution', category: 'web',  scoreBoost:-20, whyReason: 'Social media post — unverified claims',                 bdSummary: 'Social media — unverified' },
+  { pattern: 'twitter.com',           risk: 'caution', category: 'web',  scoreBoost:-20, whyReason: 'Social media post — unverified claims',                 bdSummary: 'Social media — unverified' },
 ];
 
 const DANGER_PATTERNS = ['free-download', 'crack', 'keygen', 'free-vpn', 'warez', 'nulled'];
@@ -87,9 +110,30 @@ function scoreAndAnnotate(r: {
   id: number; title: string; url: string; domain: string; snippet: string;
   provider: 'brave' | 'duckduckgo' | 'mock';
 }, query: string): SearchResultItem {
+  // ─── Query intent parsing (must come first) ───────────────────────────────
+  const q = query.toLowerCase();
+  const isDocsQuery = /\b(how to|tutorial|guide|api|documentation|docs|reference|example|install|setup|configure)\b/.test(q);
+  const isNewsQuery = /\b(news|latest|today|breaking|current|2024|2025|2026|recently)\b/.test(q);
+  const isRefQuery  = /\b(what is|who is|define|definition|meaning|explain|overview|history of)\b/.test(q);
+
   const domainInfo = classifyDomain(r.domain);
   let score = 50 + domainInfo.scoreBoost;
   let whyReason = domainInfo.whyReason;
+
+  // GitHub: only relevant for developer queries — penalise for general/news queries
+  if (r.domain.toLowerCase().includes('github.com') && !isDocsQuery) score -= 12;
+
+  // .gov / .edu TLD boost
+  const d2 = r.domain.toLowerCase();
+  if (d2.endsWith('.gov') || d2.endsWith('.gov.uk') || d2.endsWith('.gov.au')) score += 8;
+  if (d2.endsWith('.edu')) score += 6;
+
+  // SEO spam heuristics
+  const hyphenCount = (r.domain.match(/-/g) || []).length;
+  if (hyphenCount >= 3) { score -= 15; whyReason = 'Domain pattern suggests SEO-optimised site — verify source'; }
+
+  const spamTitlePatterns = /\b(best|top\s+\d+|review|vs\.?|versus|comparison|buy|cheap|deal|discount|coupon|free\s+trial)\b/i;
+  if (spamTitlePatterns.test(r.title) && !domainInfo.matched) score -= 10;
 
   // HTTPS bonus
   if (r.url.startsWith('https://')) score += 10;
@@ -112,17 +156,12 @@ function scoreAndAnnotate(r: {
   if (r.url.length > 200) score -= 10;
 
   // ─── Query intent boosting ─────────────────────────────────────────────────
-  const q = query.toLowerCase();
-  const isDocsQuery = /\b(how to|tutorial|guide|api|documentation|docs|reference|example|install|setup)\b/.test(q);
-  const isNewsQuery = /\b(news|latest|today|breaking|current|2024|2025|2026|recently)\b/.test(q);
-  const isRefQuery  = /\b(what is|who is|define|definition|meaning|explain|overview|history of)\b/.test(q);
-
   const d = r.domain.toLowerCase();
   if (isDocsQuery && (d.includes('docs.') || d.includes('developer.') || d.includes('npmjs') || d.includes('github') || d.includes('stackoverflow') || d.includes('react.dev') || d.includes('nodejs'))) {
     score += 15;
     whyReason += ' — boosted for your query';
   }
-  if (isNewsQuery && (d.includes('reuters') || d.includes('bbc') || d.includes('apnews') || d.includes('ycombinator') || d.includes('nytimes'))) {
+  if (isNewsQuery && (d.includes('reuters') || d.includes('bbc') || d.includes('apnews') || d.includes('ycombinator') || d.includes('nytimes') || d.includes('theguardian') || d.includes('washingtonpost') || d.includes('npr.org'))) {
     score += 15;
     whyReason += ' — boosted for your query';
   }

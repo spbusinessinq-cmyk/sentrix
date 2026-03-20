@@ -1,0 +1,161 @@
+You are upgrading SENTRIX from a heuristic interface into a real AI-powered intelligence system.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+OBJECTIVE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Replace all simulated intelligence with real AI-backed reasoning using free LLM APIs.
+
+Primary goal:
+Turn "Ask Sage" into a real conversational AI agent with context awareness, source grounding, and intelligence analysis.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+STEP 1 — AI CLIENT LAYER
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Create:
+src/lib/ai-client.ts
+
+Requirements:
+
+- Support multiple providers:
+  - Google Gemini (primary)
+  - Groq (fallback / fast mode)
+  - OpenRouter (optional fallback)
+
+- Use environment variables:
+  VITE_AI_PROVIDER
+  VITE_GEMINI_API_KEY
+  VITE_GROQ_API_KEY
+  VITE_OPENROUTER_API_KEY
+
+- Export:
+
+async function askSage({
+  query,
+  results,
+  context
+})
+
+Where:
+- query = user input
+- results = current search results
+- context = intelligence summary
+
+━━━━━━━━━━━━━━━━━━━━━━━
+STEP 2 — GROUNDING (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+DO NOT allow hallucination.
+
+Construct prompt:
+
+"You are an intelligence analyst.
+
+You must ONLY use the provided search results.
+Do not invent facts.
+If uncertain, say so clearly.
+
+Analyze the data and answer the user's question."
+
+Then inject:
+- top 5–10 results (title + snippet)
+- intelligence summary
+- detected signals
+
+━━━━━━━━━━━━━━━━━━━━━━━
+STEP 3 — ASK SAGE UI (REAL CHAT)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Upgrade Ask Sage panel:
+
+- Add input box
+- Add chat history (stateful)
+- Add loading + streaming response
+- Add "clear session" button
+
+Behavior:
+- User types → sends to AI
+- AI responds grounded in results
+- Store conversation in local state
+
+━━━━━━━━━━━━━━━━━━━━━━━
+STEP 4 — COLLAPSIBLE EVERYTHING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Make ALL sections collapsible:
+
+- Intelligence Brief
+- Signal breakdown
+- Source analysis
+- Sage panel
+
+Default:
+- collapsed except top signal strip
+
+━━━━━━━━━━━━━━━━━━━━━━━
+STEP 5 — FIX SEARCH QUALITY (IMPORTANT)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Current issue:
+Results are garbage (GitHub, low-signal junk)
+
+Fix:
+
+- Add domain filtering:
+  PRIORITIZE:
+    news sites
+    .gov
+    .edu
+    known sources
+
+- De-rank:
+    github
+    forums
+    random SEO sites
+
+- Add "mode switch":
+    STRICT MODE → high quality only
+    OPEN MODE → everything
+
+━━━━━━━━━━━━━━━━━━━━━━━
+STEP 6 — BLACKDOG REAL UPGRADE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Replace fake signals with AI scoring:
+
+For each result:
+- run lightweight AI classification:
+    risk level
+    trust level
+    bias level
+
+Store per result:
+{
+  trustScore,
+  riskScore,
+  category
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━
+STEP 7 — PERFORMANCE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+- Cache AI responses per query
+- Debounce user input
+- Limit to top results only
+
+━━━━━━━━━━━━━━━━━━━━━━━
+FINAL RESULT
+━━━━━━━━━━━━━━━━━━━━━━━
+
+SENTRIX becomes:
+
+- real AI-powered intelligence system
+- grounded, non-hallucinating
+- interactive analyst (Ask Sage)
+- structured decision engine
+
+NO fake UI elements.
+NO simulated intelligence.
+Everything must be real or removed.

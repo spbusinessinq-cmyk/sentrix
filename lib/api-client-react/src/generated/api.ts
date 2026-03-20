@@ -5,18 +5,21 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type { HealthStatus, SageQueryBody } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -99,3 +102,89 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Ask Sage — stream AI intelligence analysis grounded in search results
+ */
+export const getSageChatQueryUrl = () => {
+  return `/api/sage/query`;
+};
+
+export const sageChatQuery = async (
+  sageQueryBody: SageQueryBody,
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getSageChatQueryUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(sageQueryBody),
+  });
+};
+
+export const getSageChatQueryMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sageChatQuery>>,
+    TError,
+    { data: BodyType<SageQueryBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sageChatQuery>>,
+  TError,
+  { data: BodyType<SageQueryBody> },
+  TContext
+> => {
+  const mutationKey = ["sageChatQuery"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sageChatQuery>>,
+    { data: BodyType<SageQueryBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return sageChatQuery(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SageChatQueryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sageChatQuery>>
+>;
+export type SageChatQueryMutationBody = BodyType<SageQueryBody>;
+export type SageChatQueryMutationError = ErrorType<void>;
+
+/**
+ * @summary Ask Sage — stream AI intelligence analysis grounded in search results
+ */
+export const useSageChatQuery = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sageChatQuery>>,
+    TError,
+    { data: BodyType<SageQueryBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sageChatQuery>>,
+  TError,
+  { data: BodyType<SageQueryBody> },
+  TContext
+> => {
+  return useMutation(getSageChatQueryMutationOptions(options));
+};

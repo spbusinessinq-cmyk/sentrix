@@ -5,6 +5,39 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type SageQueryBodyResultsItem = {
+  title: string;
+  domain: string;
+  snippet: string;
+  score?: number;
+  confidence?: string;
+};
+
+export type SageQueryBodyMessagesItemRole =
+  (typeof SageQueryBodyMessagesItemRole)[keyof typeof SageQueryBodyMessagesItemRole];
+
+export const SageQueryBodyMessagesItemRole = {
+  user: "user",
+  assistant: "assistant",
+} as const;
+
+export type SageQueryBodyMessagesItem = {
+  role: SageQueryBodyMessagesItemRole;
+  content: string;
+};
+
+export interface SageQueryBody {
+  /** The user search query */
+  query: string;
+  results: SageQueryBodyResultsItem[];
+  /** Intelligence summary context */
+  context?: string;
+  /** Prior conversation messages */
+  messages?: SageQueryBodyMessagesItem[];
+  /** The current user message to Sage */
+  userMessage?: string;
+}
+
 export interface HealthStatus {
   status: string;
 }

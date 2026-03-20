@@ -14,3 +14,33 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary Ask Sage — stream AI intelligence analysis grounded in search results
+ */
+export const SageChatQueryBody = zod.object({
+  query: zod.string().describe("The user search query"),
+  results: zod.array(
+    zod.object({
+      title: zod.string(),
+      domain: zod.string(),
+      snippet: zod.string(),
+      score: zod.number().optional(),
+      confidence: zod.string().optional(),
+    }),
+  ),
+  context: zod.string().optional().describe("Intelligence summary context"),
+  messages: zod
+    .array(
+      zod.object({
+        role: zod.enum(["user", "assistant"]),
+        content: zod.string(),
+      }),
+    )
+    .optional()
+    .describe("Prior conversation messages"),
+  userMessage: zod
+    .string()
+    .optional()
+    .describe("The current user message to Sage"),
+});
