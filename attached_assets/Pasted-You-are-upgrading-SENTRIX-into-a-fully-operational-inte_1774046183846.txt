@@ -1,0 +1,272 @@
+You are upgrading SENTRIX into a fully operational intelligence analysis system.
+
+This is a FINAL PASS.
+All behavior must be stable, production-ready, and aligned with an analysis-first system.
+
+DO NOT redesign the UI.
+DO NOT revert to search-first.
+DO NOT remove existing working components.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+CORE IDENTITY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+SENTRIX is:
+- an intelligence interface
+- a signal and truth filter
+- an analysis-first system
+
+NOT:
+- a search engine
+- a chatbot
+- a link browser
+
+The user must:
+- understand BEFORE clicking
+- feel in control
+- see what matters and what to question
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. STARTER CHIP FIX (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Fix:
+- Analyze this claim
+- Break this down for me
+- What should I question here?
+
+CURRENT PROBLEM:
+They auto-send immediately.
+
+REQUIRED:
+
+Clicking a chip must:
+- insert text into input
+- focus input
+- place cursor at end
+- NOT send
+- NOT trigger Sage
+
+Insert EXACT text:
+
+"Analyze this claim: "
+"Break this down for me: "
+"What should I question here: "
+
+User must manually press:
+- Analyze button OR Enter
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. INPUT TYPE DETECTION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Detect input type automatically:
+
+- URL → article mode
+- long text → article/claim analysis
+- short question → direct analysis
+
+Log input type.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. ARTICLE FACT-CHECK SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━
+
+If input is a URL:
+
+Backend must:
+- fetch HTML
+- extract:
+  • title
+  • main content
+  • domain
+  • publish date (if available)
+  • author (if available)
+- remove:
+  • nav
+  • footer
+  • ads
+  • junk markup
+
+If extraction fails:
+- return structured fallback
+- DO NOT crash
+- DO NOT blank UI
+
+If user pastes article text:
+- analyze directly
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. SAGE OUTPUT FORMAT (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+ALL outputs MUST follow:
+
+## ANSWER
+Direct conclusion FIRST
+
+## SIGNAL
+HIGH / MEDIUM / LOW
++ reasoning
+
+## AGREEMENT
+CONSENSUS / MIXED / CONFLICT / UNKNOWN
+
+## RISK
+SAFE / CAUTION / DANGER
+
+## WHAT MATTERS
+- confirmed facts
+- strong signals
+
+## WHAT TO QUESTION
+- weak claims
+- missing evidence
+- bias signals
+
+## SOURCES
+(optional, max 5)
+
+NO deviations.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. ARTICLE MODE EXTENSION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+When analyzing article or URL, ALSO include:
+
+## ARTICLE
+- title
+- outlet
+- date
+- author
+
+## SUMMARY
+What the article is saying
+
+## CORE CLAIMS
+List of actual claims
+
+## VERDICT
+One of:
+- WELL SUPPORTED
+- PARTIALLY SUPPORTED
+- WEAKLY SUPPORTED
+- UNCLEAR
+- HIGH RISK
+
+## WHAT HOLDS UP
+Credible parts
+
+## WHAT DOES NOT HOLD UP
+Weak or unsupported parts
+
+## WHAT TO VERIFY NEXT
+Next investigation steps
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. CLAIM EXTRACTION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Identify:
+- factual claims
+- quoted claims
+- stats
+- implied claims
+
+Separate:
+- facts
+- claims
+- speculation
+- framing
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. REMOVE FAILURE LANGUAGE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Sage must NEVER say:
+"I cannot access live URLs"
+
+INSTEAD:
+
+- attempt fetch
+- analyze available content
+
+If blocked:
+
+Say:
+"Content could not be fully retrieved. Analysis based on available data."
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. SEARCH IS SECONDARY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Search results:
+- go to "Supporting References"
+- collapsed by default
+
+Sage = primary
+Search = secondary
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. STABILITY + FALLBACK
+━━━━━━━━━━━━━━━━━━━━━━━
+
+NEVER:
+- blank screen
+- infinite "thinking"
+- crash on API error
+
+ALWAYS:
+- return structured output
+- use fallback if needed
+
+If Gemini fails:
+- return limited-mode structured analysis
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. LOGGING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Log:
+
+- input type (URL / text / question)
+- fetch success/failure
+- gemini used yes/no
+- fallback used yes/no
+
+━━━━━━━━━━━━━━━━━━━━━━━
+11. FINAL SYSTEM GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Sentrix must:
+
+- analyze claims
+- fact-check articles
+- detect bias
+- extract signal
+- guide user thinking
+
+It should feel like:
+a tactical intelligence console.
+
+NOT:
+a search engine.
+NOT:
+a chatbot.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+END STATE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+User pastes article →
+
+Sentrix:
+- extracts it
+- breaks it down
+- evaluates claims
+- assigns signal/risk
+- shows what holds up
+- shows what to question
+
+The user walks away informed.

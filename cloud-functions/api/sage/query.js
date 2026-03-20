@@ -1,48 +1,149 @@
 /**
  * EdgeOne Node Function — /api/sage/query
  * Streams Gemini 2.5 Flash analysis as Server-Sent Events.
- * Credentials stay server-side only.
- * Fails gracefully into a structured limited-mode response.
+ * Supports: URL article fetching, input type detection, article mode analysis.
  */
 
-const SYSTEM_PROMPT = `You are SAGE — Sentrix's Signal & Truth Filter. You analyze information and return structured intelligence that helps users understand before they trust or act.
+// ── Input type detection ──────────────────────────────────────────────────────
 
-YOUR PRIMARY JOB: Explain what information actually means, how reliable it is, what matters, and what to question.
+function detectInputType(msg) {
+  const trimmed = msg.trim();
+  if (/^https?:\/\/[^\s]{4,}/.test(trimmed)) return 'url';
+  if (trimmed.length > 300) return 'article';
+  return 'question';
+}
 
-RESPONSE FORMAT — use EXACTLY these section headers, in this order:
+// ── Article extraction ────────────────────────────────────────────────────────
+
+function parseHtml(html, url) {
+  const domain = (() => {
+    try { return new URL(url).hostname.replace(/^www\./, ''); }
+    catch { return url.slice(0, 40); }
+  })();
+
+  const titleMatch =
+    html.match(/property="og:title"\s+content="([^"]{3,200})"/i) ||
+    html.match(/content="([^"]{3,200})"\s+property="og:title"/i) ||
+    html.match(/<title[^>]*>([^<]{3,200})<\/title>/i) ||
+    html.match(/<h1[^>]*>([^<]{3,150})<\/h1>/i);
+  const title = titleMatch ? titleMatch[1].trim().replace(/&amp;/g, '&') : domain;
+
+  const authorMatch =
+    html.match(/property="article:author"\s+content="([^"]{2,80})"/i) ||
+    html.match(/name="author"\s+content="([^"]{2,80})"/i) ||
+    html.match(/rel="author"[^>]*>([^<]{2,60})</i);
+  const author = authorMatch ? authorMatch[1].trim() : undefined;
+
+  const dateMatch =
+    html.match(/property="article:published_time"\s+content="([^"]{8,})"/i) ||
+    html.match(/property="og:article:published_time"\s+content="([^"]{8,})"/i) ||
+    html.match(/datetime="([0-9]{4}-[0-9]{2}-[0-9]{2}[^"]{0,20})"/i);
+  const date = dateMatch ? dateMatch[1].slice(0, 10) : undefined;
+
+  const content = html
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, ' ')
+    .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, ' ')
+    .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, ' ')
+    .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, ' ')
+    .replace(/<aside[^>]*>[\s\S]*?<\/aside>/gi, ' ')
+    .replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z#0-9]{1,8};/gi, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+    .slice(0, 9000);
+
+  return { title, domain, author, date, content, success: true };
+}
+
+async function fetchArticle(url) {
+  const domain = (() => {
+    try { return new URL(url).hostname.replace(/^www\./, ''); }
+    catch { return url.slice(0, 40); }
+  })();
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; SentrixAnalysis/1.0; +https://sentrix.io)',
+        'Accept': 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (!res.ok) {
+      return {
+        title: domain, domain,
+        content: `Content could not be fully retrieved. Analysis based on available data. HTTP ${res.status}.`,
+        success: false, error: `HTTP ${res.status}`,
+      };
+    }
+
+    const contentType = res.headers.get('content-type') ?? '';
+    if (!contentType.includes('html')) {
+      return {
+        title: domain, domain,
+        content: `Non-HTML content (${contentType}) at ${url}. Analysis based on available data.`,
+        success: false, error: 'non-html',
+      };
+    }
+
+    const html = await res.text();
+    return parseHtml(html, url);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      title: domain, domain,
+      content: `Content could not be fully retrieved. Analysis based on available data. (${msg.slice(0, 120)})`,
+      success: false, error: msg,
+    };
+  }
+}
+
+// ── System prompt ─────────────────────────────────────────────────────────────
+
+const SYSTEM_PROMPT = `You are SAGE — Sentrix's Signal & Truth Filter. You analyze information and return structured intelligence.
+
+Your job: help the user understand before they believe or act.
+You are an intelligence system, not a chatbot. Be direct, precise, and operator-grade.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+CORE FORMAT (ALL RESPONSES)
+━━━━━━━━━━━━━━━━━━━━━━━
 
 ## ANSWER
-Complete, direct explanation of what this information actually means. What is true. What the user needs to know.
-- For claims or headlines: explain what is being asserted, whether it is supported, and what the real picture is
+Direct conclusion first. Complete explanation. What is true, what is supported, what the user needs to know.
+- For claims or headlines: what is being asserted, whether it holds up, and what the real picture is
 - For questions: answer fully and clearly
 - For URLs or articles: summarize the core content and assess its substance
 - For controversial or political content: present the factual landscape without advocacy
-Never redirect to links as a substitute for answering. Never hedge. Give the best answer possible.
+Never hedge. Never redirect with "you can search for this." Give the best answer possible from available evidence.
+If content could not be retrieved, analyze based on what is available and note it once.
 
 ## SIGNAL
-One of: HIGH | MEDIUM | LOW
-On the same line, briefly explain: what drives this signal level (source quality, evidence density, corroboration).
+HIGH / MEDIUM / LOW — then explain what drives this level (source quality, evidence density, corroboration).
 Example: "HIGH — multiple independent primary sources corroborate the core claim."
 
 ## AGREEMENT
-One of: CONSENSUS | MIXED | CONFLICT
-On the same line, briefly explain what sources agree or disagree on.
+CONSENSUS / MIXED / CONFLICT / UNKNOWN — then explain what sources agree or disagree on.
 Example: "MIXED — scientific consensus supports the mechanism, but efficacy claims vary by study."
 
 ## RISK
-One of: SAFE | CAUTION | DANGER
-On the same line, briefly explain any manipulation patterns, trust signals, or sourcing weaknesses.
+SAFE / CAUTION / DANGER — then explain any manipulation patterns, trust signals, or sourcing weaknesses.
 Example: "CAUTION — primary source is a press release without independent verification."
 
 ## WHAT MATTERS
-Bullet list (3–6 items) of:
+Bullet list (3–6 items):
 - Key verified facts
 - Important context the user needs
 - Entities or actors involved
 - Timeline or scale if relevant
 
 ## WHAT TO QUESTION
-Bullet list (3–5 items) of:
+Bullet list (3–5 items):
 - Missing information or evidence gaps
 - Possible bias or framing choices
 - Weak or unverified claims
@@ -50,21 +151,62 @@ Bullet list (3–5 items) of:
 - What a skeptical reader would ask
 
 ## SOURCES
-Only include if search results genuinely support the answer.
+Include only if search results genuinely support the answer.
 Format: • domain.com — what this source specifically contributes
-Keep to 3–5 entries maximum. Omit entirely if no results add value.
+Max 5 entries. Omit entirely if no results add value.
 
-RULES:
-- ## ANSWER must always appear first and be complete — never skip it
-- SIGNAL, AGREEMENT, RISK must each appear on a single line with the rating word first
-- Never fabricate statistics, quotes, or URLs not in the search results
-- Be direct, operator-grade, and specific — not vague or hedging
+━━━━━━━━━━━━━━━━━━━━━━━
+ARTICLE / URL MODE EXTENSION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+When the input is a URL or a pasted article, ALSO include ALL of these sections AFTER the core sections above:
+
+## ARTICLE
+- Title:
+- Outlet:
+- Date:
+- Author:
+
+## SUMMARY
+What the article is actually saying in 2–4 sentences. Neutral, factual.
+
+## CORE CLAIMS
+Bullet list of the actual claims made:
+- Factual claims (verifiable assertions)
+- Quoted claims (attributed to a source)
+- Statistical claims (numbers, percentages)
+- Implied claims (framing-driven)
+Separate clearly: mark each as [FACT] [QUOTED] [STAT] [IMPLIED]
+
+## VERDICT
+One of: WELL SUPPORTED / PARTIALLY SUPPORTED / WEAKLY SUPPORTED / UNCLEAR / HIGH RISK
+Follow with a one-sentence explanation.
+
+## WHAT HOLDS UP
+Bullet list of credible, verifiable parts of the article.
+
+## WHAT DOES NOT HOLD UP
+Bullet list of weak, unverified, or misleading parts.
+
+## WHAT TO VERIFY NEXT
+Bullet list of 3–5 concrete next investigation steps the user should take.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+RULES
+━━━━━━━━━━━━━━━━━━━━━━━
+- ## ANSWER must always appear first and be complete
+- SIGNAL / AGREEMENT / RISK: rating word first, explanation on same line
+- Never fabricate statistics, quotes, or URLs not provided
+- Never say "I cannot access live URLs" — attempt analysis from available data and note limitations once
+- Never say "I don't have access to" — instead, work with what is available
+- Be direct, operator-grade, specific — not vague or hedging
 - The user should walk away informed, in control, and knowing what to question next`;
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
 function buildResultsContext(results) {
-  if (!results || results.length === 0) {
-    return 'No search results provided — answer from your knowledge and note this.';
-  }
+  if (!results || results.length === 0)
+    return 'No search results provided — answer from knowledge and note this.';
   return results.slice(0, 10).map((r, i) => {
     const tier = r.score != null
       ? (r.score >= 80 ? '[HIGH SIGNAL]' : r.score >= 60 ? '[MED SIGNAL]' : '[LOW SIGNAL]')
@@ -89,13 +231,13 @@ function limitedModeFallback(userMessage) {
   const q = (userMessage || 'this input').trim().slice(0, 120);
   return [
     `## ANSWER`,
-    `Analysis engine is running in limited mode — the Gemini API key is not configured for this deployment. The input received was: "${q}"`,
+    `Analysis engine is running in limited mode. The input received was: "${q}"`,
     ``,
     `## SIGNAL`,
     `LOW — analysis engine unavailable; no AI assessment was performed.`,
     ``,
     `## AGREEMENT`,
-    `MIXED — cannot assess source agreement without the analysis engine.`,
+    `UNKNOWN — cannot assess source agreement without the analysis engine.`,
     ``,
     `## RISK`,
     `CAUTION — verify claims independently; automated analysis is not available in this mode.`,
@@ -111,6 +253,8 @@ function limitedModeFallback(userMessage) {
     `- Does the key have access to the gemini-2.5-flash model?`,
   ].join('\n');
 }
+
+// ── Handler ───────────────────────────────────────────────────────────────────
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -128,18 +272,15 @@ export async function onRequest(context) {
 
   if (request.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
+      status: 405, headers: { 'Content-Type': 'application/json' },
     });
   }
 
   let body;
-  try {
-    body = await request.json();
-  } catch {
+  try { body = await request.json(); }
+  catch {
     return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
+      status: 400, headers: { 'Content-Type': 'application/json' },
     });
   }
 
@@ -147,16 +288,16 @@ export async function onRequest(context) {
 
   if (!userMessage || typeof userMessage !== 'string' || !userMessage.trim()) {
     return new Response(JSON.stringify({ error: 'userMessage is required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
+      status: 400, headers: { 'Content-Type': 'application/json' },
     });
   }
 
+  const inputType = detectInputType(userMessage);
+  const isArticleMode = inputType === 'url' || inputType === 'article';
   const apiKey = resolveGeminiKey(env ?? {});
-  const hasBraveKey = !!(env?.BRAVE_SEARCH_API_KEY);
 
   console.log(
-    `[Sentrix] /api/sage/query — geminiKey=${!!apiKey} braveKey=${hasBraveKey} fallback=${!apiKey} query="${(userMessage || '').slice(0, 60)}"`,
+    `[Sentrix] /api/sage/query — type=${inputType} geminiKey=${!!apiKey} query="${(userMessage || '').slice(0, 60)}"`,
   );
 
   const sseHeaders = {
@@ -171,32 +312,60 @@ export async function onRequest(context) {
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
     const encoder = new TextEncoder();
-    const fallback = limitedModeFallback(userMessage);
-    writer.write(encoder.encode(sseChunk({ content: fallback })));
+    writer.write(encoder.encode(sseChunk({ content: limitedModeFallback(userMessage) })));
     writer.write(encoder.encode(sseChunk({ done: true })));
     writer.close();
     return new Response(readable, { headers: sseHeaders });
   }
 
-  const geminiBase = resolveGeminiBase(env ?? {});
+  // ── Article fetch ───────────────────────────────────────────────────────────
+  let articleBlock = '';
+  if (inputType === 'url') {
+    const article = await fetchArticle(userMessage.trim());
+    console.log(`[Sentrix] Article fetch — success=${article.success} domain=${article.domain} error=${article.error ?? 'none'}`);
+
+    if (article.success) {
+      articleBlock =
+        `\n\nARTICLE CONTENT EXTRACTED:\n` +
+        `URL: ${userMessage.trim()}\n` +
+        `Title: ${article.title}\n` +
+        `Domain: ${article.domain}\n` +
+        (article.author ? `Author: ${article.author}\n` : '') +
+        (article.date ? `Date: ${article.date}\n` : '') +
+        `\n--- ARTICLE TEXT ---\n${article.content}\n--- END ARTICLE ---`;
+    } else {
+      articleBlock =
+        `\n\nARTICLE FETCH NOTE: Content could not be fully retrieved from ${userMessage.trim()}. ` +
+        `Reason: ${article.error ?? 'unknown'}. Analyze based on available data and note this once.`;
+    }
+  }
+
+  // ── Grounding block ─────────────────────────────────────────────────────────
   const resultsContext = buildResultsContext(results ?? []);
   const intelligenceSummary = intelligenceContext ? `\n\nINTELLIGENCE BRIEF:\n${intelligenceContext}` : '';
-  const searchQuery = query ? `\n\nORIGINAL SEARCH QUERY: "${query}"` : '';
-  const groundingBlock = `${searchQuery}\n\nSEARCH RESULTS AVAILABLE:\n${resultsContext}${intelligenceSummary}`;
+  const searchQuery = query ? `\n\nORIGINAL QUERY: "${query}"` : '';
+  const modeNote = isArticleMode ? '\n\nMODE: Article/URL analysis — use the full Article Mode Extension format.' : '';
 
+  const groundingBlock =
+    `${searchQuery}${modeNote}` +
+    `\n\nSEARCH RESULTS:\n${resultsContext}` +
+    `${intelligenceSummary}` +
+    `${articleBlock}`;
+
+  // ── Conversation contents ───────────────────────────────────────────────────
   const priorMessages = messages ?? [];
   const contents = [];
 
   if (priorMessages.length === 0) {
     contents.push({
       role: 'user',
-      parts: [{ text: `${groundingBlock}\n\n---\n\nUser question: ${userMessage.trim()}` }],
+      parts: [{ text: `${groundingBlock}\n\n---\n\nUser input: ${userMessage.trim()}` }],
     });
   } else {
     const [firstMsg, ...restMsgs] = priorMessages;
     contents.push({
       role: 'user',
-      parts: [{ text: `${groundingBlock}\n\n---\n\nUser question: ${firstMsg.content}` }],
+      parts: [{ text: `${groundingBlock}\n\n---\n\nUser input: ${firstMsg.content}` }],
     });
     for (const msg of restMsgs) {
       contents.push({
@@ -204,18 +373,16 @@ export async function onRequest(context) {
         parts: [{ text: msg.content }],
       });
     }
-    contents.push({
-      role: 'user',
-      parts: [{ text: userMessage.trim() }],
-    });
+    contents.push({ role: 'user', parts: [{ text: userMessage.trim() }] });
   }
 
+  // ── Stream from Gemini ──────────────────────────────────────────────────────
+  const geminiBase = resolveGeminiBase(env ?? {});
   const geminiPayload = {
     system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
     contents,
     generationConfig: { maxOutputTokens: 8192 },
   };
-
   const geminiUrl = `${geminiBase}/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
 
   const { readable, writable } = new TransformStream();
@@ -223,6 +390,9 @@ export async function onRequest(context) {
   const encoder = new TextEncoder();
 
   (async () => {
+    let geminiUsed = false;
+    let fallbackUsed = false;
+
     try {
       const geminiRes = await fetch(geminiUrl, {
         method: 'POST',
@@ -234,13 +404,14 @@ export async function onRequest(context) {
       if (!geminiRes.ok) {
         const errText = await geminiRes.text().catch(() => String(geminiRes.status));
         console.error(`[Sentrix] Gemini API error ${geminiRes.status}: ${errText.slice(0, 300)}`);
-        const fallback = limitedModeFallback(userMessage);
-        writer.write(encoder.encode(sseChunk({ content: fallback })));
+        fallbackUsed = true;
+        writer.write(encoder.encode(sseChunk({ content: limitedModeFallback(userMessage) })));
         writer.write(encoder.encode(sseChunk({ done: true })));
         writer.close();
         return;
       }
 
+      geminiUsed = true;
       const reader = geminiRes.body.getReader();
       const dec = new TextDecoder();
       let buf = '';
@@ -267,24 +438,25 @@ export async function onRequest(context) {
               hasOutput = true;
               writer.write(encoder.encode(sseChunk({ content: text })));
             }
-          } catch {
-            // skip malformed SSE events
-          }
+          } catch { /* skip malformed events */ }
         }
       }
 
       if (!hasOutput) {
+        fallbackUsed = true;
         console.warn('[Sentrix] Gemini returned no text — emitting limited-mode fallback');
         writer.write(encoder.encode(sseChunk({ content: limitedModeFallback(userMessage) })));
       }
 
       writer.write(encoder.encode(sseChunk({ done: true })));
       writer.close();
+
+      console.log(`[Sentrix] Sage completed — type=${inputType} gemini=${geminiUsed} fallback=${fallbackUsed} articleFetched=${inputType === 'url'}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       console.error(`[Sentrix] Sage stream error: ${msg}`);
-      const fallback = limitedModeFallback(userMessage);
-      writer.write(encoder.encode(sseChunk({ content: fallback })));
+      fallbackUsed = true;
+      writer.write(encoder.encode(sseChunk({ content: limitedModeFallback(userMessage) })));
       writer.write(encoder.encode(sseChunk({ done: true })));
       writer.close();
     }

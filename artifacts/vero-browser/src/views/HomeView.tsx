@@ -16,10 +16,10 @@ const RISK_DOT: Record<string, string> = {
   unknown: 'rgba(148,163,184,0.25)',
 };
 
-const EXAMPLES = [
-  'Analyze this claim',
-  'Break this down for me',
-  'What should I question here?',
+const EXAMPLES: Array<{ display: string; insert: string }> = [
+  { display: 'Analyze this claim',       insert: 'Analyze this claim: ' },
+  { display: 'Break this down for me',   insert: 'Break this down for me: ' },
+  { display: 'What should I question here?', insert: 'What should I question here: ' },
 ];
 
 export function HomeView() {
@@ -42,6 +42,14 @@ export function HomeView() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim()) navigateToSage(input.trim());
+  };
+
+  const insertChip = (text: string) => {
+    setInput(text);
+    setTimeout(() => {
+      const ta = inputRef.current as unknown as HTMLTextAreaElement | null;
+      if (ta) { ta.focus(); ta.setSelectionRange(text.length, text.length); }
+    }, 0);
   };
 
   const bdConnected = blackdogStatus === 'connected';
@@ -190,8 +198,8 @@ export function HomeView() {
             <span className="text-[8px] font-mono uppercase tracking-widest self-center" style={{ color: 'rgba(148,163,184,0.25)' }}>Examples:</span>
             {EXAMPLES.map(ex => (
               <button
-                key={ex}
-                onClick={() => navigateToSage(ex)}
+                key={ex.display}
+                onClick={() => insertChip(ex.insert)}
                 className="px-2.5 py-1 rounded-md text-[10px] font-mono transition-all cursor-pointer"
                 style={{
                   background: 'rgba(56,189,248,0.04)',
@@ -209,7 +217,7 @@ export function HomeView() {
                   e.currentTarget.style.color = 'rgba(56,189,248,0.45)';
                 }}
               >
-                {ex}
+                {ex.display}
               </button>
             ))}
           </div>

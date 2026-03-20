@@ -1,6 +1,21 @@
 # Sentrix
 
-A dark tactical **Signal & Truth Filter** system. Product identity: "Analyze before you believe." Primary function: analyze claims, headlines, URLs and return structured intelligence (ANSWER → SIGNAL → AGREEMENT → RISK → WHAT MATTERS → WHAT TO QUESTION → SOURCES). Powered by BLACKDOG private security engine and Sage (Gemini 2.5 Flash AI).
+A dark tactical **Signal & Truth Filter** system. Product identity: "Analyze before you believe." Primary function: analyze claims, headlines, URLs and return structured intelligence. Powered by BLACKDOG private security engine and Sage (Gemini 2.5 Flash AI).
+
+## Sage Output Format
+
+**Core (all inputs):** ANSWER → SIGNAL → AGREEMENT → RISK → WHAT MATTERS → WHAT TO QUESTION → SOURCES
+
+**Article/URL mode extension:** + ARTICLE → SUMMARY → CORE CLAIMS → VERDICT → WHAT HOLDS UP → WHAT DOES NOT HOLD UP → WHAT TO VERIFY NEXT
+
+## Input Type Detection
+
+Sage backend auto-detects input type on every query:
+- `url` — starts with `https?://`, triggers article fetch + article mode output
+- `article` — text > 300 chars, uses article mode output
+- `question` — default for short queries
+
+URL inputs trigger a server-side article fetch (title, content, author, date extracted from HTML) before analysis.
 
 ## Architecture
 
