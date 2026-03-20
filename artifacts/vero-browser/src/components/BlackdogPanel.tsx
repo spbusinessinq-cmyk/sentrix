@@ -4,10 +4,13 @@ import { ShieldCheck, X, Lock, Activity, Wifi, Eye, CheckCircle } from 'lucide-r
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const CYAN = 'rgba(56,189,248,0.90)';
+const CYAN_DIM = 'rgba(56,189,248,0.60)';
+
 const RISK_STYLES: Record<string, { dot: string; text: string; glow: string }> = {
-  safe:    { dot: '#22c55e', text: 'hsl(142 72% 42%)', glow: 'rgba(22,163,74,0.45)' },
-  caution: { dot: '#f59e0b', text: '#f59e0b',          glow: 'rgba(245,158,11,0.45)' },
-  danger:  { dot: '#ef4444', text: '#ef4444',          glow: 'rgba(239,68,68,0.45)' },
+  safe:    { dot: '#38BDF8', text: '#38BDF8',   glow: 'rgba(56,189,248,0.35)' },
+  caution: { dot: '#f59e0b', text: '#f59e0b',   glow: 'rgba(245,158,11,0.45)' },
+  danger:  { dot: '#ef4444', text: '#ef4444',   glow: 'rgba(239,68,68,0.45)' },
   unknown: { dot: 'rgba(148,163,184,0.5)', text: 'rgba(148,163,184,0.6)', glow: 'transparent' },
 };
 
@@ -36,7 +39,7 @@ export function BlackdogPanel() {
           <div
             className="flex items-center justify-between px-4 py-[11px] shrink-0"
             style={{
-              background: 'linear-gradient(180deg, rgba(22,163,74,0.07) 0%, rgba(0,0,0,0) 100%)',
+              background: 'linear-gradient(180deg, rgba(56,189,248,0.06) 0%, rgba(0,0,0,0) 100%)',
               borderBottom: '1px solid rgba(255,255,255,0.055)',
             }}
           >
@@ -44,17 +47,17 @@ export function BlackdogPanel() {
               <div
                 className="w-[7px] h-[7px] rounded-full flex-shrink-0"
                 style={{
-                  background: isConnected ? 'hsl(142 72% 38%)' : 'rgba(245,158,11,0.7)',
+                  background: isConnected ? '#38BDF8' : 'rgba(245,158,11,0.7)',
                   boxShadow: isConnected
-                    ? '0 0 6px rgba(22,163,74,0.9), 0 0 14px rgba(22,163,74,0.4)'
+                    ? '0 0 6px rgba(56,189,248,0.8), 0 0 14px rgba(56,189,248,0.3)'
                     : '0 0 6px rgba(245,158,11,0.7)',
                   animation: 'pulse-slow 3s ease-in-out infinite',
                 }}
               />
-              <Activity className="w-3 h-3" style={{ color: 'hsl(142 72% 40%)', opacity: 0.9 }} />
+              <Activity className="w-3 h-3" style={{ color: CYAN_DIM, opacity: 0.9 }} />
               <span
                 className="text-[10px] font-bold tracking-[0.2em] uppercase"
-                style={{ color: 'hsl(142 72% 44%)', opacity: 0.92 }}
+                style={{ color: CYAN, opacity: 0.92 }}
               >
                 BLACKDOG
               </span>
@@ -77,7 +80,7 @@ export function BlackdogPanel() {
           <PanelSection label="Engine Status" right={
             <span
               className="flex items-center gap-1 text-[9px] font-mono font-bold tracking-wider"
-              style={{ color: isConnected ? 'hsl(142 72% 42%)' : 'rgba(245,158,11,0.8)' }}
+              style={{ color: isConnected ? CYAN : 'rgba(245,158,11,0.8)' }}
             >
               <ShieldCheck className="w-3 h-3" />
               {isConnected ? 'ACTIVE' : 'CONNECTING'}
@@ -206,8 +209,8 @@ export function BlackdogPanel() {
                   <div
                     className="w-1.5 h-1.5 rounded-full shrink-0 mt-1"
                     style={{
-                      background: msg.ok ? 'hsl(142 72% 38%)' : 'rgba(245,158,11,0.7)',
-                      boxShadow: msg.ok ? '0 0 4px rgba(22,163,74,0.5)' : 'none',
+                      background: msg.ok ? '#38BDF8' : 'rgba(245,158,11,0.7)',
+                      boxShadow: msg.ok ? '0 0 4px rgba(56,189,248,0.45)' : 'none',
                     }}
                   />
                   <div>
@@ -270,7 +273,7 @@ function StatusRow({ icon, label, value, ok, divider }: {
       </div>
       <span
         className="text-[10px] font-semibold font-mono"
-        style={{ color: ok ? 'hsl(142 72% 42%)' : 'rgba(245,158,11,0.7)' }}
+        style={{ color: ok ? '#38BDF8' : 'rgba(245,158,11,0.7)' }}
       >
         {value}
       </span>
@@ -284,7 +287,7 @@ function InfoLine({ label, value, ok }: { label: string; value: string; ok?: boo
       <span className="text-[10px] font-mono" style={{ color: 'rgba(148,163,184,0.38)' }}>{label}</span>
       <span
         className="text-[10px] font-mono"
-        style={{ color: ok ? 'hsl(142 72% 40%)' : 'rgba(245,158,11,0.65)', opacity: 0.85 }}
+        style={{ color: ok ? '#38BDF8' : 'rgba(245,158,11,0.65)', opacity: 0.85 }}
       >
         {value}
       </span>

@@ -30,7 +30,7 @@ export function AddressBar() {
   };
 
   const riskAccentColor =
-    riskLevel === 'safe'    ? 'hsl(142 72% 40%)' :
+    riskLevel === 'safe'    ? '#38BDF8' :
     riskLevel === 'caution' ? '#f59e0b' :
     riskLevel === 'danger'  ? '#ef4444' :
     'rgba(148,163,184,0.5)';
@@ -58,7 +58,6 @@ export function AddressBar() {
     }
   };
 
-  // Determine placeholder based on page
   const placeholder =
     pageType === 'newtab' ? 'Search or enter a URL…' :
     pageType === 'search' ? 'Refine your search…' :
@@ -77,8 +76,8 @@ export function AddressBar() {
             transition={{ duration: 0.4, ease: 'easeOut' }}
             className="absolute top-0 left-0 right-0 h-[2px] origin-left z-50"
             style={{
-              background: 'linear-gradient(90deg, hsl(142 72% 28%), hsl(142 72% 46%), hsl(142 72% 36%))',
-              boxShadow: '0 0 8px rgba(22,163,74,0.5)',
+              background: 'linear-gradient(90deg, rgba(56,189,248,0.4), #38BDF8, rgba(56,189,248,0.5))',
+              boxShadow: '0 0 8px rgba(56,189,248,0.5)',
             }}
           />
         )}
@@ -108,15 +107,15 @@ export function AddressBar() {
           className="flex flex-1 items-center h-[28px] px-3 gap-2 rounded-md min-w-0 transition-all duration-200"
           style={{
             background: focused ? 'rgba(0,0,0,0.58)' : 'rgba(0,0,0,0.4)',
-            border: `1px solid ${focused ? 'rgba(22,163,74,0.28)' : 'rgba(255,255,255,0.07)'}`,
+            border: `1px solid ${focused ? 'rgba(56,189,248,0.28)' : 'rgba(255,255,255,0.07)'}`,
             boxShadow: focused
-              ? '0 0 0 1px rgba(22,163,74,0.1), 0 0 16px rgba(22,163,74,0.06), inset 0 1px 0 rgba(255,255,255,0.04)'
+              ? '0 0 0 1px rgba(56,189,248,0.08), 0 0 16px rgba(56,189,248,0.05), inset 0 1px 0 rgba(255,255,255,0.04)'
               : 'inset 0 1px 0 rgba(255,255,255,0.03)',
           }}
         >
           <Search
             className="w-3 h-3 shrink-0 transition-colors duration-200"
-            style={{ color: focused ? 'hsl(142 72% 40%)' : 'rgba(148,163,184,0.3)' }}
+            style={{ color: focused ? 'rgba(56,189,248,0.70)' : 'rgba(148,163,184,0.3)' }}
           />
           <input
             type="text"
@@ -184,10 +183,10 @@ function NavBtn({
       onMouseLeave={() => setHovered(false)}
       className="flex items-center justify-center w-7 h-7 rounded-md transition-all duration-150"
       style={{
-        color: disabled ? 'rgba(148,163,184,0.15)' : active ? 'hsl(142 72% 40%)' : hovered ? 'rgba(148,163,184,0.8)' : 'rgba(148,163,184,0.4)',
-        background: glow ? 'rgba(22,163,74,0.08)' : hovered && !disabled ? 'rgba(255,255,255,0.05)' : 'transparent',
-        border: glow ? '1px solid rgba(22,163,74,0.2)' : '1px solid transparent',
-        boxShadow: glow ? '0 0 8px rgba(22,163,74,0.15)' : 'none',
+        color: disabled ? 'rgba(148,163,184,0.15)' : active ? '#38BDF8' : hovered ? 'rgba(148,163,184,0.8)' : 'rgba(148,163,184,0.4)',
+        background: glow ? 'rgba(56,189,248,0.08)' : hovered && !disabled ? 'rgba(255,255,255,0.05)' : 'transparent',
+        border: glow ? '1px solid rgba(56,189,248,0.20)' : '1px solid transparent',
+        boxShadow: glow ? '0 0 8px rgba(56,189,248,0.12)' : 'none',
         cursor: disabled ? 'default' : 'pointer',
       }}
     >

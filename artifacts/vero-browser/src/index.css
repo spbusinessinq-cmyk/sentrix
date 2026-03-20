@@ -48,9 +48,9 @@
   --glow-primary-soft:   rgba(56, 189, 248, 0.05);
   --glow-primary-ring:   rgba(56, 189, 248, 0.16);
 
-  /* Security/system glow — stays green (semantic only) */
-  --glow-safe:           rgba(22, 163, 74, 0.11);
-  --glow-safe-soft:      rgba(22, 163, 74, 0.05);
+  /* Safe/system glow — blue-cyan (unified with brand) */
+  --glow-safe:           rgba(56, 189, 248, 0.10);
+  --glow-safe-soft:      rgba(56, 189, 248, 0.05);
   --glow-danger:         rgba(239, 68, 68, 0.11);
   --glow-caution:        rgba(245, 158, 11, 0.11);
 
@@ -140,8 +140,8 @@
   color: rgba(148, 163, 184, 0.30);
 }
 
-/* ─── Risk badge system — green stays for real security meaning ─── */
-.risk-safe    { color: hsl(142 72% 38%); border-color: rgba(22,163,74,0.22); background: rgba(22,163,74,0.06); }
+/* ─── Risk badge system — safe uses brand blue-cyan ─── */
+.risk-safe    { color: #38BDF8; border-color: rgba(56,189,248,0.22); background: rgba(56,189,248,0.06); }
 .risk-caution { color: #f59e0b;          border-color: rgba(245,158,11,0.22); background: rgba(245,158,11,0.06); }
 .risk-danger  { color: #ef4444;          border-color: rgba(239,68,68,0.22); background: rgba(239,68,68,0.06); }
 .risk-unknown { color: rgba(148,163,184,0.55); border-color: rgba(255,255,255,0.07); background: rgba(255,255,255,0.028); }

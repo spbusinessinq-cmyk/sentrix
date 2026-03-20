@@ -101,7 +101,7 @@ export function TacticalSidebar() {
             {isInvestigations && investigationMode && (
               <span
                 className="absolute top-0 right-0 w-1.5 h-1.5 rounded-full"
-                style={{ background: 'hsl(142 72% 44%)' }}
+                style={{ background: '#38BDF8' }}
               />
             )}
           </div>

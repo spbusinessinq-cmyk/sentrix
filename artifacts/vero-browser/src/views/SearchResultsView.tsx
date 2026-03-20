@@ -26,8 +26,7 @@ const CYAN_25      = 'rgba(56,189,248,0.22)';
 const SAGE_COLOR   = 'rgba(139,92,246,0.85)';
 const SAGE_BORDER  = 'rgba(139,92,246,0.25)';
 const SAGE_BG      = 'rgba(139,92,246,0.08)';
-// Security signals stay green
-const SIG_STRONG   = 'hsl(142 72% 42%)';
+const SIG_STRONG   = '#38BDF8';
 const SIG_MED      = '#f59e0b';
 
 type FilterKey = 'all' | 'safe' | 'caution' | 'docs' | 'news' | 'strict';
@@ -64,7 +63,7 @@ interface RichSageMessage extends SageMessage {
 // ── Badges ────────────────────────────────────────────────────────────────────
 function ConfidenceBadge({ level }: { level: 'high' | 'medium' | 'low' }) {
   const styles = {
-    high:   { color: 'rgba(22,163,74,0.75)',    border: 'rgba(22,163,74,0.25)',    bg: 'rgba(22,163,74,0.06)',    label: 'HIGH' },
+    high:   { color: 'rgba(56,189,248,0.80)',    border: 'rgba(56,189,248,0.25)',    bg: 'rgba(56,189,248,0.06)',    label: 'HIGH' },
     medium: { color: 'rgba(245,158,11,0.70)',   border: 'rgba(245,158,11,0.22)',   bg: 'rgba(245,158,11,0.05)',   label: 'MED'  },
     low:    { color: 'rgba(148,163,184,0.45)',  border: 'rgba(255,255,255,0.08)',  bg: 'transparent',             label: 'LOW'  },
   }[level];
@@ -94,17 +93,16 @@ function SourceTypePill({ type }: { type: SourceType }) {
   );
 }
 
-// Signal tier — security/intelligence signal, stays green
 function SignalTierBadge({ tier }: { tier: SignalTier }) {
   if (tier === 'primary') return (
     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold tracking-[0.15em] uppercase shrink-0 border"
-      style={{ color: 'hsl(142 72% 50%)', borderColor: 'rgba(22,163,74,0.35)', background: 'rgba(22,163,74,0.1)' }}>
+      style={{ color: '#38BDF8', borderColor: 'rgba(56,189,248,0.35)', background: 'rgba(56,189,248,0.10)' }}>
       <Zap className="w-2 h-2" /> Start here
     </span>
   );
   if (tier === 'high') return (
     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold tracking-[0.15em] uppercase shrink-0 border"
-      style={{ color: 'rgba(22,163,74,0.6)', borderColor: 'rgba(22,163,74,0.18)', background: 'transparent' }}>
+      style={{ color: 'rgba(56,189,248,0.65)', borderColor: 'rgba(56,189,248,0.18)', background: 'transparent' }}>
       High signal
     </span>
   );
@@ -199,7 +197,7 @@ function IntelligenceBrief({ report, expanded, onToggle, sageOpen, onToggleSage 
   report: IntelligenceReport; expanded: boolean; onToggle: () => void;
   sageOpen: boolean; onToggleSage: () => void;
 }) {
-  // Security/intelligence signals stay green
+  // Intelligence signal tier badges
   const signalColor = report.signalLevel === 'strong' ? SIG_STRONG : report.signalLevel === 'moderate' ? SIG_MED : 'rgba(148,163,184,0.5)';
   const agreementLabel = report.agreement === 'divergent' ? 'Sources diverge' : report.agreement === 'mixed' ? 'Mixed sourcing' : 'Sources consistent';
   const agreementColor = report.agreement === 'divergent' ? 'rgba(245,158,11,0.65)' : report.agreement === 'mixed' ? 'rgba(245,158,11,0.45)' : SIG_STRONG;
@@ -833,8 +831,7 @@ export function SearchResultsView() {
           ) : (
             <div className="text-right shrink-0 ml-4">
               <div className="text-[10px] font-mono text-muted-foreground/28">{allResults.length} results</div>
-              {/* Safe count — green, it's a security metric */}
-              <div className="text-[10px] font-mono mt-0.5" style={{ color: 'rgba(22,163,74,0.5)' }}>{counts.safe} safe</div>
+              <div className="text-[10px] font-mono mt-0.5" style={{ color: 'rgba(56,189,248,0.50)' }}>{counts.safe} safe</div>
             </div>
           )}
         </div>
@@ -881,9 +878,9 @@ export function SearchResultsView() {
         return (
           <button onClick={() => navigate('sentrix://investigations')}
             className="shrink-0 flex items-center gap-2 px-5 py-2 text-left hover:opacity-90 transition-opacity"
-            style={{ background: 'rgba(22,163,74,0.06)', borderBottom: '1px solid rgba(22,163,74,0.15)' }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
-            <span className="text-[10px] font-mono tracking-[0.1em]" style={{ color: 'hsl(142 72% 44%)' }}>INVESTIGATION MODE</span>
+            style={{ background: 'rgba(56,189,248,0.05)', borderBottom: '1px solid rgba(56,189,248,0.14)' }}>
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ background: '#38BDF8' }} />
+            <span className="text-[10px] font-mono tracking-[0.1em]" style={{ color: 'rgba(56,189,248,0.80)' }}>INVESTIGATION MODE</span>
             {activeInv && <span className="text-[10px] font-mono text-muted-foreground/50">· {activeInv.name} ({invSourceCount} source{invSourceCount !== 1 ? 's' : ''})</span>}
             <span className="text-[9px] font-mono ml-auto" style={{ color: 'rgba(148,163,184,0.3)' }}>Items saved will attach →</span>
           </button>

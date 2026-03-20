@@ -18,10 +18,10 @@ export function VeroTabBar() {
     >
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-3.5 border-r border-white/[0.05] shrink-0">
-        <Shield className="w-3 h-3" style={{ color: 'hsl(142 72% 38%)', opacity: 0.8 }} />
+        <Shield className="w-3 h-3" style={{ color: 'rgba(56,189,248,0.65)', opacity: 0.9 }} />
         <span
           className="text-[10px] font-bold tracking-[0.22em] uppercase"
-          style={{ color: 'hsl(142 72% 42%)', opacity: 0.85, fontFamily: "'JetBrains Mono', monospace" }}
+          style={{ color: '#38BDF8', opacity: 0.80, fontFamily: "'JetBrains Mono', monospace" }}
         >
           SENTRIX
         </span>
@@ -40,16 +40,16 @@ export function VeroTabBar() {
                 isActive ? 'text-foreground/90' : 'text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-white/[0.025]'
               )}
               style={isActive ? {
-                background: 'linear-gradient(180deg, rgba(22,163,74,0.04) 0%, rgba(0,0,0,0.5) 40%)',
-                boxShadow: 'inset 0 -1px 0 rgba(22,163,74,0.07)',
+                background: 'linear-gradient(180deg, rgba(56,189,248,0.04) 0%, rgba(0,0,0,0.5) 40%)',
+                boxShadow: 'inset 0 -1px 0 rgba(56,189,248,0.07)',
               } : {}}
             >
               {isActive && (
                 <div
                   className="absolute top-0 left-0 right-0 h-[1.5px]"
                   style={{
-                    background: 'linear-gradient(90deg, transparent 0%, hsl(142 72% 38%) 20%, hsl(142 72% 42%) 50%, hsl(142 72% 38%) 80%, transparent 100%)',
-                    boxShadow: '0 1px 5px rgba(22,163,74,0.3)',
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(56,189,248,0.5) 20%, #38BDF8 50%, rgba(56,189,248,0.5) 80%, transparent 100%)',
+                    boxShadow: '0 1px 5px rgba(56,189,248,0.25)',
                   }}
                 />
               )}
@@ -84,16 +84,16 @@ export function VeroTabBar() {
         <div
           className="flex items-center gap-1.5 px-2.5 py-[5px] rounded-full transition-all duration-500"
           style={{
-            background: isConnected ? 'rgba(22,163,74,0.07)' : 'rgba(245,158,11,0.07)',
-            border: `1px solid ${isConnected ? 'rgba(22,163,74,0.18)' : 'rgba(245,158,11,0.2)'}`,
-            boxShadow: isConnected ? '0 0 10px rgba(22,163,74,0.06)' : 'none',
+            background: isConnected ? 'rgba(56,189,248,0.07)' : 'rgba(245,158,11,0.07)',
+            border: `1px solid ${isConnected ? 'rgba(56,189,248,0.18)' : 'rgba(245,158,11,0.2)'}`,
+            boxShadow: isConnected ? '0 0 10px rgba(56,189,248,0.06)' : 'none',
           }}
         >
           {isConnected ? (
             <>
-              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" style={{ boxShadow: '0 0 5px rgba(22,163,74,0.8)' }} />
-              <Activity className="w-2.5 h-2.5" style={{ color: 'hsl(142 72% 40%)', opacity: 0.85 }} />
-              <span className="text-[9px] font-bold tracking-[0.18em] uppercase hidden sm:block" style={{ color: 'hsl(142 72% 42%)', opacity: 0.8 }}>
+              <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#38BDF8', boxShadow: '0 0 5px rgba(56,189,248,0.7)' }} />
+              <Activity className="w-2.5 h-2.5" style={{ color: 'rgba(56,189,248,0.80)', opacity: 0.85 }} />
+              <span className="text-[9px] font-bold tracking-[0.18em] uppercase hidden sm:block" style={{ color: '#38BDF8', opacity: 0.80 }}>
                 BLACKDOG ACTIVE
               </span>
             </>

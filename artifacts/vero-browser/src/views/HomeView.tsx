@@ -10,7 +10,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { LinkCheckModal } from '@/components/LinkCheckModal';
 
 const RISK_DOT: Record<string, string> = {
-  safe:    'hsl(142 72% 38%)',  // green — real safety indicator
+  safe:    '#38BDF8',
   caution: '#f59e0b',
   danger:  '#ef4444',
   unknown: 'rgba(148,163,184,0.25)',
@@ -68,7 +68,7 @@ export function HomeView() {
         className="flex items-center gap-6 px-6 py-1.5 shrink-0 overflow-x-auto"
         style={{ background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
       >
-        {/* BLACKDOG status stays green — security indicator */}
+        {/* BLACKDOG status */}
         <StatusPip active={bdConnected} label={bdConnected ? 'BLACKDOG ACTIVE' : 'BLACKDOG CONNECTING'} glow={bdConnected} />
         <div className="w-px h-3 bg-white/[0.08] shrink-0" />
         <StatusItem label="Saved" value={savedItems.length} />
@@ -399,12 +399,12 @@ function StatusPip({ active, label, glow }: { active: boolean; label: string; gl
       <span
         className="w-1.5 h-1.5 rounded-full shrink-0"
         style={{
-          background: active ? 'hsl(142 72% 38%)' : '#f59e0b', // green stays for BLACKDOG — security indicator
-          boxShadow: glow && active ? '0 0 5px rgba(22,163,74,0.8)' : 'none',
+          background: active ? '#38BDF8' : '#f59e0b',
+          boxShadow: glow && active ? '0 0 5px rgba(56,189,248,0.75)' : 'none',
         }}
       />
       <span className="text-[9px] font-mono uppercase tracking-widest"
-        style={{ color: active ? 'rgba(22,163,74,0.5)' : 'rgba(245,158,11,0.45)' }}>
+        style={{ color: active ? 'rgba(56,189,248,0.55)' : 'rgba(245,158,11,0.45)' }}>
         {label}
       </span>
     </div>
