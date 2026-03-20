@@ -24,6 +24,22 @@ function enrichResult(r: SearchResultItem): EnrichedItem {
   return { ...r, posture: e.posture, sourceType: e.sourceType, reasoning: e.reasoning };
 }
 
+function ConfidenceBadge({ level }: { level: 'high' | 'medium' | 'low' }) {
+  const styles = {
+    high:   { color: 'rgba(22,163,74,0.75)',  border: 'rgba(22,163,74,0.25)',  bg: 'rgba(22,163,74,0.06)',  label: 'HIGH' },
+    medium: { color: 'rgba(245,158,11,0.70)', border: 'rgba(245,158,11,0.22)', bg: 'rgba(245,158,11,0.05)', label: 'MED'  },
+    low:    { color: 'rgba(148,163,184,0.45)', border: 'rgba(255,255,255,0.08)', bg: 'transparent',          label: 'LOW'  },
+  }[level];
+  return (
+    <span
+      className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold tracking-[0.15em] uppercase shrink-0 border"
+      style={{ color: styles.color, borderColor: styles.border, background: styles.bg }}
+    >
+      {styles.label}
+    </span>
+  );
+}
+
 function PostureBadge({ posture }: { posture: Posture }) {
   const c = postureColor(posture);
   const Icon =
@@ -224,6 +240,7 @@ function ResultCard({
           </span>
           <PostureBadge posture={result.posture} />
           <SourceTypePill type={result.sourceType} />
+          <ConfidenceBadge level={result.confidence} />
           {result.provider === 'brave' && (
             <span className="text-[8px] font-mono text-muted-foreground/20 uppercase tracking-widest">live</span>
           )}
@@ -257,10 +274,10 @@ function ResultCard({
           'flex items-center justify-between gap-2 py-2.5 px-3 mt-3 mx-[-1rem] border-t',
           isBlocked ? 'border-red-500/10 bg-red-500/[0.04]' : 'border-white/[0.04] bg-black/20'
         )}>
-          {/* Reasoning */}
+          {/* Why this result */}
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
             <ShieldCheck className={twMerge('w-2.5 h-2.5 shrink-0 opacity-50', c.text)} />
-            <span className="text-[10px] font-mono text-muted-foreground/38 truncate">{result.reasoning}</span>
+            <span className="text-[10px] font-mono text-muted-foreground/45 truncate">{result.whyReason}</span>
           </div>
 
           {/* Action buttons */}
@@ -370,7 +387,7 @@ export function SearchResultsView() {
     searchWeb(safeQuery)
       .then(resp => {
         setAllResults(resp.results.map(enrichResult));
-        setProvider(resp.provider as any);
+        setProvider(resp.provider);
         setError(!!resp.error && resp.results.length === 0);
       })
       .catch(() => { setError(true); setAllResults([]); })

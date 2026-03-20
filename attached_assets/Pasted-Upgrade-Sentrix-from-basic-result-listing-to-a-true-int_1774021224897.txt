@@ -1,0 +1,114 @@
+Upgrade Sentrix from basic result listing to a true intelligence-ranked search system.
+
+DO NOT redesign UI.
+DO NOT add fake data.
+This is a ranking + reasoning + filtering upgrade.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. INTELLIGENCE RANKING ENGINE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Every result must be scored before rendering.
+
+Create a scoring system (0–100) based on:
+
++ Domain authority (hardcoded list boost):
+  - wikipedia.org +30
+  - github.com +25
+  - stackoverflow.com +20
+  - major news (reuters, ap, bbc) +25
+  - docs domains (developer.mozilla.org, docs.*) +25
+
++ HTTPS (secure) +10
++ Clean domain (no query spam) +5
+
+- User-generated content (reddit, forums) -10
+- Suspicious TLD (.xyz, .click, etc.) -20
+- Long query spam URLs -10
+
+Sort results by score DESC before display.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. “WHY THIS RESULT” (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add a visible reasoning line under each result:
+
+Examples:
+- “High-authority reference source”
+- “Developer documentation — low risk”
+- “User-generated content — verify claims”
+- “News source — check date and bias”
+- “Search aggregation page — indirect source”
+
+This must be:
+- short
+- human-readable
+- derived from domain + classification
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. HARD FILTERING (CLEAN RESULTS)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Before rendering:
+
+REMOVE:
+- duplicate domains (keep best one)
+- empty/snippet-less results
+- duckduckgo redirect/disambiguation links
+- broken URLs
+
+Ensure every result:
+- has title
+- has clean URL
+- has usable snippet
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. CATEGORY BOOSTING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Use query intent to boost results:
+
+If query includes:
+- “how”, “docs”, “api” → boost docs/dev sources
+- “news”, “latest” → boost news
+- “what is”, “who is” → boost reference (wikipedia)
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. BETTER RESULT MIX
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Ensure result diversity:
+
+Top 5 results should include:
+- 1 reference (Wikipedia or equivalent)
+- 1 documentation/dev
+- 1 discussion/forum
+- 1 news (if applicable)
+- 1 general web result
+
+Do NOT allow 5 similar sources in a row.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. VISUAL CONFIDENCE BOOST
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add subtle score indicator:
+
+- small confidence bar or % (optional)
+- or “High confidence / Medium / Low”
+
+Based on score bucket:
+80+ = High
+50–79 = Medium
+<50 = Low
+
+━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Results should:
+- feel curated
+- feel intentional
+- feel ranked, not dumped
+- immediately answer “what should I click?”
