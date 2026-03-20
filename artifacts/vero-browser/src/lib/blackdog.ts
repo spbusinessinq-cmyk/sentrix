@@ -1,3 +1,12 @@
+/**
+ * BLACKDOG Security Analysis Engine — Mock Service Layer
+ *
+ * This module provides the analysis interface for the BLACKDOG engine.
+ * The current implementation is a heuristic mock. It is structured so
+ * that `analyzeUrl()` and `classifyInput()` can later be replaced with
+ * real backend/API calls without changing the calling code.
+ */
+
 export type RiskLevel = 'safe' | 'caution' | 'danger' | 'unknown';
 
 export interface BlackdogData {
@@ -11,36 +20,67 @@ export interface BlackdogData {
   mixedContent: boolean;
 }
 
+export type PageType =
+  | 'newtab'
+  | 'search'
+  | 'website'
+  | 'history'
+  | 'downloads'
+  | 'privacy'
+  | 'vault'
+  | 'settings';
+
+// ─── Domain reputation lists (mock — future: pull from BLACKDOG backend) ───────
+
 const SAFE_DOMAINS = [
-  'google.com', 'wikipedia.org', 'github.com', 'vero.browser', 'docs.vero',
-  'mozilla.org', 'apple.com', 'microsoft.com', 'cloudflare.com', 'stackoverflow.com',
-  'npmjs.com', 'nodejs.org', 'react.dev', 'tailwindcss.com',
+  'google.com', 'wikipedia.org', 'github.com',
+  'sentra.browser', 'docs.sentra',
+  'mozilla.org', 'apple.com', 'microsoft.com',
+  'cloudflare.com', 'stackoverflow.com',
+  'npmjs.com', 'nodejs.org', 'react.dev',
+  'tailwindcss.com', 'typescript-lang.org',
 ];
 
 const DANGER_PATTERNS = [
   'crack', 'keygen', 'free-download', 'login-verify', 'crypto-network',
   'payload', 'malware', 'phishing', 'danger-zone', 'unknown-source',
+  'free-vpn',
 ];
 
 const CAUTION_PATTERNS = [
-  'free', 'download', 'promo', 'deal', 'track', 'analytics',
+  'free', 'download', 'promo', 'deal', 'track', 'analytics', 'technews',
 ];
 
-export function analyzeUrl(url: string): { riskLevel: RiskLevel; blackdog: BlackdogData } {
-  const lower = url.toLowerCase();
+// ─── Core analysis function ────────────────────────────────────────────────────
 
-  // Internal Vero pages are always safe
-  if (lower.startsWith('vero://')) {
+export function analyzeUrl(url: string): { riskLevel: RiskLevel; blackdog: BlackdogData } {
+  const lower = url.toLowerCase().trim();
+
+  // Internal Sentra protocol — always safe
+  if (lower.startsWith('sentra://')) {
     return {
       riskLevel: 'safe',
       blackdog: {
-        trackers: 0, scripts: 0, redirects: 0, findings: ['Internal Vero page — fully trusted'],
+        trackers: 0, scripts: 0, redirects: 0,
+        findings: ['Internal Sentra page — fully trusted'],
         certificate: 'Internal', hsts: true, fingerprinting: false, mixedContent: false,
       },
     };
   }
 
-  // Known danger patterns
+  // Empty / null guard
+  if (!lower) {
+    return {
+      riskLevel: 'unknown',
+      blackdog: {
+        trackers: 0, scripts: 0, redirects: 0,
+        findings: ['No URL provided'],
+        certificate: 'N/A', hsts: false, fingerprinting: false, mixedContent: false,
+      },
+    };
+  }
+
+  // Known danger patterns — block immediately
   if (DANGER_PATTERNS.some(p => lower.includes(p))) {
     return {
       riskLevel: 'danger',
@@ -52,12 +92,13 @@ export function analyzeUrl(url: string): { riskLevel: RiskLevel; blackdog: Black
           'Multiple redirect chains intercepted',
           'Data harvesting fingerprint confirmed',
         ],
-        certificate: 'Invalid / Self-signed', hsts: false, fingerprinting: true, mixedContent: true,
+        certificate: 'Invalid / Self-signed',
+        hsts: false, fingerprinting: true, mixedContent: true,
       },
     };
   }
 
-  // HTTP non-secure
+  // HTTP — unencrypted connection
   if (lower.startsWith('http://')) {
     return {
       riskLevel: 'caution',
@@ -66,9 +107,10 @@ export function analyzeUrl(url: string): { riskLevel: RiskLevel; blackdog: Black
         findings: [
           'Non-HTTPS connection — traffic unencrypted',
           'Third-party analytics scripts detected',
-          'No HSTS policy found',
+          'No HSTS policy enforced',
         ],
-        certificate: 'None — HTTP only', hsts: false, fingerprinting: false, mixedContent: true,
+        certificate: 'None — HTTP only',
+        hsts: false, fingerprinting: false, mixedContent: true,
       },
     };
   }
@@ -84,12 +126,13 @@ export function analyzeUrl(url: string): { riskLevel: RiskLevel; blackdog: Black
           'TLS 1.3 certificate validated',
           'No tracking scripts detected',
         ],
-        certificate: 'TLS 1.3 / Valid', hsts: true, fingerprinting: false, mixedContent: false,
+        certificate: 'TLS 1.3 / Valid',
+        hsts: true, fingerprinting: false, mixedContent: false,
       },
     };
   }
 
-  // Caution patterns
+  // Caution-level patterns
   if (CAUTION_PATTERNS.some(p => lower.includes(p))) {
     return {
       riskLevel: 'caution',
@@ -100,12 +143,13 @@ export function analyzeUrl(url: string): { riskLevel: RiskLevel; blackdog: Black
           'Third-party analytics and tracking present',
           'Mixed reputation signals — proceed with caution',
         ],
-        certificate: 'TLS 1.2 / Valid', hsts: true, fingerprinting: false, mixedContent: false,
+        certificate: 'TLS 1.2 / Valid',
+        hsts: true, fingerprinting: false, mixedContent: false,
       },
     };
   }
 
-  // Unknown
+  // Unknown domain — no reputation data
   return {
     riskLevel: 'unknown',
     blackdog: {
@@ -115,62 +159,90 @@ export function analyzeUrl(url: string): { riskLevel: RiskLevel; blackdog: Black
         'Standard script load detected',
         'No known threat signatures matched',
       ],
-      certificate: 'TLS 1.3 / Valid', hsts: true, fingerprinting: false, mixedContent: false,
+      certificate: 'TLS 1.3 / Valid',
+      hsts: true, fingerprinting: false, mixedContent: false,
     },
   };
 }
 
-export type PageType =
-  | 'newtab'
-  | 'search'
-  | 'website'
-  | 'history'
-  | 'downloads'
-  | 'privacy'
-  | 'vault'
-  | 'settings';
+// ─── Input classification ───────────────────────────────────────────────────────
 
-export function classifyInput(input: string): { pageType: PageType; url: string; searchQuery: string } {
-  const trimmed = input.trim();
+const INTERNAL_PAGES: Record<string, PageType> = {
+  newtab: 'newtab', history: 'history', vault: 'vault',
+  settings: 'settings', privacy: 'privacy', downloads: 'downloads',
+  search: 'search',
+};
 
-  if (!trimmed || trimmed === 'vero://newtab') {
-    return { pageType: 'newtab', url: 'vero://newtab', searchQuery: '' };
+/**
+ * Classify raw user input into a navigable intent.
+ * Future: may call a backend classification API.
+ */
+export function classifyInput(input: string): {
+  pageType: PageType; url: string; searchQuery: string;
+} {
+  const trimmed = (input ?? '').trim();
+
+  // Empty — go home
+  if (!trimmed) {
+    return { pageType: 'newtab', url: 'sentra://newtab', searchQuery: '' };
   }
 
-  if (trimmed.startsWith('vero://')) {
-    const path = trimmed.replace('vero://', '').split('?')[0];
-    const map: Record<string, PageType> = {
-      newtab: 'newtab', history: 'history', vault: 'vault',
-      settings: 'settings', privacy: 'privacy', downloads: 'downloads',
-      search: 'search',
-    };
-    const pageType: PageType = map[path] ?? 'newtab';
+  // Internal sentra:// protocol
+  if (trimmed.startsWith('sentra://')) {
+    const path = trimmed.replace('sentra://', '').split('?')[0].toLowerCase();
+    const pageType: PageType = INTERNAL_PAGES[path] ?? 'newtab';
     const searchQuery = trimmed.includes('?q=')
       ? decodeURIComponent(trimmed.split('?q=')[1] ?? '')
       : '';
     return { pageType, url: trimmed, searchQuery };
   }
 
-  // URL detection
-  const urlPattern = /^(https?:\/\/)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(:\d+)?(\/[^\s]*)?$/;
-  if (!trimmed.includes(' ') && urlPattern.test(trimmed)) {
-    const url = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`;
-    return { pageType: 'website', url, searchQuery: '' };
+  // Legacy vero:// — transparently upgrade to sentra://
+  if (trimmed.startsWith('vero://')) {
+    const upgraded = trimmed.replace('vero://', 'sentra://');
+    return classifyInput(upgraded);
   }
 
-  // Search query
+  // IP address (v4)
+  if (/^\d{1,3}(\.\d{1,3}){3}(:\d+)?(\/.*)?$/.test(trimmed)) {
+    return { pageType: 'website', url: `http://${trimmed}`, searchQuery: '' };
+  }
+
+  // URL with explicit scheme
+  if (/^https?:\/\//.test(trimmed)) {
+    return { pageType: 'website', url: trimmed, searchQuery: '' };
+  }
+
+  // Domain-like pattern without scheme — auto-upgrade to https://
+  // Must have a dot and no spaces, and look like a real TLD
+  const domainPattern = /^([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(:\d+)?(\/[^\s]*)?$/;
+  if (!trimmed.includes(' ') && domainPattern.test(trimmed)) {
+    return { pageType: 'website', url: `https://${trimmed}`, searchQuery: '' };
+  }
+
+  // Fallback: treat as a search query
   return {
     pageType: 'search',
-    url: `vero://search?q=${encodeURIComponent(trimmed)}`,
+    url: `sentra://search?q=${encodeURIComponent(trimmed)}`,
     searchQuery: trimmed,
   };
 }
 
+// ─── Utilities ─────────────────────────────────────────────────────────────────
+
 export function getDomainTitle(url: string): string {
   try {
-    const u = new URL(url.startsWith('http') ? url : `https://${url}`);
-    return u.hostname.replace('www.', '');
+    const normalized = url.startsWith('http') ? url : `https://${url}`;
+    const u = new URL(normalized);
+    return u.hostname.replace(/^www\./, '');
   } catch {
     return url;
   }
+}
+
+export function normalizeUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed || trimmed.startsWith('sentra://')) return trimmed;
+  if (/^https?:\/\//.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
 }

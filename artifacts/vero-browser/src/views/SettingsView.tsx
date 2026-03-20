@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Shield, Eye, Globe, Bell, Cpu, ChevronRight } from 'lucide-react';
+import { Settings, Shield, Eye, Globe } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 
 interface Toggle {
@@ -83,7 +83,7 @@ export function SettingsView() {
       {/* Sidebar nav */}
       <div className="w-48 border-r border-white/[0.05] bg-black/20 flex flex-col py-4 shrink-0">
         <div className="px-4 pb-3 text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40">
-          vero://settings
+          sentra://settings
         </div>
         {SECTIONS.map(s => {
           const Icon = s.icon;
@@ -93,8 +93,8 @@ export function SettingsView() {
               key={s.id}
               onClick={() => setActiveSection(s.id)}
               className={twMerge(
-                'flex items-center gap-2.5 px-4 py-2.5 text-left transition-all',
-                active ? 'bg-primary/8 text-foreground/90' : 'text-muted-foreground/50 hover:bg-white/[0.03] hover:text-muted-foreground/80'
+                'relative flex items-center gap-2.5 px-4 py-2.5 text-left transition-all',
+                active ? 'bg-primary/[0.07] text-foreground/90' : 'text-muted-foreground/50 hover:bg-white/[0.03] hover:text-muted-foreground/80'
               )}
             >
               {active && <div className="absolute left-0 w-0.5 h-5 bg-primary rounded-r-full" />}
@@ -122,13 +122,12 @@ export function SettingsView() {
                     <div className="text-[13px] font-medium text-foreground/80 mb-0.5">{t.label}</div>
                     <div className="text-[11px] font-mono text-muted-foreground/40">{t.description}</div>
                   </div>
-                  <ToggleSwitch on={values[key]} onChange={v => setValues(prev => ({ ...prev, [key]: v }))} />
+                  <ToggleSwitch on={values[key] ?? t.default} onChange={v => setValues(prev => ({ ...prev, [key]: v }))} />
                 </div>
               );
             })}
           </div>
 
-          {/* Engine version info */}
           {activeSection === 'blackdog' && (
             <div className="mt-6 p-4 rounded-lg border border-white/[0.05] bg-black/20">
               <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-3">Engine Info</div>
@@ -136,8 +135,27 @@ export function SettingsView() {
                 {[
                   ['Engine Version', 'BLACKDOG v4.1.2'],
                   ['Signature Database', '2026-03-20 04:00 UTC'],
-                  ['Threat Intelligence', 'Vero Labs Feed Active'],
+                  ['Threat Intelligence', 'Sentra Labs Feed Active'],
                   ['Engine Status', 'Operational'],
+                ].map(([k, v]) => (
+                  <div key={k} className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono text-muted-foreground/40">{k}</span>
+                    <span className="text-[11px] font-mono text-foreground/60">{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'general' && (
+            <div className="mt-6 p-4 rounded-lg border border-white/[0.05] bg-black/20">
+              <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-3">Build Info</div>
+              <div className="space-y-2">
+                {[
+                  ['Product', 'Sentra Browser'],
+                  ['Version', '1.0.0-beta'],
+                  ['Build', 'sentra-2026.03.20'],
+                  ['Engine', 'BLACKDOG v4.1.2'],
                 ].map(([k, v]) => (
                   <div key={k} className="flex items-center justify-between">
                     <span className="text-[11px] font-mono text-muted-foreground/40">{k}</span>

@@ -2,11 +2,7 @@ import React, { useState } from 'react';
 import { Shield, Flame, Link as LinkIcon, FileText, LockKeyhole, RotateCcw, Plus, Clock, Search } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { useToast } from '@/hooks/use-toast';
-import { twMerge } from 'tailwind-merge';
 import { format } from 'date-fns';
-
-const SESSION_START = format(new Date(Date.now() - 1000 * 60 * 14), 'HH:mm:ss');
-const LAST_SCAN = format(new Date(Date.now() - 1000 * 47), 'HH:mm:ss');
 
 const RISK_DOT: Record<string, string> = {
   safe:    'hsl(142 72% 38%)',
@@ -25,6 +21,10 @@ export function HomeView() {
     e.preventDefault();
     if (localSearch.trim()) navigate(localSearch.trim());
   };
+
+  const now = Date.now();
+  const SESSION_START = format(new Date(now - 1000 * 60 * 14), 'HH:mm:ss');
+  const LAST_SCAN    = format(new Date(now - 1000 * 47), 'HH:mm:ss');
 
   return (
     <div className="h-full w-full overflow-y-auto flex flex-col items-center bg-background">
@@ -59,7 +59,7 @@ export function HomeView() {
       {/* Content column */}
       <div className="flex-1 flex flex-col items-center justify-start px-6 pt-10 pb-10 w-full max-w-xl mx-auto">
 
-        {/* Brand lockup */}
+        {/* Brand */}
         <div className="flex flex-col items-center mb-9 text-center">
           <div className="flex items-center gap-3 mb-2">
             <div
@@ -70,7 +70,7 @@ export function HomeView() {
                 boxShadow: '0 0 16px rgba(22,163,74,0.12)',
               }}
             >
-              <Shield className="w-4.5 h-4.5" style={{ color: 'hsl(142 72% 42%)' }} />
+              <Shield className="w-5 h-5" style={{ color: 'hsl(142 72% 42%)' }} />
             </div>
             <div className="text-left">
               <h1 className="text-[18px] font-semibold text-foreground/88 tracking-tight leading-none">
@@ -88,7 +88,7 @@ export function HomeView() {
         {/* Search bar */}
         <form onSubmit={handleSearch} className="w-full mb-7">
           <div
-            className="flex items-center h-11 rounded-xl overflow-hidden transition-all duration-200"
+            className="flex items-center h-11 rounded-xl overflow-hidden"
             style={{
               background: inputFocused ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.45)',
               border: `1px solid ${inputFocused ? 'rgba(22,163,74,0.3)' : 'rgba(255,255,255,0.07)'}`,
@@ -110,6 +110,7 @@ export function HomeView() {
               placeholder="Search securely or enter a URL"
               className="flex-1 bg-transparent border-none outline-none text-[13px] text-foreground/80 placeholder:text-muted-foreground/28 font-mono caret-primary"
               spellCheck={false}
+              autoComplete="off"
             />
             {localSearch && (
               <button
@@ -135,13 +136,29 @@ export function HomeView() {
             <UtilBlock
               icon={<Flame className="w-3.5 h-3.5" style={{ color: '#ef4444' }} />}
               label="Burn Session" sub="Sanitize all data"
-              onClick={() => { burnSession(); toast({ title: 'Session Burned', description: 'All data sanitized.' }); }}
+              onClick={() => { burnSession(); toast({ title: 'Session Burned', description: 'All local data has been sanitized.' }); }}
               danger
             />
-            <UtilBlock icon={<LinkIcon className="w-3.5 h-3.5" style={{ color: '#60a5fa' }} />} label="Link Check" sub="Pre-flight analysis" onClick={() => toast({ title: 'Link Check', description: 'Enter a URL in the address bar to analyze.' })} />
-            <UtilBlock icon={<FileText className="w-3.5 h-3.5" style={{ color: '#a78bfa' }} />} label="Privacy Report" sub="Tracker summary" onClick={() => navigate('vero://privacy')} />
-            <UtilBlock icon={<LockKeyhole className="w-3.5 h-3.5" style={{ color: 'hsl(142 72% 42%)' }} />} label="Vault Access" sub="Credentials locked" onClick={() => navigate('vero://vault')} />
-            <UtilBlock icon={<RotateCcw className="w-3.5 h-3.5" />} label="Session Controls" sub="Manage isolation" onClick={() => navigate('vero://settings')} />
+            <UtilBlock
+              icon={<LinkIcon className="w-3.5 h-3.5" style={{ color: '#60a5fa' }} />}
+              label="Link Check" sub="Pre-flight analysis"
+              onClick={() => toast({ title: 'Link Check', description: 'Paste a URL in the address bar to run a pre-flight analysis.' })}
+            />
+            <UtilBlock
+              icon={<FileText className="w-3.5 h-3.5" style={{ color: '#a78bfa' }} />}
+              label="Privacy Report" sub="Tracker summary"
+              onClick={() => navigate('sentra://privacy')}
+            />
+            <UtilBlock
+              icon={<LockKeyhole className="w-3.5 h-3.5" style={{ color: 'hsl(142 72% 42%)' }} />}
+              label="Vault Access" sub="Credentials locked"
+              onClick={() => navigate('sentra://vault')}
+            />
+            <UtilBlock
+              icon={<RotateCcw className="w-3.5 h-3.5" />}
+              label="Session Controls" sub="Manage isolation"
+              onClick={() => navigate('sentra://settings')}
+            />
           </div>
         </div>
 
@@ -158,12 +175,16 @@ export function HomeView() {
             className="flex items-center justify-between px-4 py-2.5"
             style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
           >
-            <span className="section-label">Page Inspection — vero://newtab</span>
+            <span className="section-label">Page Inspection — sentra://newtab</span>
             <span className="text-[9px] font-mono font-bold tracking-widest" style={{ color: 'hsl(142 72% 42%)', opacity: 0.7 }}>CLEAN</span>
           </div>
-          <div className="grid grid-cols-4 divide-x" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
-            {[['TRACKERS', '0', true], ['SCRIPTS', '0', false], ['REDIRECTS', '0', false], ['RISK', 'LOW', true]].map(([label, value, green]) => (
-              <div key={label as string} className="px-4 py-3 flex flex-col gap-[5px]">
+          <div className="grid grid-cols-4" style={{ borderTop: '1px solid transparent' }}>
+            {[['TRACKERS', '0', true], ['SCRIPTS', '0', false], ['REDIRECTS', '0', false], ['RISK', 'LOW', true]].map(([label, value, green], i) => (
+              <div
+                key={label as string}
+                className="px-4 py-3 flex flex-col gap-[5px]"
+                style={{ borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+              >
                 <span className="section-label">{label}</span>
                 <span
                   className="text-[13px] font-bold font-mono"
@@ -184,7 +205,7 @@ export function HomeView() {
               Recent
             </div>
             <div className="flex flex-col gap-px">
-              {history.slice(0, 5).map(entry => (
+              {history.slice(0, 6).map(entry => (
                 <button
                   key={entry.id}
                   onClick={() => navigate(entry.url)}
@@ -195,9 +216,9 @@ export function HomeView() {
                 >
                   <span
                     className="w-1.5 h-1.5 rounded-full shrink-0"
-                    style={{ background: RISK_DOT[entry.riskLevel] }}
+                    style={{ background: RISK_DOT[entry.riskLevel] ?? RISK_DOT.unknown }}
                   />
-                  <span className="text-[12px] font-mono flex-1 truncate" style={{ color: 'rgba(148,163,184,0.5)' }}>
+                  <span className="text-[12px] font-mono flex-1 truncate" style={{ color: 'rgba(148,163,184,0.55)' }}>
                     {entry.title}
                   </span>
                   <span className="text-[10px] font-mono shrink-0" style={{ color: 'rgba(148,163,184,0.25)' }}>
@@ -214,7 +235,7 @@ export function HomeView() {
 }
 
 function Divider() {
-  return <span className="shrink-0 text-[rgba(255,255,255,0.12)]">|</span>;
+  return <span className="shrink-0" style={{ color: 'rgba(255,255,255,0.12)' }}>|</span>;
 }
 
 function UtilBlock({ icon, label, sub, onClick, danger = false }: {

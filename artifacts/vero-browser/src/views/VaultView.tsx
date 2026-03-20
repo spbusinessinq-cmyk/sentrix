@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { LockKeyhole, Unlock, Key, CreditCard, Globe, User, Plus, Eye, EyeOff } from 'lucide-react';
+import { LockKeyhole, Key, CreditCard, Globe, User, Plus, Eye, EyeOff } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 
 const MOCK_ITEMS = [
-  { id: '1', type: 'login', label: 'vero.browser', username: 'user@vero.io', icon: Globe },
-  { id: '2', type: 'login', label: 'github.com', username: 'dev@example.com', icon: Globe },
-  { id: '3', type: 'identity', label: 'Primary Identity', username: 'J. Smith', icon: User },
-  { id: '4', type: 'card', label: 'Secure Card •••• 4821', username: 'Visa', icon: CreditCard },
+  { id: '1', type: 'login',    label: 'sentra.browser',         username: 'user@sentra.io',   icon: Globe },
+  { id: '2', type: 'login',    label: 'github.com',             username: 'dev@example.com',  icon: Globe },
+  { id: '3', type: 'identity', label: 'Primary Identity',       username: 'J. Smith',         icon: User },
+  { id: '4', type: 'card',     label: 'Secure Card •••• 4821',  username: 'Visa',             icon: CreditCard },
 ];
 
 export function VaultView() {
@@ -27,7 +27,7 @@ export function VaultView() {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] bg-black/20">
         <div>
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">vero://vault</div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">sentra://vault</div>
           <h2 className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
             <LockKeyhole className="w-4 h-4 text-primary/70" />
             Secure Vault
@@ -53,11 +53,17 @@ export function VaultView() {
       </div>
 
       {!unlocked ? (
-        /* Lock screen */
         <div className="flex flex-col items-center justify-center h-[calc(100%-65px)] pb-12">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 rounded-full border border-white/[0.06] bg-black/40 flex items-center justify-center mb-4">
-              <LockKeyhole className="w-7 h-7 text-primary/60" />
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+              style={{
+                background: 'rgba(22,163,74,0.07)',
+                border: '1px solid rgba(22,163,74,0.18)',
+                boxShadow: '0 0 24px rgba(22,163,74,0.08)',
+              }}
+            >
+              <LockKeyhole className="w-7 h-7 text-primary/70" />
             </div>
             <h3 className="text-sm font-semibold text-foreground/70 mb-1">Vault Locked</h3>
             <p className="text-[11px] font-mono text-muted-foreground/40">Enter your PIN to access stored credentials</p>
@@ -68,7 +74,9 @@ export function VaultView() {
               {[0, 1, 2, 3].map(i => (
                 <div key={i} className={twMerge(
                   'w-3 h-3 rounded-full border transition-all',
-                  i < pin.length ? 'bg-primary border-primary' : 'border-white/[0.1] bg-transparent'
+                  i < pin.length
+                    ? 'bg-primary border-primary shadow-[0_0_6px_rgba(22,163,74,0.6)]'
+                    : 'border-white/[0.1] bg-transparent'
                 )} />
               ))}
             </div>
@@ -88,14 +96,15 @@ export function VaultView() {
             >
               Authenticate
             </button>
-            <p className="text-[10px] font-mono text-muted-foreground/30">Any 4+ digit PIN will unlock (prototype)</p>
+            <p className="text-[10px] font-mono text-muted-foreground/30">Any 4+ digit PIN will unlock</p>
           </form>
         </div>
       ) : (
-        /* Vault contents */
         <div className="px-6 py-5 max-w-lg space-y-4">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40">Stored Items — {MOCK_ITEMS.length}</div>
+            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40">
+              Stored Items — {MOCK_ITEMS.length}
+            </div>
             <button className="flex items-center gap-1 text-[10px] font-mono text-primary/60 hover:text-primary transition-colors">
               <Plus className="w-3 h-3" /> Add Item
             </button>
@@ -114,7 +123,7 @@ export function VaultView() {
                     <div className="text-[11px] font-mono text-muted-foreground/40">{item.username}</div>
                   </div>
                   <button className="opacity-0 group-hover:opacity-100 transition-opacity px-2.5 py-1 rounded border border-white/[0.05] text-[10px] font-mono text-muted-foreground/50 hover:text-foreground/70 hover:bg-white/[0.04]">
-                    {showPasswords ? 'Hide' : 'Fill'}
+                    Fill
                   </button>
                 </div>
               );

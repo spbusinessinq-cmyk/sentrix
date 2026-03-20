@@ -14,16 +14,16 @@ interface NavItem {
 }
 
 const MAIN_ITEMS: NavItem[] = [
-  { id: 'home',      icon: Home,       label: 'Home',       target: 'vero://newtab',    matchPageType: 'newtab' },
-  { id: 'search',    icon: Search,     label: 'Search',     target: 'vero://search',    matchPageType: 'search' },
-  { id: 'history',   icon: Clock,      label: 'History',    target: 'vero://history',   matchPageType: 'history' },
-  { id: 'downloads', icon: Download,   label: 'Downloads',  target: 'vero://downloads', matchPageType: 'downloads' },
-  { id: 'bookmarks', icon: BookOpen,   label: 'Bookmarks',  target: 'vero://newtab',    matchPageType: 'newtab' },
+  { id: 'home',      icon: Home,       label: 'Home',       target: 'sentra://newtab',    matchPageType: 'newtab' },
+  { id: 'search',    icon: Search,     label: 'Search',     target: 'sentra://search',    matchPageType: 'search' },
+  { id: 'history',   icon: Clock,      label: 'History',    target: 'sentra://history',   matchPageType: 'history' },
+  { id: 'downloads', icon: Download,   label: 'Downloads',  target: 'sentra://downloads', matchPageType: 'downloads' },
+  { id: 'bookmarks', icon: BookOpen,   label: 'Bookmarks',  target: 'sentra://newtab',    matchPageType: 'newtab' },
 ];
 
 const SECURITY_ITEMS: NavItem[] = [
-  { id: 'privacy', icon: Shield,      label: 'Privacy Report', target: 'vero://privacy', matchPageType: 'privacy' },
-  { id: 'vault',   icon: LockKeyhole, label: 'Secure Vault',   target: 'vero://vault',   matchPageType: 'vault' },
+  { id: 'privacy', icon: Shield,      label: 'Privacy Report', target: 'sentra://privacy', matchPageType: 'privacy' },
+  { id: 'vault',   icon: LockKeyhole, label: 'Secure Vault',   target: 'sentra://vault',   matchPageType: 'vault' },
 ];
 
 function SidebarBtn({
@@ -136,7 +136,7 @@ export function TacticalSidebar() {
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={() => navigate('vero://settings')}
+              onClick={() => navigate('sentra://settings')}
               onMouseEnter={() => setSettingsHovered(true)}
               onMouseLeave={() => setSettingsHovered(false)}
               className="relative flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200"

@@ -28,7 +28,7 @@ interface SearchResult {
 
 function generateResults(query: string): SearchResult[] {
   const q = query || 'results';
-  const slug = q.toLowerCase().replace(/\s+/g, '-');
+  const slug = q.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
   return [
     {
       id: 1,
@@ -39,7 +39,7 @@ function generateResults(query: string): SearchResult[] {
       snippet: `${q} is a concept covered extensively in this community-sourced encyclopedia entry. Includes verified citations, linked cross-references, and editorial peer review. Last edited today.`,
       risk: 'safe',
       bdSummary: '0 trackers — verified encyclopedia source',
-      bdDetail: 'Domain on Vero safe-list. TLS 1.3. No analytics, no ad network. Fully trusted.',
+      bdDetail: 'Domain on Sentra safe-list. TLS 1.3. No analytics, no ad network. Fully trusted.',
       trackers: 0, scripts: 1,
       category: 'docs', readTime: '8 min read', resultType: 'Encyclopedia',
     },
@@ -65,7 +65,7 @@ function generateResults(query: string): SearchResult[] {
       snippet: `Open-source repositories related to ${q}. Browse code, issues, PRs, and community discussions. View dependency graphs and contributor activity.`,
       risk: 'safe',
       bdSummary: '0 trackers — verified developer platform',
-      bdDetail: 'GitHub on Vero safe-list. Minimal first-party analytics only. No cross-site tracking.',
+      bdDetail: 'GitHub on Sentra safe-list. Minimal first-party analytics only. No cross-site tracking.',
       trackers: 0, scripts: 2,
       category: 'docs', readTime: 'Repository', resultType: 'Code',
     },
@@ -165,16 +165,13 @@ function ResultCard({ result, index, onClick }: { result: SearchResult; index: n
         cardHover
       )}
     >
-      {/* Left risk stripe */}
       <div className={twMerge('absolute left-0 top-0 w-[2px] h-full opacity-50 group-hover:opacity-90 transition-opacity', riskAccent)} />
 
       <div className="pl-4 pr-4 pt-3.5 pb-0 ml-0.5">
-        {/* Header row */}
         <div className="flex items-start gap-3 mb-2.5">
           <DomainDot risk={result.risk} domain={result.domain} />
 
           <div className="flex-1 min-w-0">
-            {/* Domain + meta */}
             <div className="flex items-center gap-2 mb-0.5">
               <span className={twMerge('text-[11px] font-mono truncate',
                 result.risk === 'safe' ? 'text-primary/60' :
@@ -195,7 +192,6 @@ function ResultCard({ result, index, onClick }: { result: SearchResult; index: n
               )}
             </div>
 
-            {/* Title */}
             <button
               onClick={onClick}
               className={twMerge(
@@ -212,7 +208,6 @@ function ResultCard({ result, index, onClick }: { result: SearchResult; index: n
           <RiskBadge risk={result.risk} />
         </div>
 
-        {/* Snippet */}
         <p className={twMerge(
           'text-[12px] leading-relaxed mb-3 pl-11',
           isBlocked ? 'text-red-400/40 line-through' : 'text-foreground/50'
@@ -220,7 +215,6 @@ function ResultCard({ result, index, onClick }: { result: SearchResult; index: n
           {result.snippet}
         </p>
 
-        {/* BLACKDOG footer */}
         <div className={twMerge(
           'flex items-center justify-between gap-3 py-2.5 px-3 mx-[-1rem] border-t',
           isBlocked ? 'border-red-500/10 bg-red-500/[0.04]' : 'border-white/[0.04] bg-black/20'
@@ -241,17 +235,13 @@ function ResultCard({ result, index, onClick }: { result: SearchResult; index: n
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            {/* Micro stats */}
             <span className="text-[10px] font-mono text-muted-foreground/30 flex items-center gap-1">
-              <Globe className="w-2.5 h-2.5" />
-              {result.trackers}t
+              <Globe className="w-2.5 h-2.5" />{result.trackers}t
             </span>
             <span className="text-[10px] font-mono text-muted-foreground/30 flex items-center gap-1">
-              <Cpu className="w-2.5 h-2.5" />
-              {result.scripts}s
+              <Cpu className="w-2.5 h-2.5" />{result.scripts}s
             </span>
 
-            {/* Expand / navigate buttons */}
             {!isBlocked && (
               <>
                 <button
@@ -274,7 +264,6 @@ function ResultCard({ result, index, onClick }: { result: SearchResult; index: n
           </div>
         </div>
 
-        {/* Expanded BLACKDOG detail */}
         <AnimatePresence>
           {expanded && !isBlocked && (
             <motion.div
@@ -301,8 +290,9 @@ function ResultCard({ result, index, onClick }: { result: SearchResult; index: n
 export function SearchResultsView() {
   const { searchQuery, navigate } = useBrowserState();
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
+  const safeQuery = searchQuery ?? '';
 
-  const results = useMemo(() => generateResults(searchQuery), [searchQuery]);
+  const results = useMemo(() => generateResults(safeQuery), [safeQuery]);
 
   const filtered = results.filter(r => {
     if (activeFilter === 'all') return true;
@@ -324,17 +314,15 @@ export function SearchResultsView() {
 
   return (
     <div className="h-full overflow-y-auto bg-background">
-      {/* Header */}
       <div className="border-b border-white/[0.05] bg-black/25 px-6 pt-4 pb-0 sticky top-0 z-10 backdrop-blur-sm">
-        {/* Query + stats */}
         <div className="flex items-start justify-between mb-3">
           <div>
             <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-muted-foreground/40 mb-1.5 flex items-center gap-1.5">
               <ShieldCheck className="w-2.5 h-2.5 text-primary/50" />
-              Vero Secure Search — BLACKDOG pre-scanned
+              Sentra Secure Search — BLACKDOG pre-scanned
             </div>
             <h2 className="text-[15px] font-semibold text-foreground/90 leading-tight">
-              "{searchQuery}"
+              "{safeQuery || '—'}"
             </h2>
           </div>
           <div className="text-right shrink-0 ml-4">
@@ -347,7 +335,6 @@ export function SearchResultsView() {
           </div>
         </div>
 
-        {/* Filter tabs */}
         <div className="flex items-center gap-0.5 -mx-1">
           {filters.map(f => (
             <button
@@ -361,10 +348,7 @@ export function SearchResultsView() {
               )}
             >
               {f.label}
-              <span className={twMerge(
-                'text-[9px] font-bold tabular-nums',
-                activeFilter === f.id ? 'text-primary/70' : 'text-muted-foreground/30'
-              )}>
+              <span className={twMerge('text-[9px] font-bold tabular-nums', activeFilter === f.id ? 'text-primary/70' : 'text-muted-foreground/30')}>
                 {f.count}
               </span>
               {activeFilter === f.id && (
@@ -375,7 +359,6 @@ export function SearchResultsView() {
         </div>
       </div>
 
-      {/* Results list */}
       <div className="px-5 py-4 flex flex-col gap-2.5 max-w-3xl">
         {filtered.map((result, i) => (
           <ResultCard
@@ -392,7 +375,6 @@ export function SearchResultsView() {
         )}
       </div>
 
-      {/* Footer */}
       <div className="px-6 py-4 border-t border-white/[0.04] flex items-center gap-3">
         <ShieldCheck className="w-3 h-3 text-primary/40" />
         <span className="text-[10px] font-mono text-muted-foreground/30">

@@ -1,23 +1,23 @@
 import React from 'react';
-import { Shield, ShieldOff, Eye, Cpu, TrendingDown, CheckCircle } from 'lucide-react';
+import { Shield, ShieldOff, Eye, TrendingDown, CheckCircle } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
 
 const BLOCKED_TRACKERS = [
-  { domain: 'ads.google.com', count: 8, category: 'Advertising' },
-  { domain: 'analytics.twitter.com', count: 5, category: 'Analytics' },
-  { domain: 'pixel.facebook.com', count: 4, category: 'Social' },
-  { domain: 'cdn.segment.io', count: 3, category: 'Analytics' },
+  { domain: 'ads.google.com',         count: 8,  category: 'Advertising' },
+  { domain: 'analytics.twitter.com',  count: 5,  category: 'Analytics' },
+  { domain: 'pixel.facebook.com',     count: 4,  category: 'Social' },
+  { domain: 'cdn.segment.io',         count: 3,  category: 'Analytics' },
   { domain: 'track.unknown-source.net', count: 7, category: 'Unknown' },
 ];
 
 const PROTECTIONS = [
-  { label: 'Tracker Blocking', status: true, description: 'Cross-site tracking scripts blocked' },
+  { label: 'Tracker Blocking',     status: true, description: 'Cross-site tracking scripts blocked' },
   { label: 'Fingerprint Protection', status: true, description: 'Canvas, WebGL fingerprinting suppressed' },
-  { label: 'Script Sandboxing', status: true, description: 'Third-party scripts isolated' },
-  { label: 'DNS over HTTPS', status: true, description: 'Encrypted DNS resolution active' },
-  { label: 'HSTS Enforcement', status: true, description: 'Forced HTTPS on all connections' },
-  { label: 'Cookie Isolation', status: true, description: 'Per-tab cookie partitioning active' },
+  { label: 'Script Sandboxing',    status: true, description: 'Third-party scripts isolated' },
+  { label: 'DNS over HTTPS',       status: true, description: 'Encrypted DNS resolution active' },
+  { label: 'HSTS Enforcement',     status: true, description: 'Forced HTTPS on all connections' },
+  { label: 'Cookie Isolation',     status: true, description: 'Per-tab cookie partitioning active' },
 ];
 
 export function PrivacyReportView() {
@@ -26,9 +26,8 @@ export function PrivacyReportView() {
 
   return (
     <div className="h-full overflow-y-auto bg-background">
-      {/* Header */}
       <div className="px-6 py-4 border-b border-white/[0.05] bg-black/20">
-        <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">vero://privacy</div>
+        <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">sentra://privacy</div>
         <h2 className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
           <Shield className="w-4 h-4 text-primary/70" />
           Privacy Report
@@ -36,15 +35,12 @@ export function PrivacyReportView() {
       </div>
 
       <div className="px-6 py-5 max-w-2xl space-y-6">
-
-        {/* Summary cards */}
         <div className="grid grid-cols-3 gap-3">
           <SummaryCard icon={<ShieldOff className="w-4 h-4" />} label="Trackers Blocked" value={String(totalTrackers)} color="text-primary" />
           <SummaryCard icon={<Eye className="w-4 h-4" />} label="Scripts Sandboxed" value="12" color="text-blue-400" />
           <SummaryCard icon={<TrendingDown className="w-4 h-4" />} label="Risk Reductions" value={`${history.filter(h => h.riskLevel !== 'safe').length}`} color="text-amber-500" />
         </div>
 
-        {/* Privacy score */}
         <div className="p-4 rounded-lg border border-white/[0.05] bg-black/20">
           <div className="flex items-center justify-between mb-3">
             <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50">Session Privacy Score</div>
@@ -56,10 +52,11 @@ export function PrivacyReportView() {
             </div>
             <span className="text-sm font-bold font-mono text-primary shrink-0">92 / 100</span>
           </div>
-          <div className="text-[10px] font-mono text-muted-foreground/40 mt-2">Based on trackers blocked, fingerprint resistance, and script isolation</div>
+          <div className="text-[10px] font-mono text-muted-foreground/40 mt-2">
+            Based on trackers blocked, fingerprint resistance, and script isolation
+          </div>
         </div>
 
-        {/* Blocked trackers */}
         <div>
           <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-3">Blocked Tracker Domains</div>
           <div className="flex flex-col gap-0.5">
@@ -74,7 +71,6 @@ export function PrivacyReportView() {
           </div>
         </div>
 
-        {/* Active protections */}
         <div>
           <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-3">Active Protections</div>
           <div className="flex flex-col gap-0.5">

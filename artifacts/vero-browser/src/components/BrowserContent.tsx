@@ -8,19 +8,35 @@ import { DownloadsView } from '@/views/DownloadsView';
 import { PrivacyReportView } from '@/views/PrivacyReportView';
 import { VaultView } from '@/views/VaultView';
 import { SettingsView } from '@/views/SettingsView';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const PAGE_MAP: Record<string, React.FC> = {
+  newtab:    HomeView,
+  search:    SearchResultsView,
+  website:   WebsiteView,
+  history:   HistoryView,
+  downloads: DownloadsView,
+  privacy:   PrivacyReportView,
+  vault:     VaultView,
+  settings:  SettingsView,
+};
 
 export function BrowserContent() {
-  const { pageType } = useBrowserState();
+  const { pageType, activeTabId } = useBrowserState();
+  const View = PAGE_MAP[pageType] ?? HomeView;
 
-  switch (pageType) {
-    case 'newtab':    return <HomeView />;
-    case 'search':    return <SearchResultsView />;
-    case 'website':   return <WebsiteView />;
-    case 'history':   return <HistoryView />;
-    case 'downloads': return <DownloadsView />;
-    case 'privacy':   return <PrivacyReportView />;
-    case 'vault':     return <VaultView />;
-    case 'settings':  return <SettingsView />;
-    default:          return <HomeView />;
-  }
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={`${activeTabId}-${pageType}`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.1 }}
+        className="h-full w-full overflow-hidden"
+      >
+        <View />
+      </motion.div>
+    </AnimatePresence>
+  );
 }

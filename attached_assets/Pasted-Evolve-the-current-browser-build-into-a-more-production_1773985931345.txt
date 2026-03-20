@@ -1,0 +1,103 @@
+Evolve the current browser build into a more production-oriented product and rename the product across the UI and codebase from Vero to Sentra.
+
+IMPORTANT:
+Do not break existing functionality.
+Do not redesign the UI from scratch.
+Do not remove the current tactical, slick, glassy design language.
+Build on top of the current stable version.
+This pass is about making the product more real, more stable, more future-ready, and correctly renamed to Sentra everywhere appropriate.
+
+MISSION:
+1. Rename the browser product from Vero to Sentra
+2. Move the app closer to a production-ready browser product
+3. Keep BLACKDOG mocked for now, but prepare clean architecture for later integration
+4. Improve behavior realism, persistence, and system stability
+
+RENAME REQUIREMENTS:
+- Replace visible product naming across the app UI
+- Update browser labels, headers, placeholders, pills, top chrome branding, internal user-facing references, and page copy where appropriate
+- Preserve BLACKDOG as the security engine branding
+- Make sure the name Sentra feels native and consistent throughout the experience
+- Update document title / app title if applicable
+
+FOCUS AREAS:
+
+1. NAVIGATION ENGINE IMPROVEMENT
+- Improve URL handling logic
+- Better detect valid domains vs search queries
+- Normalize URLs where appropriate
+- Auto-add https:// when sensible
+- Improve tab navigation state consistency
+- Improve back / forward / refresh logic so it behaves more like a real browser shell
+- Prepare structure for future real webview integration
+
+2. WEBSITE VIEW ENHANCEMENT
+- Make the website view feel more like real browsing
+- Support external page rendering where possible, with graceful fallback where external rendering is blocked
+- Improve page chrome realism
+- Improve blocked-page fallback and caution-state handling
+- Make page rendering states feel more intentional and stable
+
+3. ANALYSIS SERVICE LAYER
+- Abstract the current mock BLACKDOG analysis logic into a centralized service layer
+- Create a clean analyzeURL() service or equivalent that can later be replaced by real backend/API logic
+- Route all risk, telemetry, and panel data through this service
+- Improve consistency of SAFE / CAUTION / DANGER / UNKNOWN logic across the app
+
+4. SEARCH SYSTEM UPGRADE
+- Improve search routing logic
+- Prepare integration points for future external search APIs
+- Keep current mock results behavior but structure it so real API data can plug in later
+- Add polished loading states for search
+- Make the search flow feel more stable and production-like
+
+5. SESSION + STORAGE LAYER
+- Persist tabs and session state locally
+- Persist history safely
+- Persist relevant settings if appropriate
+- Restore app state correctly after refresh
+- Ensure burn session fully resets persistent state and returns the app to a clean valid state
+
+6. ERROR + EDGE CASE HANDLING
+- Handle invalid URLs
+- Handle empty input
+- Handle unsupported external page rendering
+- Handle rapid tab switching
+- Prevent undefined/null UI breaks
+- Add safe fallbacks for all dynamic sections
+- Ensure all major views render safely even with empty state
+
+7. STRUCTURE FOR FUTURE FEATURES
+- Prepare modular architecture for:
+  - real BLACKDOG backend integration
+  - Vault expansion
+  - settings persistence expansion
+  - downloads system expansion
+  - future external search provider integration
+- Do not fully implement these systems yet; just prepare the structure cleanly
+
+8. PERFORMANCE + CLEANUP
+- Reduce unnecessary re-renders
+- Improve component separation
+- Clean state flow
+- Keep interactions smooth under repeated use
+- Eliminate obvious duplication where possible
+
+9. PRODUCT REALISM
+- Make the app feel more like a real browser product
+- Add smoother transitions between states
+- Improve loading and fallback behavior
+- Improve stability of interactive flows
+- Reduce any remaining “mock app” feeling and increase “system product” feeling
+
+10. KEEP DESIGN LANGUAGE INTACT
+- Preserve the premium tactical browser aesthetic
+- Keep the green glow controlled and high-end
+- Keep the glass depth and sharp chrome
+- Do not flatten the visual identity
+- Do not turn the app into a generic dashboard
+
+OUTPUT GOAL:
+Return a more production-oriented version of the browser, renamed to Sentra, still using mocked BLACKDOG logic but clearly structured for future real backend integration, real browsing improvements, and long-term product expansion.
+
+The final result should feel like Sentra is no longer just a styled beta, but an early real product.

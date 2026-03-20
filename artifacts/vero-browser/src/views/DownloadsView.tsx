@@ -4,13 +4,13 @@ import { twMerge } from 'tailwind-merge';
 
 const MOCK_DOWNLOADS = [
   {
-    id: '1', name: 'vero-browser-1.4.2.dmg', size: '94.2 MB',
-    status: 'complete', source: 'vero.browser', risk: 'safe',
+    id: '1', name: 'sentra-browser-1.0.0.dmg', size: '94.2 MB',
+    status: 'complete', source: 'sentra.browser', risk: 'safe',
     date: 'Today, 04:51',
   },
   {
     id: '2', name: 'blackdog-security-report-q1.pdf', size: '2.1 MB',
-    status: 'complete', source: 'docs.vero.browser', risk: 'safe',
+    status: 'complete', source: 'docs.sentra.browser', risk: 'safe',
     date: 'Today, 03:12',
   },
   {
@@ -33,10 +33,9 @@ const MOCK_DOWNLOADS = [
 export function DownloadsView() {
   return (
     <div className="h-full overflow-y-auto bg-background">
-      {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] bg-black/20">
         <div>
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">vero://downloads</div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">sentra://downloads</div>
           <h2 className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
             <Download className="w-4 h-4 text-muted-foreground/50" />
             Downloads
@@ -47,14 +46,12 @@ export function DownloadsView() {
         </button>
       </div>
 
-      {/* Stats */}
       <div className="flex items-center gap-6 px-6 py-3 border-b border-white/[0.04] bg-black/10">
-        <Stat label="Total" value={`${MOCK_DOWNLOADS.length}`} />
+        <Stat label="Total"    value={`${MOCK_DOWNLOADS.length}`} />
         <Stat label="Complete" value={`${MOCK_DOWNLOADS.filter(d => d.status === 'complete').length}`} color="text-primary" />
-        <Stat label="Blocked" value={`${MOCK_DOWNLOADS.filter(d => d.status === 'blocked').length}`} color="text-red-500" />
+        <Stat label="Blocked"  value={`${MOCK_DOWNLOADS.filter(d => d.status === 'blocked').length}`}  color="text-red-500" />
       </div>
 
-      {/* List */}
       <div className="px-6 py-4 flex flex-col gap-2 max-w-2xl">
         {MOCK_DOWNLOADS.map(dl => (
           <div key={dl.id} className={twMerge(
@@ -107,9 +104,9 @@ function Stat({ label, value, color = 'text-foreground/60' }: { label: string; v
 
 function RiskTag({ risk }: { risk: string }) {
   const map: Record<string, string> = {
-    safe: 'text-primary border-primary/20 bg-primary/[0.06]',
+    safe:    'text-primary border-primary/20 bg-primary/[0.06]',
     caution: 'text-amber-500 border-amber-500/20 bg-amber-500/[0.06]',
-    danger: 'text-red-500 border-red-500/20 bg-red-500/[0.06]',
+    danger:  'text-red-500 border-red-500/20 bg-red-500/[0.06]',
     unknown: 'text-muted-foreground border-white/10 bg-white/[0.04]',
   };
   return (

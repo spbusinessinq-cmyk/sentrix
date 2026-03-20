@@ -15,7 +15,7 @@ export function VeroTabBar() {
         boxShadow: '0 1px 0 rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.025)',
       }}
     >
-      {/* Window controls + VERO brand */}
+      {/* Window controls + SENTRA brand */}
       <div className="flex items-center gap-4 px-3.5 border-r border-white/[0.05] shrink-0">
         <div className="flex items-center gap-[5px]">
           <div className="w-[11px] h-[11px] rounded-full bg-[#FF5F57] hover:brightness-110 transition-[filter] cursor-default" />
@@ -25,10 +25,10 @@ export function VeroTabBar() {
         <div className="flex items-center gap-1.5">
           <Shield className="w-3.5 h-3.5" style={{ color: 'hsl(142 72% 38%)', opacity: 0.85 }} />
           <span
-            className="text-[10.5px] font-bold tracking-[0.18em] uppercase"
+            className="text-[10.5px] font-bold tracking-[0.2em] uppercase"
             style={{ color: 'hsl(142 72% 42%)', opacity: 0.9 }}
           >
-            VERO
+            SENTRA
           </span>
         </div>
       </div>
@@ -43,16 +43,13 @@ export function VeroTabBar() {
               onClick={() => setActiveTabId(tab.id)}
               className={twMerge(
                 'group relative flex items-center gap-2 h-full min-w-[140px] max-w-[210px] px-3.5 border-r border-white/[0.04] cursor-default transition-all duration-150 shrink-0',
-                isActive
-                  ? 'text-foreground/92'
-                  : 'text-muted-foreground/45 hover:text-muted-foreground/75 hover:bg-white/[0.025]'
+                isActive ? 'text-foreground/92' : 'text-muted-foreground/45 hover:text-muted-foreground/75 hover:bg-white/[0.025]'
               )}
               style={isActive ? {
                 background: 'linear-gradient(180deg, rgba(22,163,74,0.04) 0%, rgba(0,0,0,0.55) 40%)',
                 boxShadow: 'inset 0 -1px 0 rgba(22,163,74,0.08)',
               } : {}}
             >
-              {/* Top accent line */}
               {isActive && (
                 <div
                   className="absolute top-0 left-0 right-0 h-[1.5px] rounded-b-full"
@@ -80,10 +77,9 @@ export function VeroTabBar() {
           );
         })}
 
-        {/* Add tab */}
         <button
           onClick={addTab}
-          title="New Tab"
+          title="New Tab (Ctrl+T)"
           className="flex items-center justify-center w-8 h-full shrink-0 transition-colors duration-150"
           style={{ color: 'rgba(148,163,184,0.3)' }}
           onMouseEnter={e => (e.currentTarget.style.color = 'rgba(148,163,184,0.65)')}

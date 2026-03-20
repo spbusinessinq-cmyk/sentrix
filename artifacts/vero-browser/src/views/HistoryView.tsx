@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Trash2, ShieldCheck, AlertTriangle, ShieldAlert, ExternalLink } from 'lucide-react';
+import { Clock, Trash2, ExternalLink } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
 import { format, isToday, isYesterday } from 'date-fns';
@@ -7,7 +7,11 @@ import { format, isToday, isYesterday } from 'date-fns';
 function groupByDate(entries: { visitedAt: Date; [key: string]: any }[]) {
   const groups: Record<string, typeof entries> = {};
   for (const e of entries) {
-    const label = isToday(e.visitedAt) ? 'Today' : isYesterday(e.visitedAt) ? 'Yesterday' : format(e.visitedAt, 'MMM d, yyyy');
+    const label = isToday(e.visitedAt)
+      ? 'Today'
+      : isYesterday(e.visitedAt)
+      ? 'Yesterday'
+      : format(e.visitedAt, 'MMM d, yyyy');
     (groups[label] ??= []).push(e);
   }
   return groups;
@@ -15,15 +19,13 @@ function groupByDate(entries: { visitedAt: Date; [key: string]: any }[]) {
 
 export function HistoryView() {
   const { history, clearHistory, navigate } = useBrowserState();
-
   const grouped = groupByDate(history);
 
   return (
     <div className="h-full overflow-y-auto bg-background">
-      {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] bg-black/20">
         <div>
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">vero://history</div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">sentra://history</div>
           <h2 className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
             <Clock className="w-4 h-4 text-muted-foreground/50" />
             Session History
@@ -39,7 +41,6 @@ export function HistoryView() {
         )}
       </div>
 
-      {/* Content */}
       <div className="px-6 py-4 max-w-2xl">
         {history.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground/30 font-mono text-[12px]">
@@ -56,7 +57,7 @@ export function HistoryView() {
                   <button
                     key={entry.id}
                     onClick={() => navigate(entry.url)}
-                    className="group flex items-center gap-3 px-3 py-2.5 rounded hover:bg-white/[0.03] transition-colors text-left"
+                    className="group flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors text-left"
                   >
                     <RiskDot risk={entry.riskLevel} />
                     <div className="flex-1 min-w-0">
@@ -82,9 +83,9 @@ export function HistoryView() {
 
 function RiskDot({ risk }: { risk: string }) {
   const cls =
-    risk === 'safe' ? 'bg-primary/60' :
+    risk === 'safe'    ? 'bg-primary/60' :
     risk === 'caution' ? 'bg-amber-500/60' :
-    risk === 'danger' ? 'bg-red-500/60' :
+    risk === 'danger'  ? 'bg-red-500/60' :
     'bg-muted-foreground/30';
   return <span className={twMerge('w-1.5 h-1.5 rounded-full shrink-0', cls)} />;
 }

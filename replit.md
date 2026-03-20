@@ -91,6 +91,25 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 
 Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
 
+### `artifacts/vero-browser` (`@workspace/vero-browser`)
+
+**Sentra Browser** — a dark tactical browser UI prototype with BLACKDOG as the embedded security engine.
+
+- **Brand**: Sentra Browser. Internal protocol: `sentra://`. Legacy `vero://` auto-upgrades.
+- **Stack**: React 18, TypeScript, Vite, Tailwind CSS, framer-motion, date-fns
+- **Key files**:
+  - `src/lib/blackdog.ts` — BLACKDOG analysis engine (heuristic URL risk classification, `classifyInput`, `analyzeUrl`)
+  - `src/hooks/use-browser-state.tsx` — `BrowserProvider` with full browser state: tabs, per-tab `navBack`/`navForward` stacks, `navigateBack`/`navigateForward`, `isNavigating` progress state, localStorage persistence (`sentra-session-v3`), history, logs, burnSession
+  - `src/components/VeroTabBar.tsx` — Tab bar (filename kept, export `VeroTabBar`); displays "SENTRA" brand
+  - `src/components/AddressBar.tsx` — Address bar with wired back/forward/refresh, animated loading progress bar, risk-colored lock icon
+  - `src/components/BlackdogPanel.tsx` — Slide-in BLACKDOG analysis panel with live telemetry log
+  - `src/components/TacticalSidebar.tsx` — Icon sidebar with `sentra://` navigation targets
+  - `src/components/BrowserContent.tsx` — Page router (AnimatePresence transitions per tab+pageType)
+  - `src/views/` — 8 page views: HomeView, SearchResultsView, WebsiteView, HistoryView, DownloadsView, PrivacyReportView, VaultView, SettingsView
+- **Design tokens** (in `index.css`): near-black bg `220 14% 5.5%`, primary green `142 72% 34%`, `.glass-panel`, `.glass-surface`, `.glow-primary-ring`, `.section-label`, `.risk-*` CSS classes
+- **Persistence**: `localStorage` key `sentra-session-v3` stores tabs + history (date-safe). Cleared on Burn Session.
+- **Navigation**: per-tab back/forward URL stacks (in-memory, not persisted). Loading bar for website navigations (~480ms).
+
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
