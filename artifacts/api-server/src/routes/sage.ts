@@ -53,6 +53,11 @@ function buildResultsContext(
 }
 
 sageRouter.post("/sage/query", async (req, res) => {
+  logger.info(
+    { env: process.env.NODE_ENV, ip: req.ip },
+    "[Sentrix] /api/sage/query hit",
+  );
+
   const { query, results, context, messages, userMessage } = req.body as {
     query?: string;
     results?: Array<{ title: string; domain: string; snippet: string; score?: number; confidence?: string }>;

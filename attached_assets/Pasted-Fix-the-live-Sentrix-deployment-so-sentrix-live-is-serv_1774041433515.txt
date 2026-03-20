@@ -1,0 +1,64 @@
+Fix the live Sentrix deployment so sentrix.live is served by the api-server, not the static frontend only.
+
+CRITICAL FACT:
+The live production domain currently returns:
+- 404 for /api/healthz
+- dead search
+- dead Sage
+
+This proves the live domain is not routing through the Express/api-server runtime.
+
+MISSION:
+Make sentrix.live run through the unified api-server deployment so that:
+- /api/healthz returns JSON
+- /api/search works live
+- /api/sage/query works live
+- frontend static assets are still served
+- SPA routes still work
+- no separate product/domain is created
+
+DO NOT:
+- redesign UI
+- work on styling
+- work on prompts
+- touch ranking unless necessary
+- build a second app
+
+ONLY FIX:
+production runtime + routing + deployment target
+
+CHECKLIST:
+
+1. Confirm which deployment target is actually attached to sentrix.live
+- determine whether the custom domain is bound to the static frontend deployment instead of the api-server deployment
+- if so, move/bind the domain to the deployment that runs api-server
+
+2. Ensure the deployment entrypoint is the api-server
+- Express server must be the live runtime
+- it must listen on process.env.PORT and 0.0.0.0
+
+3. Ensure the api-server serves:
+- /api/healthz -> JSON
+- /api/search -> JSON
+- /api/sage/query -> JSON/stream
+- static frontend assets
+- SPA fallback only for non-API routes
+
+4. Ensure /api/* never falls through to frontend routing
+- if route missing, return JSON 404
+- never HTML for API routes
+
+5. Add production logging:
+- log on startup which deployment/runtime is active
+- log when /api/healthz is hit
+- log when /api/search is hit
+- log when /api/sage/query is hit
+
+6. Output a final verification checklist:
+- https://sentrix.live/api/healthz
+- https://sentrix.live/api/search?q=test
+- https://sentrix.live/
+and explain what each should return if production is fixed
+
+GOAL:
+The custom domain sentrix.live must point to the unified server deployment, not the static-only frontend deployment.

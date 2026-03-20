@@ -2,15 +2,28 @@ import { Router, type IRouter } from "express";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
 router.get("/healthz", (_req, res) => {
-  const thisFileDir = path.dirname(fileURLToPath(import.meta.url));
+  logger.info(
+    { env: process.env.NODE_ENV, port: process.env.PORT },
+    "[Sentrix] /api/healthz hit",
+  );
+
+  let thisFileDir = "";
+  try {
+    thisFileDir = path.dirname(fileURLToPath(import.meta.url));
+  } catch {
+    thisFileDir = "";
+  }
 
   // Resolve frontend dist using the same multi-candidate strategy as app.ts
   const candidates = [
-    path.resolve(thisFileDir, "..", "..", "vero-browser", "dist", "public"),
+    ...(thisFileDir
+      ? [path.resolve(thisFileDir, "..", "..", "vero-browser", "dist", "public")]
+      : []),
     path.resolve(process.cwd(), "artifacts", "vero-browser", "dist", "public"),
     path.resolve(
       path.dirname(path.resolve(process.argv[1] ?? ".")),

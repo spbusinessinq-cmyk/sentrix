@@ -320,6 +320,11 @@ async function searchBrave(query: string, apiKey: string): Promise<SearchResult[
 router.get("/search", async (req, res) => {
   const query = String(req.query["q"] ?? "").trim().slice(0, 400);
 
+  logger.info(
+    { query: query || "(empty)", env: process.env.NODE_ENV },
+    "[Sentrix] /api/search hit",
+  );
+
   if (!query) {
     return res.json({ results: [], provider: "empty", query: "" });
   }

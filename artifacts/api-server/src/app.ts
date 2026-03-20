@@ -91,14 +91,25 @@ app.use("/api", (req, res) => {
 // This makes the server robust to CWD changes and different deployment modes.
 //
 if (isProduction) {
-  const thisFileDir = path.dirname(fileURLToPath(import.meta.url));
+  // import.meta.url is undefined in CJS bundles (esbuild CJS output) — wrap
+  // in try/catch so we fall through to candidates that always work in prod.
+  let thisFileDir = "";
+  try {
+    thisFileDir = path.dirname(fileURLToPath(import.meta.url));
+  } catch {
+    thisFileDir = "";
+  }
 
   const candidates = [
     // 1. Relative to built bundle (dist/index.cjs → artifacts/api-server/dist)
-    path.resolve(thisFileDir, "..", "..", "vero-browser", "dist", "public"),
-    // 2. Relative to workspace root via cwd
+    //    Only works when import.meta.url is available (ESM builds).
+    ...(thisFileDir
+      ? [path.resolve(thisFileDir, "..", "..", "vero-browser", "dist", "public")]
+      : []),
+    // 2. Relative to workspace root via cwd — works when Replit runs the
+    //    server from the workspace root (standard production behaviour).
     path.resolve(process.cwd(), "artifacts", "vero-browser", "dist", "public"),
-    // 3. Relative to the script being executed
+    // 3. Relative to the script being executed — works regardless of cwd.
     path.resolve(
       path.dirname(path.resolve(process.argv[1] ?? ".")),
       "..",
