@@ -596,6 +596,32 @@ function SageAnswerBlock({ msg }: { msg: RichSageMessage }) {
   );
 }
 
+// ── Scaffold detection ────────────────────────────────────────────────────────
+// Starter chip display → scaffold insert text (with trailing colon-space)
+const STARTER_CHIPS: Array<{ display: string; insert: string }> = [
+  { display: 'Analyze this claim',        insert: 'Analyze this claim: ' },
+  { display: 'Break this down for me',    insert: 'Break this down for me: ' },
+  { display: 'What should I question here?', insert: 'What should I question here: ' },
+];
+
+// Scaffold-only prefixes (no real content after the colon)
+const SCAFFOLD_PREFIXES = [
+  'analyze this claim',
+  'break this down for me',
+  'what should i question here',
+];
+
+function isScaffoldOnly(msg: string): boolean {
+  const t = msg.trim().toLowerCase();
+  if (!t) return true;
+  for (const prefix of SCAFFOLD_PREFIXES) {
+    // Matches "Analyze this claim", "Analyze this claim:", "Analyze this claim:  "
+    // Does NOT match "Analyze this claim: The earth is flat"
+    if (new RegExp(`^${prefix}:?\\s*$`).test(t)) return true;
+  }
+  return false;
+}
+
 // ── Ask Sage Chat Panel ────────────────────────────────────────────────────────
 function SageChat({ open, query, results, context, onClose, initialMessage, onClearInitialMessage }: {
   open: boolean; query: string; results: SageResult[]; context: string; onClose: () => void;
@@ -624,8 +650,28 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
     if (open) setTimeout(() => inputRef.current?.focus(), 100);
   }, [open]);
 
+  // Prefill input with scaffold text without triggering a send
+  const insertScaffold = (text: string) => {
+    setInput(text);
+    setTimeout(() => {
+      const inp = inputRef.current;
+      if (inp) { inp.focus(); inp.setSelectionRange(text.length, text.length); }
+    }, 0);
+  };
+
   const send = useCallback(async (msg: string) => {
     if (!msg.trim() || loading) return;
+    // Guard: scaffold-only input should prefill the input box, not trigger Sage
+    if (isScaffoldOnly(msg)) {
+      const chip = STARTER_CHIPS.find(c => c.display.toLowerCase() === msg.trim().toLowerCase() || c.insert.toLowerCase().startsWith(msg.trim().toLowerCase()));
+      const scaffold = chip ? chip.insert : msg.trim().replace(/:?\s*$/, ': ');
+      setInput(scaffold);
+      setTimeout(() => {
+        const inp = inputRef.current;
+        if (inp) { inp.focus(); inp.setSelectionRange(scaffold.length, scaffold.length); }
+      }, 0);
+      return;
+    }
     setInput('');
     const userMsg: RichSageMessage = { role: 'user', content: msg.trim() };
     setHistory(h => [...h, userMsg]);
@@ -714,14 +760,14 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
           <div className="flex flex-col items-center justify-center h-full gap-3 py-4">
             <Sparkles className="w-6 h-6 opacity-20" style={{ color: SAGE_COLOR }} />
             <p className="text-[11px] font-mono text-center leading-relaxed" style={{ color: 'rgba(148,163,184,0.35)' }}>
-              Input is ready for analysis.<br />Signal, agreement, and risk will be returned.
+              Paste a claim, URL, or article to analyze.<br />Type below or use a starter to compose your query.
             </p>
             <div className="flex flex-wrap gap-2 justify-center mt-1">
-              {['Analyze this claim', 'Break this down for me', 'What should I question here?'].map(s => (
-                <button key={s} onClick={() => send(s)}
+              {STARTER_CHIPS.map(chip => (
+                <button key={chip.display} onClick={() => insertScaffold(chip.insert)}
                   className="px-2.5 py-1 rounded-lg text-[10px] font-mono cursor-pointer transition-all"
                   style={{ background: SAGE_BG, border: `1px solid ${SAGE_BORDER}`, color: SAGE_COLOR }}>
-                  {s}
+                  {chip.display}
                 </button>
               ))}
             </div>
