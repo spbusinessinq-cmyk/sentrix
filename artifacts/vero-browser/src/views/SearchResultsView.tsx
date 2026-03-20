@@ -15,13 +15,13 @@ import { InspectDrawer } from '@/components/InspectDrawer';
 import { analyzeResults, IntelligenceReport, SignalTier } from '@/lib/intelligence';
 import { streamSageQuery, SageMessage, SageResult } from '@/lib/sage-client';
 
-// ── Color tokens — neutral steel white (primary), purple for Sage only ────────
-const STEEL        = '#E6E8EB';
-const STEEL_04     = 'rgba(255,255,255,0.04)';
-const STEEL_06     = 'rgba(255,255,255,0.06)';
-const STEEL_08     = 'rgba(255,255,255,0.08)';
-const STEEL_18     = 'rgba(255,255,255,0.18)';
-const STEEL_25     = 'rgba(255,255,255,0.22)';
+// ── Color tokens — blue-cyan brand (primary), purple for Sage only ────────────
+const CYAN         = '#38BDF8';
+const CYAN_04      = 'rgba(56,189,248,0.04)';
+const CYAN_06      = 'rgba(56,189,248,0.06)';
+const CYAN_08      = 'rgba(56,189,248,0.08)';
+const CYAN_18      = 'rgba(56,189,248,0.18)';
+const CYAN_25      = 'rgba(56,189,248,0.22)';
 // Sage/AI accent stays purple
 const SAGE_COLOR   = 'rgba(139,92,246,0.85)';
 const SAGE_BORDER  = 'rgba(139,92,246,0.25)';
@@ -239,7 +239,7 @@ function IntelligenceBrief({ report, expanded, onToggle, sageOpen, onToggleSage 
             <div className="px-5 py-3 flex flex-col gap-1.5">
               {report.topFindings.map((f, i) => (
                 <div key={i} className="flex items-start gap-2">
-                  <div className="w-1 h-1 rounded-full mt-[5px] shrink-0" style={{ background: 'rgba(255,255,255,0.22)' }} />
+                  <div className="w-1 h-1 rounded-full mt-[5px] shrink-0" style={{ background: 'rgba(56,189,248,0.50)' }} />
                   <span className="text-[10px] font-mono text-muted-foreground/45 leading-relaxed">{f}</span>
                 </div>
               ))}
@@ -594,7 +594,7 @@ function ResultCard({ result, index, onInspect, tier, compare }: {
         border: isBlocked
           ? '1px solid rgba(239,68,68,0.12)'
           : isPrimary
-          ? `1px solid ${cardHovered ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.08)'}`
+          ? `1px solid ${cardHovered ? 'rgba(56,189,248,0.20)' : 'rgba(56,189,248,0.10)'}`
           : '1px solid rgba(255,255,255,0.055)',
         background: isBlocked
           ? 'rgba(0,0,0,0.28)'
@@ -604,16 +604,16 @@ function ResultCard({ result, index, onInspect, tier, compare }: {
           ? 'rgba(0,0,0,0.14)'
           : 'rgba(0,0,0,0.20)',
         boxShadow: isPrimary && cardHovered
-          ? '0 0 24px rgba(255,255,255,0.02), 0 0 0 1px rgba(255,255,255,0.06)'
+          ? '0 0 24px rgba(56,189,248,0.05), 0 0 0 1px rgba(56,189,248,0.08)'
           : 'none',
         opacity: isNoise ? (cardHovered ? 1 : 0.78) : 1,
         transition: 'border-color 150ms ease-out, box-shadow 150ms ease-out, opacity 150ms ease-out, background 150ms ease-out',
       }}
     >
-      {/* Left accent bar — primary (white) and danger (red) only */}
+      {/* Left accent bar — primary (cyan) and danger (red) only */}
       {isPrimary && (
         <div className="absolute left-0 top-[4px] bottom-[4px] w-[1.5px] rounded-full pointer-events-none"
-          style={{ background: 'rgba(255,255,255,0.30)' }} />
+          style={{ background: 'rgba(56,189,248,0.65)', boxShadow: '0 0 6px rgba(56,189,248,0.25)' }} />
       )}
       {isBlocked && (
         <div className="absolute left-0 top-[4px] bottom-[4px] w-[1.5px] rounded-full pointer-events-none"

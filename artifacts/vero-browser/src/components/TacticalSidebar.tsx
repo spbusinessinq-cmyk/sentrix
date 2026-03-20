@@ -45,15 +45,16 @@ function SidebarBtn({ item, isActive, onNavigate }: {
           onMouseLeave={() => setHovered(false)}
           className="relative flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200"
           style={{
-            background: isActive ? 'rgba(255,255,255,0.07)' : hovered ? 'rgba(255,255,255,0.04)' : 'transparent',
-            border: isActive ? '1px solid rgba(255,255,255,0.10)' : '1px solid transparent',
-            color: isActive ? 'rgba(230,232,235,0.90)' : hovered ? 'rgba(148,163,184,0.72)' : 'rgba(148,163,184,0.34)',
+            background: isActive ? 'rgba(56,189,248,0.10)' : hovered ? 'rgba(255,255,255,0.04)' : 'transparent',
+            border: isActive ? '1px solid rgba(56,189,248,0.22)' : '1px solid transparent',
+            color: isActive ? 'rgba(56,189,248,0.92)' : hovered ? 'rgba(148,163,184,0.72)' : 'rgba(148,163,184,0.34)',
+            boxShadow: isActive ? '0 0 14px rgba(56,189,248,0.08)' : 'none',
           }}
         >
           {isActive && (
             <div
               className="absolute left-[-1px] top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-r-full"
-              style={{ background: 'rgba(255,255,255,0.22)' }}
+              style={{ background: 'rgba(56,189,248,0.75)', boxShadow: '0 0 6px rgba(56,189,248,0.35)' }}
             />
           )}
           <Icon className="w-[15px] h-[15px]" strokeWidth={isActive ? 2 : 1.5} />
@@ -127,15 +128,16 @@ export function TacticalSidebar() {
               onMouseLeave={() => setSettingsHovered(false)}
               className="relative flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200"
               style={{
-                background: isSettingsActive ? 'rgba(255,255,255,0.07)' : settingsHovered ? 'rgba(255,255,255,0.04)' : 'transparent',
-                border: isSettingsActive ? '1px solid rgba(255,255,255,0.10)' : '1px solid transparent',
-                color: isSettingsActive ? 'rgba(230,232,235,0.90)' : settingsHovered ? 'rgba(148,163,184,0.72)' : 'rgba(148,163,184,0.34)',
+                background: isSettingsActive ? 'rgba(56,189,248,0.10)' : settingsHovered ? 'rgba(255,255,255,0.04)' : 'transparent',
+                border: isSettingsActive ? '1px solid rgba(56,189,248,0.22)' : '1px solid transparent',
+                color: isSettingsActive ? 'rgba(56,189,248,0.92)' : settingsHovered ? 'rgba(148,163,184,0.72)' : 'rgba(148,163,184,0.34)',
+                boxShadow: isSettingsActive ? '0 0 14px rgba(56,189,248,0.08)' : 'none',
               }}
             >
               {isSettingsActive && (
                 <div
                   className="absolute left-[-1px] top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-r-full"
-                  style={{ background: 'rgba(255,255,255,0.22)' }}
+                  style={{ background: 'rgba(56,189,248,0.75)', boxShadow: '0 0 6px rgba(56,189,248,0.35)' }}
                 />
               )}
               <Settings className="w-[15px] h-[15px]" strokeWidth={isSettingsActive ? 2 : 1.5} />

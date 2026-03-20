@@ -95,16 +95,17 @@ export function HomeView() {
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
               style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.09)',
+                background: 'rgba(56,189,248,0.08)',
+                border: '1px solid rgba(56,189,248,0.18)',
+                boxShadow: '0 0 20px rgba(56,189,248,0.06)',
               }}
             >
-              <Shield className="w-5 h-5" style={{ color: 'rgba(200,205,210,0.55)' }} />
+              <Shield className="w-5 h-5" style={{ color: 'rgba(56,189,248,0.70)' }} />
             </div>
             <span
               className="text-[28px] font-bold tracking-[0.2em] uppercase"
               style={{
-                color: '#E6E8EB',
+                color: '#38BDF8',
                 fontFamily: "'JetBrains Mono', monospace",
               }}
             >
@@ -112,7 +113,8 @@ export function HomeView() {
             </span>
           </div>
           <h1 className="text-[20px] font-semibold text-foreground/80 leading-tight mb-2">
-            Search clearly. Decide before you click.
+            Search clearly.{' '}
+            <span style={{ color: 'rgba(56,189,248,0.88)' }}>Decide before you click.</span>
           </h1>
           <p className="text-[11px] font-mono text-muted-foreground/35 tracking-wide">
             Intelligence-powered search with BLACKDOG analysis.
@@ -125,9 +127,9 @@ export function HomeView() {
             className="relative flex items-center rounded-xl overflow-hidden"
             style={{
               background: focused ? 'rgba(0,0,0,0.58)' : 'rgba(0,0,0,0.38)',
-              border: `1px solid ${focused ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.065)'}`,
+              border: `1px solid ${focused ? 'rgba(56,189,248,0.28)' : 'rgba(255,255,255,0.065)'}`,
               boxShadow: focused
-                ? '0 0 0 1px rgba(255,255,255,0.04), 0 0 28px rgba(255,255,255,0.02)'
+                ? '0 0 0 1px rgba(56,189,248,0.08), 0 0 28px rgba(56,189,248,0.05)'
                 : 'none',
               transition: 'border-color 150ms ease-out, box-shadow 150ms ease-out, background 150ms ease-out',
             }}
@@ -135,7 +137,7 @@ export function HomeView() {
             <div className="pl-5 pr-3.5 shrink-0">
               <Search
                 className="w-4 h-4 transition-colors duration-200"
-                style={{ color: focused ? 'rgba(200,205,210,0.65)' : 'rgba(148,163,184,0.3)' }}
+                style={{ color: focused ? 'rgba(56,189,248,0.70)' : 'rgba(148,163,184,0.3)' }}
               />
             </div>
             <input
@@ -163,9 +165,9 @@ export function HomeView() {
                     type="submit"
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold tracking-[0.12em] uppercase transition-all cursor-pointer"
                     style={{
-                      background: 'rgba(255,255,255,0.07)',
-                      border: '1px solid rgba(255,255,255,0.14)',
-                      color: 'rgba(200,205,210,0.85)',
+                      background: 'rgba(56,189,248,0.10)',
+                      border: '1px solid rgba(56,189,248,0.28)',
+                      color: 'rgba(56,189,248,0.90)',
                     }}
                   >
                     Search <ArrowRight className="w-3 h-3" />

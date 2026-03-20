@@ -32,21 +32,21 @@
   --border:             220 10% 12%;
   --input:              220 10% 12%;
 
-  /* ── PRIMARY: neutral steel white ─────────────────────── */
-  --primary:            215 8% 90%;
+  /* ── PRIMARY: blue-cyan brand ─────────────────────────── */
+  --primary:            199 89% 60%;
   --primary-foreground: 220 14% 5.5%;
-  --ring:               215 8% 90%;
-  --accent:             215 8% 90%;
+  --ring:               199 89% 60%;
+  --accent:             199 89% 60%;
   --accent-foreground:  220 14% 5.5%;
 
   --muted:              220 12% 11%;
   --muted-foreground:   215 8% 42%;
   --radius:             0.375rem;
 
-  /* ── Glow tokens — diffused halos, neutral ── */
-  --glow-primary:        rgba(255, 255, 255, 0.06);
-  --glow-primary-soft:   rgba(255, 255, 255, 0.03);
-  --glow-primary-ring:   rgba(255, 255, 255, 0.08);
+  /* ── Glow tokens — diffused halos, blue-cyan ── */
+  --glow-primary:        rgba(56, 189, 248, 0.10);
+  --glow-primary-soft:   rgba(56, 189, 248, 0.05);
+  --glow-primary-ring:   rgba(56, 189, 248, 0.16);
 
   /* Security/system glow — stays green (semantic only) */
   --glow-safe:           rgba(22, 163, 74, 0.11);
@@ -65,8 +65,8 @@
   body {
     @apply bg-background text-foreground font-sans antialiased overflow-hidden;
     background-image:
-      radial-gradient(ellipse 60% 30% at 50% -10%, rgba(139, 92, 246, 0.024) 0%, transparent 70%),
-      radial-gradient(ellipse 40% 20% at 100% 100%, rgba(139, 92, 246, 0.012) 0%, transparent 60%);
+      radial-gradient(ellipse 65% 30% at 50% -8%, rgba(56, 189, 248, 0.038) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 20% at 100% 100%, rgba(139, 92, 246, 0.014) 0%, transparent 60%);
   }
   * { @apply border-border; }
 
