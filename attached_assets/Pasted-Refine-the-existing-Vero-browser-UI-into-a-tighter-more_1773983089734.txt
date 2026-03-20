@@ -1,0 +1,110 @@
+Refine the existing Vero browser UI into a tighter, more professional tactical desktop browser.
+
+IMPORTANT:
+Do not redesign from scratch.
+Keep the existing Vero direction, layout foundation, and BLACKDOG identity.
+This is now a refinement pass focused on making the interface feel:
+- more tactical
+- more professional
+- more precise
+- less playful
+- less like a landing page
+- more like a real browser product
+
+CORE GOAL:
+The current build looks good, but it still feels slightly too soft, promotional, and concept-like.
+I want it tightened into a slick, serious, desktop-grade browser UI.
+
+DESIGN REFINEMENT RULES:
+
+1. REDUCE “MARKETING HERO” ENERGY
+- Shrink the central shield graphic
+- Reduce headline size
+- Tighten vertical spacing
+- Make the homepage feel like a browser start page, not a promo landing page
+- Keep “Browse clearly. Stay protected.” but present it in a more restrained way
+
+2. MAKE IT MORE TACTICAL, LESS PLAYFUL
+- Reduce oversized glow effects
+- Reduce soft oversized card feel
+- Sharpen panel edges slightly
+- Tighten spacing and padding
+- Make components feel more technical and deliberate
+- Keep glass, but make it more controlled and subtle
+- Avoid looking like a gaming UI or neon concept art
+
+3. UPGRADE THE TOP BROWSER CHROME
+- Make the tab bar feel more like a real desktop browser
+- Improve active tab styling
+- Improve spacing and proportions in the address bar row
+- Refine button sizes and alignment
+- Make the browser frame feel believable and production-grade
+
+4. REFINE THE LEFT SIDEBAR
+- Keep it icon-based and tactical
+- Improve icon spacing, active states, and hover states
+- Make it feel more premium and less generic
+- Ensure it visually belongs to the browser shell
+
+5. TIGHTEN THE RIGHT BLACKDOG PANEL
+- Make the BLACKDOG panel more surgical and professional
+- Reduce “dashboard card” feel
+- Use more compact stat modules
+- Improve typography hierarchy
+- Improve spacing between telemetry items
+- Make the telemetry log feel more real and less decorative
+- Emphasize session security, threat posture, and current page analysis
+
+6. REWORK THE MAIN START PAGE
+The center area should feel like a serious secure start page.
+Keep:
+- search bar
+- security identity
+- quick actions
+But redesign the quick actions to feel more like tactical browser tools and less like homepage feature cards.
+
+Suggested modules:
+- New Secure Tab
+- Burn Session
+- Link Check
+- Privacy Report
+- Vault Access
+- Session Controls
+
+Style them as compact professional utility blocks, not marketing tiles.
+
+7. ADD MORE “REAL PRODUCT” SIGNALS
+Subtly add believable browser status details such as:
+- secure session active
+- last scan timestamp
+- vault status
+- local protections enabled
+- current page inspection state
+- tracker interception count
+- page certificate status
+
+8. KEEP THE COLOR DISCIPLINE
+- Black / charcoal base
+- Green only for protected / safe / connected
+- Amber for caution
+- Red for danger
+- Blue only for neutral technical info
+Reduce unnecessary glow.
+Keep it controlled, precise, and premium.
+
+9. MOTION / POLISH
+- subtle hover states
+- refined transitions
+- active tab highlight
+- soft status pulse only where useful
+Do not over-animate.
+
+10. OUTPUT QUALITY
+This should now feel like:
+a serious, polished, tactical consumer browser interface
+not a concept poster
+not a marketing landing page
+not a game UI
+
+FINAL DIRECTION:
+Keep the current Vero design language, but tighten it into a slick, professional, tactical browser that feels credible, real, and ready for deeper feature development.

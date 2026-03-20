@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, ArrowRight, RefreshCw, Lock, ShieldAlert, Bookmark, ShieldCheck, Eye } from 'lucide-react';
+import { ArrowLeft, ArrowRight, RotateCw, Lock, ShieldAlert, Bookmark, ShieldCheck, Eye } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
 
@@ -8,85 +8,92 @@ export function AddressBar() {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      const val = e.currentTarget.value;
-      if (!val.includes('://') && !val.includes(' ')) {
-        setCurrentUrl(`https://${val}`);
-      } else {
-        setCurrentUrl(val);
-      }
-      addLog(`Navigating to ${val}`, 'info');
+      const val = e.currentTarget.value.trim();
+      const url = !val.includes('://') && !val.includes(' ') ? `https://${val}` : val;
+      setCurrentUrl(url);
+      addLog(`Navigation: ${url}`, 'info');
     }
   };
 
-  const renderRiskBadge = () => {
-    switch (riskLevel) {
-      case 'danger':
-        return (
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-red/10 text-red border border-red/20">
-            <ShieldAlert className="w-3 h-3" /> Danger
-          </div>
-        );
-      case 'caution':
-        return (
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-amber/10 text-[#F59E0B] border border-amber/20">
-            <ShieldAlert className="w-3 h-3" /> Caution
-          </div>
-        );
-      case 'safe':
-      default:
-        return (
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-primary/10 text-primary border border-primary/20">
-            <ShieldCheck className="w-3 h-3" /> Safe
-          </div>
-        );
-    }
+  const RiskBadge = () => {
+    const map = {
+      danger:  { label: 'DANGER',  cls: 'text-red-500 border-red-500/25 bg-red-500/[0.07]',    Icon: ShieldAlert },
+      caution: { label: 'CAUTION', cls: 'text-amber-500 border-amber-500/25 bg-amber-500/[0.07]', Icon: ShieldAlert },
+      safe:    { label: 'SAFE',    cls: 'text-primary border-primary/25 bg-primary/[0.07]',      Icon: ShieldCheck },
+      unknown: { label: 'UNKNWN',  cls: 'text-muted-foreground border-white/10 bg-white/[0.04]', Icon: ShieldCheck },
+    } as const;
+    const { label, cls, Icon } = map[riskLevel] ?? map.safe;
+    return (
+      <div className={twMerge('flex items-center gap-1 px-2 py-0.5 rounded border text-[9px] font-bold tracking-widest uppercase shrink-0', cls)}>
+        <Icon className="w-2.5 h-2.5" />
+        {label}
+      </div>
+    );
   };
 
   return (
-    <div className="flex items-center h-12 bg-card/40 backdrop-blur-md border-b border-border px-3 gap-3 relative z-10">
-      
-      {/* Nav Controls */}
-      <div className="flex items-center gap-1">
-        <button className="p-1.5 rounded-md text-muted-foreground hover:bg-white/10 hover:text-foreground transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <button className="p-1.5 rounded-md text-white/20 cursor-not-allowed">
-          <ArrowRight className="w-4 h-4" />
-        </button>
-        <button className="p-1.5 rounded-md text-muted-foreground hover:bg-white/10 hover:text-foreground transition-colors">
-          <RefreshCw className="w-4 h-4" />
-        </button>
+    <div className="flex items-center h-10 bg-[#0a0a0c] border-b border-white/[0.05] px-2 gap-1.5 z-10 shrink-0">
+
+      {/* Nav controls */}
+      <div className="flex items-center gap-0.5 shrink-0">
+        <NavBtn title="Back"><ArrowLeft className="w-3.5 h-3.5" /></NavBtn>
+        <NavBtn title="Forward" disabled><ArrowRight className="w-3.5 h-3.5 opacity-25" /></NavBtn>
+        <NavBtn title="Refresh"><RotateCw className="w-3.5 h-3.5" /></NavBtn>
       </div>
 
-      {/* Main Input */}
-      <div className="flex-1 flex items-center h-8 bg-black/40 border border-white/10 rounded-lg px-3 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all shadow-inner group">
-        <Lock className="w-3.5 h-3.5 text-primary/70 mr-2" />
-        <input 
-          type="text" 
+      {/* Separator */}
+      <div className="w-px h-4 bg-white/[0.06] shrink-0 mx-0.5" />
+
+      {/* Address input */}
+      <div className="flex flex-1 items-center h-7 bg-black/40 border border-white/[0.07] rounded px-3 gap-2 focus-within:border-primary/30 focus-within:ring-1 focus-within:ring-primary/10 transition-all min-w-0">
+        <Lock className="w-3 h-3 text-primary/60 shrink-0" />
+        <input
+          type="text"
           value={currentUrl}
           onChange={(e) => setCurrentUrl(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="flex-1 bg-transparent border-none outline-none text-[13px] font-mono text-foreground placeholder:text-muted-foreground"
+          className="flex-1 bg-transparent border-none outline-none text-[12px] font-mono text-foreground/80 placeholder:text-muted-foreground/30 min-w-0"
           placeholder="Search or enter address"
           spellCheck={false}
         />
-        <div className="ml-2 flex items-center opacity-80 group-hover:opacity-100 transition-opacity">
-          {renderRiskBadge()}
-        </div>
+        <RiskBadge />
       </div>
 
-      {/* Action Icons */}
-      <div className="flex items-center gap-1 pl-1 border-l border-white/5">
-        <button className="p-1.5 rounded-md text-muted-foreground hover:bg-white/10 hover:text-foreground transition-colors" title="Bookmark">
-          <Bookmark className="w-4 h-4" />
-        </button>
-        <button className="p-1.5 rounded-md text-primary hover:bg-white/10 transition-colors" title="Secure Mode Active">
-          <ShieldCheck className="w-4 h-4" />
-        </button>
-        <button className="p-1.5 rounded-md text-muted-foreground hover:bg-white/10 hover:text-foreground transition-colors" title="Inspect">
-          <Eye className="w-4 h-4" />
-        </button>
+      {/* Separator */}
+      <div className="w-px h-4 bg-white/[0.06] shrink-0 mx-0.5" />
+
+      {/* Action icons */}
+      <div className="flex items-center gap-0.5 shrink-0">
+        <NavBtn title="Bookmark"><Bookmark className="w-3.5 h-3.5" /></NavBtn>
+        <NavBtn title="Secure Mode Active" active><ShieldCheck className="w-3.5 h-3.5" /></NavBtn>
+        <NavBtn title="Inspect"><Eye className="w-3.5 h-3.5" /></NavBtn>
       </div>
     </div>
+  );
+}
+
+function NavBtn({
+  children,
+  title,
+  disabled,
+  active,
+}: {
+  children: React.ReactNode;
+  title?: string;
+  disabled?: boolean;
+  active?: boolean;
+}) {
+  return (
+    <button
+      title={title}
+      disabled={disabled}
+      className={twMerge(
+        'flex items-center justify-center w-7 h-7 rounded transition-colors',
+        disabled ? 'cursor-default text-muted-foreground/20' : 'text-muted-foreground/50 hover:bg-white/[0.05] hover:text-muted-foreground/80',
+        active && 'text-primary/80 hover:text-primary'
+      )}
+    >
+      {children}
+    </button>
   );
 }
