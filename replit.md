@@ -1,115 +1,97 @@
-# Workspace
+# Sentrix Browser
 
-## Overview
+A polished dark tactical browser UI prototype with BLACKDOG as the embedded private security engine.
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+## Architecture
 
-## Stack
+**Monorepo** (`pnpm workspaces`):
+- `artifacts/vero-browser/` — React + Vite frontend (port via `$PORT`)
+- `artifacts/api-server/` — Express API server (port 8080)
+- `artifacts/mockup-sandbox/` — Component preview server
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+## Design System
 
-## Structure
+- Background: `220 14% 5.5%` (near-black)
+- Primary (green): `hsl(142 72% 34%)` with glow tokens
+- Fonts: JetBrains Mono + Inter
+- CSS utilities: `.glass-panel`, `.glass-surface`, `.section-label`, `.risk-safe/caution/danger/unknown`
+- Compact interface: `html.compact` class applied via `applyCompactInterface()`
 
-```text
-artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
+## Key Files
+
+```
+artifacts/vero-browser/src/
+  hooks/use-browser-state.tsx   — Full browser state (tabs, nav, history, bookmarks, downloads, settings)
+  lib/blackdog.ts               — URL analysis, risk classification, PageType enum
+  lib/settings.ts               — Settings persistence (sentrix-settings-v1 localStorage)
+  lib/search.ts                 — Search API client (calls /api/search, enriches results)
+  components/
+    AddressBar.tsx              — Nav buttons, URL input, bookmark button, BLACKDOG toggle
+    BrowserContent.tsx          — Routes pageType → view component
+    TacticalSidebar.tsx         — Icon nav (Home/Search/History/Downloads/Bookmarks/Privacy/Vault/Settings)
+    BlackdogPanel.tsx           — Collapsible security panel
+    VeroTabBar.tsx              — Tab bar (displays "SENTRIX" brand)
+    LinkCheckModal.tsx          — Pre-flight URL risk analysis modal
+  views/
+    HomeView.tsx                — New tab with search, Quick Tools (functional), recent history
+    SearchResultsView.tsx       — Real search API integration, risk-filtered cards
+    WebsiteView.tsx             — Preview + Live iframe attempt with graceful embed-blocked fallback
+    HistoryView.tsx             — Full history list with search/filter
+    BookmarksView.tsx           — Bookmark CRUD (navigate + delete)
+    DownloadsView.tsx           — Real download tracking (auto-populated from file-type URLs)
+    PrivacyReportView.tsx       — Honest session policies, real stats from history, burn session
+    SettingsView.tsx            — Real settings (Session/Appearance/About) with persistent toggles
+    VaultView.tsx               — Secure vault placeholder
+artifacts/api-server/src/routes/
+  search.ts                    — GET /api/search — Brave Search API proxy + mock fallback
 ```
 
-## TypeScript & Composite Projects
+## Protocols
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
+- `sentrix://newtab` `search` `history` `downloads` `privacy` `vault` `settings` `bookmarks`
+- Legacy `sentra://` and `vero://` auto-upgrade via `classifyInput()`
+- BLACKDOG engine URL is NEVER exposed (private endpoint, heuristic classification only)
 
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
+## Storage
 
-## Root Scripts
+- Session: `sentrix-session-v4` localStorage key
+- Settings: `sentrix-settings-v1` localStorage key
+- Downloads: auto-tracked from file-type URL navigation (`.pdf`, `.zip`, `.dmg`, `.exe`, etc.)
+- Bookmarks: persisted in session, CRUD via `addBookmark/removeBookmark/isBookmarked`
 
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
+## Settings (all real, persisted)
 
-## Packages
+- `sessionRestore` — re-open tabs/history on launch
+- `clearDataOnExit` — wipes session on `beforeunload`
+- `compactInterface` — adds `html.compact` class
+- `developerMode` — shows DEV indicator in status bar
+- `blackdogPanelOpenByDefault` — controls panel open state on init
 
-### `artifacts/api-server` (`@workspace/api-server`)
+## BLACKDOG
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
+- Status: `connecting → connected` (900ms simulated transition)
+- Engine: `BLACKDOG v4.1.2` — private endpoint never exposed
+- `blackdogStatus`: `'connecting' | 'connected' | 'unavailable'`
 
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+## Search API
 
-### `lib/db` (`@workspace/db`)
+- `GET /api/search?q=...`
+- Uses `BRAVE_SEARCH_API_KEY` env var if set; smart mock fallback otherwise
+- Results enriched client-side with heuristic domain risk classification
 
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
+## Feature Checklist ✓
 
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
-
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
-
-### `lib/api-spec` (`@workspace/api-spec`)
-
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
-
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
-
-### `artifacts/vero-browser` (`@workspace/vero-browser`)
-
-**Sentra Browser** — a dark tactical browser UI prototype with BLACKDOG as the embedded security engine.
-
-- **Brand**: Sentra Browser. Internal protocol: `sentra://`. Legacy `vero://` auto-upgrades.
-- **Stack**: React 18, TypeScript, Vite, Tailwind CSS, framer-motion, date-fns
-- **Key files**:
-  - `src/lib/blackdog.ts` — BLACKDOG analysis engine (heuristic URL risk classification, `classifyInput`, `analyzeUrl`)
-  - `src/hooks/use-browser-state.tsx` — `BrowserProvider` with full browser state: tabs, per-tab `navBack`/`navForward` stacks, `navigateBack`/`navigateForward`, `isNavigating` progress state, localStorage persistence (`sentra-session-v3`), history, logs, burnSession
-  - `src/components/VeroTabBar.tsx` — Tab bar (filename kept, export `VeroTabBar`); displays "SENTRA" brand
-  - `src/components/AddressBar.tsx` — Address bar with wired back/forward/refresh, animated loading progress bar, risk-colored lock icon
-  - `src/components/BlackdogPanel.tsx` — Slide-in BLACKDOG analysis panel with live telemetry log
-  - `src/components/TacticalSidebar.tsx` — Icon sidebar with `sentra://` navigation targets
-  - `src/components/BrowserContent.tsx` — Page router (AnimatePresence transitions per tab+pageType)
-  - `src/views/` — 8 page views: HomeView, SearchResultsView, WebsiteView, HistoryView, DownloadsView, PrivacyReportView, VaultView, SettingsView
-- **Design tokens** (in `index.css`): near-black bg `220 14% 5.5%`, primary green `142 72% 34%`, `.glass-panel`, `.glass-surface`, `.glow-primary-ring`, `.section-label`, `.risk-*` CSS classes
-- **Persistence**: `localStorage` key `sentra-session-v3` stores tabs + history (date-safe). Cleared on Burn Session.
-- **Navigation**: per-tab back/forward URL stacks (in-memory, not persisted). Loading bar for website navigations (~480ms).
-
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+- [x] 8+ distinct page views (newtab, search, website, history, downloads, privacy, vault, settings, bookmarks)
+- [x] Per-tab back/forward navigation with full stack
+- [x] Session persistence (localStorage, version 4)
+- [x] Bookmarks (add/remove from address bar, view in BookmarksView)
+- [x] Downloads auto-tracking from file-type URLs
+- [x] Settings persistence with real applied effects
+- [x] Privacy report with real session stats
+- [x] Link Check modal (pre-flight URL analysis)
+- [x] Real search API integration with mock fallback
+- [x] Website view: Preview mode + Live iframe attempt with blocked-domain fallback
+- [x] Burn session (full data wipe + tab reset)
+- [x] BLACKDOG panel with status transitions
+- [x] Risk classification (safe/caution/danger/unknown) on every URL
+- [x] High-risk domain block screen with override option

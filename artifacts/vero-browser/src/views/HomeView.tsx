@@ -3,6 +3,8 @@ import { Shield, Flame, Link as LinkIcon, FileText, LockKeyhole, RotateCcw, Plus
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { LinkCheckModal } from '@/components/LinkCheckModal';
+import { AnimatePresence } from 'framer-motion';
 
 const RISK_DOT: Record<string, string> = {
   safe:    'hsl(142 72% 38%)',
@@ -12,9 +14,10 @@ const RISK_DOT: Record<string, string> = {
 };
 
 export function HomeView() {
-  const { navigate, history, burnSession, addTab } = useBrowserState();
+  const { navigate, history, burnSession, addTab, settings } = useBrowserState();
   const [localSearch, setLocalSearch] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
+  const [linkCheckOpen, setLinkCheckOpen] = useState(false);
   const { toast } = useToast();
 
   const handleSearch = (e: React.FormEvent) => {
@@ -24,10 +27,9 @@ export function HomeView() {
 
   const now = Date.now();
   const SESSION_START = format(new Date(now - 1000 * 60 * 14), 'HH:mm:ss');
-  const LAST_SCAN    = format(new Date(now - 1000 * 47), 'HH:mm:ss');
 
   return (
-    <div className="h-full w-full overflow-y-auto flex flex-col items-center bg-background">
+    <div className={`h-full w-full overflow-y-auto flex flex-col items-center bg-background ${settings.compactInterface ? 'compact' : ''}`}>
 
       {/* Status strip */}
       <div
@@ -46,13 +48,17 @@ export function HomeView() {
           SESSION ACTIVE — {SESSION_START}
         </span>
         <Divider />
-        <span className="shrink-0">LAST SCAN {LAST_SCAN}</span>
-        <Divider />
         <span className="shrink-0">VAULT LOCKED</span>
         <Divider />
         <span className="shrink-0" style={{ color: 'hsl(142 72% 42%)', opacity: 0.7 }}>
-          LOCAL PROTECTIONS ENABLED
+          SENTRIX POLICIES ACTIVE
         </span>
+        {settings.developerMode && (
+          <>
+            <Divider />
+            <span className="shrink-0 text-amber-500/50">DEV MODE</span>
+          </>
+        )}
         <span className="ml-auto shrink-0">CERT: TLS 1.3 / VALID</span>
       </div>
 
@@ -61,7 +67,6 @@ export function HomeView() {
 
         {/* Brand hero */}
         <div className="flex flex-col items-center mb-10 text-center">
-          {/* Wordmark */}
           <div className="flex items-center gap-3 mb-3">
             <div
               className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
@@ -85,13 +90,11 @@ export function HomeView() {
             </div>
           </div>
 
-          {/* Tagline */}
           <h1 className="text-[17px] font-semibold text-foreground/85 tracking-tight leading-snug mb-1.5">
             Browse clearly.{' '}
             <span style={{ color: 'hsl(142 72% 44%)' }}>Stay protected.</span>
           </h1>
 
-          {/* Engine attribution */}
           <p
             className="text-[10px] font-mono uppercase tracking-[0.18em] flex items-center gap-2"
             style={{ color: 'rgba(148,163,184,0.38)' }}
@@ -151,32 +154,45 @@ export function HomeView() {
         <div className="w-full mb-7">
           <div className="section-label mb-2.5">Quick Tools</div>
           <div className="grid grid-cols-3 gap-1.5">
-            <UtilBlock icon={<Plus className="w-3.5 h-3.5" />} label="New Secure Tab" sub="Isolated session" onClick={addTab} />
+            <UtilBlock
+              icon={<Plus className="w-3.5 h-3.5" />}
+              label="New Secure Tab"
+              sub="Isolated session"
+              onClick={addTab}
+            />
             <UtilBlock
               icon={<Flame className="w-3.5 h-3.5" style={{ color: '#ef4444' }} />}
-              label="Burn Session" sub="Sanitize all data"
-              onClick={() => { burnSession(); toast({ title: 'Session Burned', description: 'All local data has been sanitized.' }); }}
+              label="Burn Session"
+              sub="Sanitize all data"
+              onClick={() => {
+                burnSession();
+                toast({ title: 'Session Burned', description: 'All local data has been sanitized.' });
+              }}
               danger
             />
             <UtilBlock
               icon={<LinkIcon className="w-3.5 h-3.5" style={{ color: '#60a5fa' }} />}
-              label="Link Check" sub="Pre-flight analysis"
-              onClick={() => toast({ title: 'Link Check', description: 'Paste a URL in the address bar to run a pre-flight analysis.' })}
+              label="Link Check"
+              sub="Pre-flight analysis"
+              onClick={() => setLinkCheckOpen(true)}
             />
             <UtilBlock
               icon={<FileText className="w-3.5 h-3.5" style={{ color: '#a78bfa' }} />}
-              label="Privacy Report" sub="Protection status"
+              label="Privacy Report"
+              sub="Protection status"
               onClick={() => navigate('sentrix://privacy')}
             />
             <UtilBlock
               icon={<LockKeyhole className="w-3.5 h-3.5" style={{ color: 'hsl(142 72% 42%)' }} />}
-              label="Vault Access" sub="Credentials locked"
+              label="Vault Access"
+              sub="Credentials locked"
               onClick={() => navigate('sentrix://vault')}
             />
             <UtilBlock
               icon={<RotateCcw className="w-3.5 h-3.5" />}
-              label="Session Controls" sub="Manage isolation"
-              onClick={() => navigate('sentrix://settings')}
+              label="Session Controls"
+              sub="History & session"
+              onClick={() => navigate('sentrix://history')}
             />
           </div>
         </div>
@@ -224,36 +240,17 @@ export function HomeView() {
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-150 group"
-            style={{
-              background: 'rgba(0,0,0,0.25)',
-              border: '1px solid rgba(255,255,255,0.055)',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = 'rgba(22,163,74,0.04)';
-              e.currentTarget.style.borderColor = 'rgba(22,163,74,0.15)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'rgba(0,0,0,0.25)';
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.055)';
-            }}
+            style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.055)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(22,163,74,0.04)'; e.currentTarget.style.borderColor = 'rgba(22,163,74,0.15)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.25)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.055)'; }}
           >
             <div className="flex items-center gap-2.5">
-              <div
-                className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-                style={{
-                  background: 'rgba(22,163,74,0.08)',
-                  border: '1px solid rgba(22,163,74,0.15)',
-                }}
-              >
+              <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}>
                 <Shield className="w-3 h-3" style={{ color: 'hsl(142 72% 42%)', opacity: 0.7 }} />
               </div>
               <div>
-                <div className="text-[11px] font-mono font-medium" style={{ color: 'rgba(148,163,184,0.7)' }}>
-                  Intelligence Network
-                </div>
-                <div className="text-[9px] font-mono" style={{ color: 'rgba(148,163,184,0.3)' }}>
-                  rsrintel.com — threat intelligence platform
-                </div>
+                <div className="text-[11px] font-mono font-medium" style={{ color: 'rgba(148,163,184,0.7)' }}>Intelligence Network</div>
+                <div className="text-[9px] font-mono" style={{ color: 'rgba(148,163,184,0.3)' }}>rsrintel.com — threat intelligence platform</div>
               </div>
             </div>
             <ExternalLink className="w-3 h-3 shrink-0" style={{ color: 'rgba(148,163,184,0.25)' }} />
@@ -261,6 +258,16 @@ export function HomeView() {
         </div>
 
       </div>
+
+      {/* Link Check Modal */}
+      <AnimatePresence>
+        {linkCheckOpen && (
+          <LinkCheckModal
+            onClose={() => setLinkCheckOpen(false)}
+            onNavigate={navigate}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -300,12 +307,8 @@ function UtilBlock({ icon, label, sub, onClick, danger = false }: {
         {icon}
       </div>
       <div>
-        <div className="text-[12px] font-medium leading-tight" style={{ color: 'rgba(148,163,184,0.82)' }}>
-          {label}
-        </div>
-        <div className="text-[10px] font-mono leading-tight mt-0.5" style={{ color: 'rgba(148,163,184,0.35)' }}>
-          {sub}
-        </div>
+        <div className="text-[12px] font-medium leading-tight" style={{ color: 'rgba(148,163,184,0.82)' }}>{label}</div>
+        <div className="text-[10px] font-mono leading-tight mt-0.5" style={{ color: 'rgba(148,163,184,0.35)' }}>{sub}</div>
       </div>
     </button>
   );

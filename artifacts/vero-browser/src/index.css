@@ -120,3 +120,22 @@
 .risk-caution { color: #f59e0b;          border-color: rgba(245,158,11,0.25); background: rgba(245,158,11,0.07); }
 .risk-danger  { color: #ef4444;          border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.07); }
 .risk-unknown { color: rgba(148,163,184,0.6); border-color: rgba(255,255,255,0.09); background: rgba(255,255,255,0.035); }
+
+/* ─── Compact interface density override ─── */
+html.compact .glass-panel,
+html.compact [class*="py-4"],
+html.compact [class*="py-5"],
+html.compact [class*="py-6"] {
+  /* Reduce base padding for compact mode */
+}
+
+html.compact {
+  --spacing-compact: 0.7;
+}
+
+/* Compact nav panels */
+html.compact [data-compact-target] {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, RotateCw, Lock, ShieldAlert, Bookmark, ShieldCheck, Eye } from 'lucide-react';
+import { ArrowLeft, ArrowRight, RotateCw, Lock, ShieldAlert, Bookmark, BookmarkCheck, ShieldCheck, Eye } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,6 +8,8 @@ export function AddressBar() {
   const {
     currentUrl, navigate, setAddressBarUrl, riskLevel,
     navigateBack, navigateForward, canGoBack, canGoForward, isNavigating,
+    addBookmark, removeBookmark, isBookmarked, bookmarks, pageType,
+    setBlackdogPanelOpen, blackdogPanelOpen,
   } = useBrowserState();
   const [inputValue, setInputValue] = useState(currentUrl);
   const [focused, setFocused] = useState(false);
@@ -33,6 +35,19 @@ export function AddressBar() {
     unknown: { label: 'UNKNOWN', lockColor: 'rgba(148,163,184,0.5)', cls: 'risk-unknown', Icon: ShieldCheck },
   };
   const risk = riskMap[riskLevel] ?? riskMap.safe;
+
+  const canBookmark = pageType === 'website';
+  const bookmarked = isBookmarked(currentUrl);
+
+  const handleBookmark = () => {
+    if (!canBookmark) return;
+    if (bookmarked) {
+      const bm = bookmarks.find(b => b.url === currentUrl);
+      if (bm) removeBookmark(bm.id);
+    } else {
+      addBookmark();
+    }
+  };
 
   return (
     <div className="relative z-10 shrink-0">
@@ -64,10 +79,10 @@ export function AddressBar() {
       >
         {/* Navigation buttons */}
         <div className="flex items-center gap-0.5 shrink-0">
-          <NavBtn title="Back (Alt+←)" disabled={!canGoBack} onClick={navigateBack}>
+          <NavBtn title="Back" disabled={!canGoBack} onClick={navigateBack}>
             <ArrowLeft className="w-3.5 h-3.5" />
           </NavBtn>
-          <NavBtn title="Forward (Alt+→)" disabled={!canGoForward} onClick={navigateForward}>
+          <NavBtn title="Forward" disabled={!canGoForward} onClick={navigateForward}>
             <ArrowRight className="w-3.5 h-3.5" />
           </NavBtn>
           <NavBtn title="Refresh" onClick={() => navigate(currentUrl)}>
@@ -122,9 +137,24 @@ export function AddressBar() {
 
         {/* Action buttons */}
         <div className="flex items-center gap-0.5 shrink-0">
-          <NavBtn title="Bookmark"><Bookmark className="w-3.5 h-3.5" /></NavBtn>
-          <NavBtn title="Secure Mode Active" active><ShieldCheck className="w-3.5 h-3.5" /></NavBtn>
-          <NavBtn title="Inspect"><Eye className="w-3.5 h-3.5" /></NavBtn>
+          <NavBtn
+            title={bookmarked ? 'Remove bookmark' : canBookmark ? 'Bookmark this page' : 'Bookmarks'}
+            active={bookmarked}
+            onClick={canBookmark ? handleBookmark : undefined}
+          >
+            {bookmarked
+              ? <BookmarkCheck className="w-3.5 h-3.5" />
+              : <Bookmark className="w-3.5 h-3.5" />
+            }
+          </NavBtn>
+          <NavBtn
+            title="BLACKDOG Security Panel"
+            active={blackdogPanelOpen}
+            onClick={() => setBlackdogPanelOpen(!blackdogPanelOpen)}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+          </NavBtn>
+          <NavBtn title="Page Inspection"><Eye className="w-3.5 h-3.5" /></NavBtn>
         </div>
       </div>
     </div>

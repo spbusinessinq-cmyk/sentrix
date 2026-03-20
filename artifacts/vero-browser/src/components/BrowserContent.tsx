@@ -8,6 +8,7 @@ import { DownloadsView } from '@/views/DownloadsView';
 import { PrivacyReportView } from '@/views/PrivacyReportView';
 import { VaultView } from '@/views/VaultView';
 import { SettingsView } from '@/views/SettingsView';
+import { BookmarksView } from '@/views/BookmarksView';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PAGE_MAP: Record<string, React.FC> = {
@@ -19,6 +20,7 @@ const PAGE_MAP: Record<string, React.FC> = {
   privacy:   PrivacyReportView,
   vault:     VaultView,
   settings:  SettingsView,
+  bookmarks: BookmarksView,
 };
 
 export function BrowserContent() {

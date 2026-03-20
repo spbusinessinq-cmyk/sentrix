@@ -1,114 +1,21 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  ShieldCheck, ShieldAlert, AlertTriangle, ArrowRight,
-  Shield, Clock
+  ShieldCheck, ShieldAlert, AlertTriangle,
+  ArrowRight, Shield, Clock, Loader2, AlertCircle
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
+import { searchWeb, SearchResultItem } from '@/lib/search';
 
 type ActiveFilter = 'all' | 'safe' | 'news' | 'docs';
-
-interface SearchResult {
-  id: number;
-  title: string;
-  domain: string;
-  displayDomain: string;
-  url: string;
-  snippet: string;
-  risk: 'safe' | 'caution' | 'danger' | 'unknown';
-  bdSummary: string;
-  bdDetail: string;
-  category: 'safe' | 'news' | 'docs';
-  readTime?: string;
-  resultType: string;
-}
-
-function generateResults(query: string): SearchResult[] {
-  const q = query || 'results';
-  const slug = q.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-  return [
-    {
-      id: 1,
-      title: `${q} — Wikipedia, the free encyclopedia`,
-      domain: 'wikipedia.org',
-      displayDomain: 'wikipedia.org',
-      url: `https://wikipedia.org/wiki/${encodeURIComponent(q)}`,
-      snippet: `${q} is a concept covered extensively in this community-sourced encyclopedia entry. Includes verified citations, linked cross-references, and editorial peer review. Last edited today.`,
-      risk: 'safe',
-      bdSummary: 'Verified encyclopedia source — trusted domain',
-      bdDetail: 'Domain verified by BLACKDOG. TLS 1.3 active. No cross-site tracking detected. Fully trusted.',
-      category: 'docs', readTime: '8 min read', resultType: 'Encyclopedia',
-    },
-    {
-      id: 2,
-      title: `${q} · Official Documentation`,
-      domain: `docs.${slug}.dev`,
-      displayDomain: `docs.${slug}.dev`,
-      url: `https://docs.${slug}.dev`,
-      snippet: `The official documentation hub for ${q}. API references, getting started guides, changelogs, and example walkthroughs. Maintained by the core team.`,
-      risk: 'safe',
-      bdSummary: 'Official documentation — no tracking detected',
-      bdDetail: 'HSTS enforced. TLS 1.3. No external scripts detected. Certificate valid.',
-      category: 'docs', readTime: 'Reference', resultType: 'Documentation',
-    },
-    {
-      id: 3,
-      title: `${q} — GitHub`,
-      domain: 'github.com',
-      displayDomain: 'github.com/search',
-      url: `https://github.com/search?q=${encodeURIComponent(q)}`,
-      snippet: `Open-source repositories related to ${q}. Browse code, issues, PRs, and community discussions. View dependency graphs and contributor activity.`,
-      risk: 'safe',
-      bdSummary: 'Verified developer platform — trusted domain',
-      bdDetail: 'Minimal first-party analytics only. No cross-site tracking. Domain verified by BLACKDOG.',
-      category: 'docs', readTime: 'Repository', resultType: 'Code',
-    },
-    {
-      id: 4,
-      title: `${q} — News, Analysis & Commentary`,
-      domain: 'technews.io',
-      displayDomain: 'technews.io',
-      url: `https://technews.io/search?q=${encodeURIComponent(q)}`,
-      snippet: `Recent editorial coverage and analysis of ${q} from multiple outlets. Aggregated articles from verified publishers. Third-party analytics scripts present.`,
-      risk: 'caution',
-      bdSummary: 'Third-party analytics active — proceed with caution',
-      bdDetail: 'Multiple analytics scripts identified. Mixed content detected. BLACKDOG: reputation neutral — caution advised.',
-      category: 'news', readTime: 'Today', resultType: 'News',
-    },
-    {
-      id: 5,
-      title: `${q} Community — Forum & Discussion`,
-      domain: 'community.dev',
-      displayDomain: 'community.dev',
-      url: `https://community.dev/t/${encodeURIComponent(q)}`,
-      snippet: `Active discussion thread about ${q} with community contributions, answers, and debate. Standard ad network active on this domain.`,
-      risk: 'caution',
-      bdSummary: 'Ad network detected — session isolation recommended',
-      bdDetail: 'Third-party ad SDKs detected. Cookies may be set on load. BLACKDOG: proceed with tab isolation active.',
-      category: 'news', readTime: 'Discussion', resultType: 'Forum',
-    },
-    {
-      id: 6,
-      title: `Free ${q} Download — Unlimited Access`,
-      domain: 'free-downloads.net',
-      displayDomain: 'free-downloads.net',
-      url: `http://free-downloads.net/${encodeURIComponent(q)}`,
-      snippet: `Download ${q} completely free. No account needed. Instant access. Multiple mirrors. Fast download speeds.`,
-      risk: 'danger',
-      bdSummary: 'BLACKDOG: High-risk domain — navigation blocked',
-      bdDetail: 'Known high-risk domain pattern. HTTP only — no encryption. BLACKDOG: Do not proceed.',
-      category: 'safe', readTime: undefined, resultType: 'Download',
-    },
-  ];
-}
 
 function DomainDot({ risk, domain }: { risk: string; domain: string }) {
   const initial = domain.charAt(0).toUpperCase();
   const cls =
-    risk === 'safe' ? 'bg-primary/15 text-primary/80 border-primary/20' :
+    risk === 'safe'    ? 'bg-primary/15 text-primary/80 border-primary/20' :
     risk === 'caution' ? 'bg-amber-500/15 text-amber-500/80 border-amber-500/20' :
-    risk === 'danger' ? 'bg-red-500/15 text-red-500/80 border-red-500/20' :
+    risk === 'danger'  ? 'bg-red-500/15 text-red-500/80 border-red-500/20' :
     'bg-white/[0.06] text-muted-foreground/50 border-white/10';
   return (
     <div className={twMerge('w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 text-[11px] font-bold font-mono', cls)}>
@@ -133,7 +40,7 @@ function RiskBadge({ risk }: { risk: string }) {
   );
 }
 
-function ResultCard({ result, index, onClick }: { result: SearchResult; index: number; onClick: () => void }) {
+function ResultCard({ result, index, onClick }: { result: SearchResultItem; index: number; onClick: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const isBlocked = result.risk === 'danger';
 
@@ -170,16 +77,12 @@ function ResultCard({ result, index, onClick }: { result: SearchResult; index: n
                 result.risk === 'caution' ? 'text-amber-500/60' :
                 result.risk === 'danger' ? 'text-red-500/60' : 'text-muted-foreground/50'
               )}>
-                {result.displayDomain}
+                {result.domain}
               </span>
-              <span className="text-muted-foreground/20 text-[10px]">·</span>
-              <span className="text-[10px] font-mono text-muted-foreground/30 uppercase tracking-widest">{result.resultType}</span>
-              {result.readTime && (
+              {result.provider === 'brave' && (
                 <>
                   <span className="text-muted-foreground/20 text-[10px]">·</span>
-                  <span className="text-[10px] font-mono text-muted-foreground/30 flex items-center gap-0.5">
-                    <Clock className="w-2.5 h-2.5" />{result.readTime}
-                  </span>
+                  <span className="text-[10px] font-mono text-muted-foreground/30 uppercase tracking-widest">{result.category}</span>
                 </>
               )}
             </div>
@@ -233,7 +136,7 @@ function ResultCard({ result, index, onClick }: { result: SearchResult; index: n
                   onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
                   className="text-[10px] font-mono text-muted-foreground/30 hover:text-muted-foreground/70 transition-colors uppercase tracking-widest"
                 >
-                  {expanded ? 'Less' : 'Inspect'}
+                  {expanded ? 'Less' : 'Details'}
                 </button>
                 <button
                   onClick={onClick}
@@ -260,8 +163,8 @@ function ResultCard({ result, index, onClick }: { result: SearchResult; index: n
             >
               <div className="py-2.5 px-3 mx-[-1rem] border-t border-white/[0.04] bg-black/30">
                 <div className="text-[10px] font-mono text-muted-foreground/50 leading-relaxed">
-                  <span className="text-primary/50 uppercase tracking-widest mr-2">BLACKDOG:</span>
-                  {result.bdDetail}
+                  <span className="text-primary/50 uppercase tracking-widest mr-2">URL:</span>
+                  <span className="text-muted-foreground/40 break-all">{result.url}</span>
                 </div>
               </div>
             </motion.div>
@@ -275,9 +178,25 @@ function ResultCard({ result, index, onClick }: { result: SearchResult; index: n
 export function SearchResultsView() {
   const { searchQuery, navigate } = useBrowserState();
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
+  const [results, setResults] = useState<SearchResultItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const [provider, setProvider] = useState<'brave' | 'mock'>('mock');
   const safeQuery = searchQuery ?? '';
 
-  const results = useMemo(() => generateResults(safeQuery), [safeQuery]);
+  useEffect(() => {
+    if (!safeQuery) return;
+    setLoading(true);
+    setError(false);
+    searchWeb(safeQuery).then(resp => {
+      setResults(resp.results);
+      setProvider(resp.provider);
+      setError(!!resp.error && resp.results.length === 0);
+    }).catch(() => {
+      setError(true);
+      setResults([]);
+    }).finally(() => setLoading(false));
+  }, [safeQuery]);
 
   const filtered = results.filter(r => {
     if (activeFilter === 'all') return true;
@@ -287,14 +206,14 @@ export function SearchResultsView() {
     return true;
   });
 
-  const safeCount = results.filter(r => r.risk === 'safe').length;
+  const safeCount    = results.filter(r => r.risk === 'safe').length;
   const flaggedCount = results.filter(r => r.risk !== 'safe').length;
 
   const filters: { id: ActiveFilter; label: string; count: number }[] = [
-    { id: 'all', label: 'All', count: results.length },
+    { id: 'all',  label: 'All',      count: results.length },
     { id: 'safe', label: 'Safe Only', count: safeCount },
-    { id: 'news', label: 'News', count: results.filter(r => r.category === 'news').length },
-    { id: 'docs', label: 'Docs', count: results.filter(r => r.category === 'docs').length },
+    { id: 'news', label: 'News',      count: results.filter(r => r.category === 'news').length },
+    { id: 'docs', label: 'Docs',      count: results.filter(r => r.category === 'docs').length },
   ];
 
   return (
@@ -304,19 +223,27 @@ export function SearchResultsView() {
           <div>
             <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-muted-foreground/40 mb-1.5 flex items-center gap-1.5">
               <ShieldCheck className="w-2.5 h-2.5 text-primary/50" />
-              Sentrix Secure Search — BLACKDOG pre-scanned
+              Sentrix Search
+              {provider === 'brave' && <span className="text-primary/40 ml-1">· Brave Search</span>}
+              {provider === 'mock' && <span className="text-muted-foreground/30 ml-1">· local results</span>}
             </div>
             <h2 className="text-[15px] font-semibold text-foreground/90 leading-tight">
               "{safeQuery || '—'}"
             </h2>
           </div>
           <div className="text-right shrink-0 ml-4">
-            <div className="text-[10px] font-mono text-muted-foreground/35">{results.length} results</div>
-            <div className="text-[10px] font-mono mt-0.5">
-              <span className="text-primary/60">{safeCount} safe</span>
-              <span className="text-muted-foreground/20 mx-1">·</span>
-              <span className={flaggedCount > 1 ? 'text-amber-500/60' : 'text-muted-foreground/40'}>{flaggedCount} flagged</span>
-            </div>
+            {loading ? (
+              <Loader2 className="w-4 h-4 text-primary/50 animate-spin mt-1" />
+            ) : (
+              <>
+                <div className="text-[10px] font-mono text-muted-foreground/35">{results.length} results</div>
+                <div className="text-[10px] font-mono mt-0.5">
+                  <span className="text-primary/60">{safeCount} safe</span>
+                  <span className="text-muted-foreground/20 mx-1">·</span>
+                  <span className={flaggedCount > 0 ? 'text-amber-500/60' : 'text-muted-foreground/40'}>{flaggedCount} flagged</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -345,7 +272,21 @@ export function SearchResultsView() {
       </div>
 
       <div className="px-5 py-4 flex flex-col gap-2.5 max-w-3xl">
-        {filtered.map((result, i) => (
+        {loading && (
+          <div className="flex items-center justify-center py-16 gap-3">
+            <Loader2 className="w-4 h-4 text-primary/50 animate-spin" />
+            <span className="text-[12px] font-mono text-muted-foreground/40">Searching…</span>
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="flex items-center gap-3 py-12 justify-center text-center">
+            <AlertCircle className="w-4 h-4 text-amber-500/60" />
+            <span className="text-[12px] font-mono text-muted-foreground/40">Search unavailable — check your connection</span>
+          </div>
+        )}
+
+        {!loading && !error && filtered.map((result, i) => (
           <ResultCard
             key={result.id}
             result={result}
@@ -353,7 +294,8 @@ export function SearchResultsView() {
             onClick={() => navigate(result.url)}
           />
         ))}
-        {filtered.length === 0 && (
+
+        {!loading && !error && filtered.length === 0 && results.length > 0 && (
           <div className="text-center py-16 text-muted-foreground/30 font-mono text-[12px]">
             — no results match this filter —
           </div>
@@ -363,7 +305,7 @@ export function SearchResultsView() {
       <div className="px-6 py-4 border-t border-white/[0.04] flex items-center gap-3">
         <ShieldCheck className="w-3 h-3 text-primary/40" />
         <span className="text-[10px] font-mono text-muted-foreground/30">
-          All results pre-analyzed by BLACKDOG. Risk assessments are heuristic — exercise independent judgment.
+          Results classified by heuristic domain reputation. Exercise independent judgment.
         </span>
       </div>
     </div>

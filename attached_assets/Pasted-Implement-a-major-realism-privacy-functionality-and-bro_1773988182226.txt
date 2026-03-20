@@ -1,0 +1,359 @@
+Implement a major realism, privacy-functionality, and browser-behavior pass for Sentrix.
+
+IMPORTANT:
+Do not redesign the UI from scratch.
+Do not break existing functionality.
+Do not expose BLACKDOG as a visible site, tab, iframe, or direct link.
+Do not generate fake BLACKDOG detections, fake tracker logs, fake threat findings, fake telemetry, or fake domain-level security claims.
+Do not present BLACKDOG as having user-facing controls or configurable engine features if those controls do not actually exist yet.
+
+MISSION:
+For this pass, move Sentrix much closer to a real early browser product by focusing on:
+1. making privacy/protection features honest and functional
+2. improving real browser-like behavior
+3. integrating a real search API
+4. making homepage Quick Tools actually work
+5. keeping BLACKDOG as a hidden connected engine with status only
+6. improving product realism and deployment readiness
+
+PRIMARY GOALS:
+- Sentrix should feel like a real browser product, not a concept shell
+- Privacy and protection features must either function, be honestly scoped, or be removed
+- BLACKDOG must remain hidden and status-only
+- Search, navigation, bookmarks, downloads, and quick tools should feel more real and more usable
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. PRIVACY REPORT + PROTECTION FEATURES MUST BE REAL OR HONEST
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Audit every current privacy/protection item shown in Sentrix.
+
+If a feature can actually be implemented meaningfully in the current browser-shell/web app environment, implement it.
+If it cannot truly be implemented in the current environment, do NOT fake it. Instead:
+- either relabel it honestly
+- or move it into a “Browser Policy” / “Planned Protection” grouping
+- or remove it entirely
+
+Current privacy/protection items include things like:
+- Tracker Blocking
+- Fingerprint Protection
+- Script Sandboxing
+- DNS over HTTPS
+- HSTS Enforcement
+- Cookie Isolation
+- WebRTC Leak Prevention
+- Third-party Cookie Block
+- Clear Data on Exit
+- Hardware Acceleration
+- Compact Interface
+- Auto-update BLACKDOG Engine
+- Enhanced Threat Scanning
+- Real-time URL Analysis
+- Script Interception
+- Redirect Chain Detection
+
+REQUIREMENTS:
+- Remove fake BLACKDOG control/settings language completely
+- BLACKDOG should not appear as something the user can configure if those controls are not real yet
+- Settings should only contain controls that Sentrix itself can actually own right now
+
+Implement real, app-owned functionality where possible, for example:
+- Clear Data on Exit -> actually clears persisted session data on app close/unload if enabled
+- Third-party Cookie Block / Cookie Isolation -> apply honest browser-shell/session storage policy behavior where possible in app state and embedded rendering behavior
+- Clear recent pages/history -> actually works
+- Session restore toggle -> actually affects restore behavior
+- Compact Interface -> actually changes spacing density across key layouts
+- Privacy Report -> should be generated from real session/app state, not fabricated sample data
+
+If full browser-engine-level protections are not technically possible in the current web app architecture, reflect that honestly in UI copy:
+- use language like “Sentrix session policy active”
+- “external page constraints apply”
+- “browser shell protection enabled”
+instead of claiming impossible deep engine enforcement
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. REAL SEARCH API INTEGRATION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Integrate a real web search API into Sentrix.
+
+PREFERRED PROVIDER:
+- Brave Search API
+
+IMPLEMENTATION REQUIREMENTS:
+- Create a dedicated search service layer
+- Use environment variables for API keys
+- Route all search queries through this service
+- Replace mock search result generation with real API-driven results
+- Map API results into the existing Sentrix search result UI
+- Preserve/adapt the current filters where possible:
+  - All
+  - Safe
+  - News
+  - Docs
+- Add loading, empty, and error states
+- Ensure API failures never crash the app
+- Structure the search service so providers can be swapped later if needed
+
+If exact provider support differs from the current UI assumptions, adapt gracefully without breaking the Sentrix look and feel.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. HIDDEN BLACKDOG STATUS SERVICE ONLY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep BLACKDOG as a hidden internal engine only.
+
+RULES:
+- Do NOT expose the BLACKDOG URL in the UI
+- Do NOT open it in a tab
+- Do NOT iframe it
+- Do NOT create fake detections
+- Do NOT create fake engine control toggles
+
+IMPLEMENT:
+- a lightweight background status service / health check
+- return only simple engine states:
+  - connecting
+  - online
+  - unavailable
+  - error
+
+Use this state in:
+- top BLACKDOG indicator
+- BLACKDOG panel header/status
+- homepage protection status if useful
+
+Allowed messaging only:
+- BLACKDOG CONNECTING
+- BLACKDOG ACTIVE
+- ENGINE ONLINE
+- ENGINE UNAVAILABLE
+- PROTECTION ACTIVE
+- SESSION PROTECTED
+
+Remove fake counts and fake telemetry entirely.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. REAL PAGE LOADING / WEBSITE VIEW UPGRADE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Make Sentrix behave more like a normal browser when opening websites.
+
+- Attempt real external page rendering where possible
+- Use iframe/webview-style rendering if supported
+- If a site blocks embedding, show a graceful fallback page within Website View
+- Explain clearly that the site cannot be rendered directly inside Sentrix
+- If appropriate, offer a controlled external-open action only for blocked external pages
+- Improve Website View so it feels like a real browsing session, not a mock card
+
+Do not fabricate deep page security analytics that are not real.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. URL HANDLING + ADDRESS BAR IMPROVEMENT
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Improve browser-like behavior:
+
+- trim and normalize input
+- detect valid domains more accurately
+- auto-add https:// when appropriate
+- support IP addresses cleanly
+- route ambiguous input to search instead of broken URLs
+- preserve current URL per tab properly
+- update address bar correctly on tab switch and navigation
+- maintain consistent per-tab nav state
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. NAVIGATION CONTROLS UPGRADE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Improve browser controls:
+
+- back button works per-tab
+- forward button works per-tab
+- refresh works per-tab
+- support loading / stop state during navigation if possible
+- controls enable/disable correctly and never desync from tab state
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. SESSION + RESTORE LAYER
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Strengthen persistence and browser-like behavior:
+
+- persist tabs
+- persist active tab
+- persist history
+- persist bookmarks if added
+- persist settings that are actually supported
+- restore session safely on refresh
+- ensure burn session fully clears everything and returns to a clean valid state
+
+If “Clear Data on Exit” is enabled, implement it honestly against Sentrix-owned persisted state.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. QUICK TOOLS MUST ACTUALLY WORK
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Make homepage Quick Tools actually perform their stated functions.
+
+A. New Secure Tab
+- opens a new fresh tab
+- routes to sentrix://newtab
+- starts in a clean protected/default state
+
+B. Burn Session
+- clears tabs, history, recent pages, and persisted session state
+- resets the browser to one fresh new tab
+
+C. Link Check
+- opens a real lightweight modal / drawer / utility panel
+- lets the user paste a URL
+- runs the current URL classification logic
+- returns:
+  - SAFE / CAUTION / DANGER / UNKNOWN
+  - short reason
+- do not invent advanced fake detections
+
+D. Privacy Report
+- opens the Privacy Report screen directly
+- acts as a real shortcut
+
+E. Vault Access
+- opens the Vault screen directly
+- focuses the unlock/access flow
+- if already unlocked, shows vault state/content
+
+F. Session Controls
+- opens a real session-management view or panel
+- useful actions may include:
+  - clear history
+  - clear recent pages
+  - session restore toggle if supported
+  - clear bookmarks if appropriate
+  - current session state
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. BOOKMARKS / FAVORITES
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add lightweight bookmarking:
+
+- save current page
+- store bookmarks locally
+- expose bookmarks in a clean browser-appropriate location
+- keep this simple, stable, and real
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. DOWNLOADS IMPROVEMENT
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Improve Downloads so Sentrix feels more complete:
+
+- detect file-like navigation or download-like actions where possible
+- record them into Downloads view
+- support basic states such as:
+  - queued
+  - downloaded
+  - blocked
+- do NOT simulate fake malware scanning
+- keep it realistic and minimal
+
+━━━━━━━━━━━━━━━━━━━━━━━
+11. SETTINGS CLEANUP (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Remove or rewrite settings that falsely imply BLACKDOG engine control or impossible browser-engine control.
+
+Examples that should be removed, relabeled, or honestly scoped if not truly implemented:
+- Auto-update BLACKDOG Engine
+- Enhanced Threat Scanning
+- Real-time URL Analysis
+- Script Interception
+- Redirect Chain Detection
+- DNS over HTTPS
+- HSTS Enforcement
+- WebRTC Leak Prevention
+- Third-party Cookie Block
+- Canvas Fingerprint Block
+
+SETTINGS RULE:
+Only show settings that:
+1. Sentrix can actually control right now
+2. have a real effect in the app
+3. can be honestly described
+
+Good examples of settings that may remain if actually implemented:
+- Clear Data on Exit
+- Compact Interface
+- Session Restore
+- Hardware Acceleration (only if meaningful in current environment)
+- Developer Mode (only if real and useful)
+- Theme / density / interface behavior
+- Bookmark/session/privacy policies owned by Sentrix itself
+
+Also clean the Privacy Report page so it only reports:
+- real session stats
+- real navigation history counts
+- real Sentrix-owned settings/policies
+- honest protection state
+
+━━━━━━━━━━━━━━━━━━━━━━━
+12. SAFE FALLBACKS + ERROR HANDLING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Handle:
+- invalid URLs
+- blocked iframe/external rendering
+- empty input
+- rapid tab switching
+- BLACKDOG unavailable state
+- search API errors
+- undefined/null UI state
+
+Ensure all major views have safe fallback states and never crash.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+13. INTERNAL SERVICE LAYER CLEANUP
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Refactor app logic into clean services/modules where appropriate:
+
+- search service
+- BLACKDOG status service
+- URL classification service
+- navigation service
+- session persistence service
+- privacy/session policy service if helpful
+
+The goal is to make future backend integration easier without redesigning the app.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+14. PRESERVE DESIGN + BRAND
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep:
+- Sentrix branding
+- dark tactical premium UI
+- green glow discipline
+- glassy panels
+- sharp browser chrome
+- current visual identity
+
+Do not flatten the product or turn it into a generic settings dashboard.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Return a significantly more real and usable version of Sentrix that:
+- uses a real search API
+- connects privately to BLACKDOG in the background
+- shows only real engine connection state
+- behaves more like a normal web browser
+- includes Quick Tools that actually perform their stated functions
+- includes only honest, functional privacy/settings controls
+- removes fake BLACKDOG control language
+- remains stable and ready for deployment
+
+The result should feel like Sentrix is moving beyond a polished prototype and becoming a credible early browser product.

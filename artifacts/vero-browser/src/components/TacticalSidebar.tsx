@@ -14,11 +14,11 @@ interface NavItem {
 }
 
 const MAIN_ITEMS: NavItem[] = [
-  { id: 'home',      icon: Home,       label: 'Home',       target: 'sentrix://newtab',    matchPageType: 'newtab' },
-  { id: 'search',    icon: Search,     label: 'Search',     target: 'sentrix://search',    matchPageType: 'search' },
-  { id: 'history',   icon: Clock,      label: 'History',    target: 'sentrix://history',   matchPageType: 'history' },
-  { id: 'downloads', icon: Download,   label: 'Downloads',  target: 'sentrix://downloads', matchPageType: 'downloads' },
-  { id: 'bookmarks', icon: BookOpen,   label: 'Bookmarks',  target: 'sentrix://newtab',    matchPageType: 'newtab' },
+  { id: 'home',      icon: Home,     label: 'Home',      target: 'sentrix://newtab',    matchPageType: 'newtab' },
+  { id: 'search',    icon: Search,   label: 'Search',    target: 'sentrix://search',    matchPageType: 'search' },
+  { id: 'history',   icon: Clock,    label: 'History',   target: 'sentrix://history',   matchPageType: 'history' },
+  { id: 'downloads', icon: Download, label: 'Downloads', target: 'sentrix://downloads', matchPageType: 'downloads' },
+  { id: 'bookmarks', icon: BookOpen, label: 'Bookmarks', target: 'sentrix://bookmarks', matchPageType: 'bookmarks' },
 ];
 
 const SECURITY_ITEMS: NavItem[] = [
@@ -91,7 +91,7 @@ export function TacticalSidebar() {
         <SidebarBtn
           key={item.id}
           item={item}
-          isActive={pageType === item.matchPageType && item.id !== 'bookmarks'}
+          isActive={pageType === item.matchPageType}
           onNavigate={navigate}
         />
       ))}

@@ -4,9 +4,13 @@ import {
   RiskLevel, BlackdogData, PageType,
   analyzeUrl, classifyInput, getDomainTitle,
 } from '@/lib/blackdog';
+import {
+  SentrixSettings, DEFAULT_SETTINGS,
+  loadSettings, saveSettings, applyCompactInterface,
+} from '@/lib/settings';
 
 export type { RiskLevel, PageType };
-export type BlackdogStatus = 'connecting' | 'connected';
+export type BlackdogStatus = 'connecting' | 'connected' | 'unavailable';
 
 const SESSION_VERSION = 4;
 const STORAGE_KEY = 'sentrix-session-v4';
@@ -33,11 +37,54 @@ export interface HistoryEntry {
   riskLevel: RiskLevel;
 }
 
+export interface BookmarkEntry {
+  id: string;
+  title: string;
+  url: string;
+  domain: string;
+  riskLevel: RiskLevel;
+  savedAt: Date;
+}
+
+export interface DownloadEntry {
+  id: string;
+  name: string;
+  url: string;
+  source: string;
+  size: string;
+  status: 'downloaded' | 'blocked' | 'queued';
+  risk: RiskLevel;
+  date: string;
+}
+
 export interface LogEntry {
   id: string;
   time: string;
   text: string;
   type: 'info' | 'warn' | 'alert';
+}
+
+// ─── File extension detection ──────────────────────────────────────────────────
+
+const FILE_EXTENSIONS = /\.(pdf|zip|dmg|exe|msi|pkg|tar|gz|rar|7z|apk|deb|rpm|csv|xlsx|docx|pptx|mp4|mp3)(\?.*)?$/i;
+
+function isFileUrl(url: string): { isFile: boolean; filename: string; size: string } {
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname;
+    const match = path.match(FILE_EXTENSIONS);
+    if (!match) return { isFile: false, filename: '', size: '' };
+    const parts = path.split('/');
+    const filename = parts[parts.length - 1] || path;
+    const ext = match[1].toLowerCase();
+    const sizeMock: Record<string, string> = {
+      pdf: '1.2 MB', zip: '4.8 MB', dmg: '92 MB', exe: '18 MB',
+      msi: '14 MB', mp4: '88 MB', mp3: '8 MB', default: '< 1 MB',
+    };
+    return { isFile: true, filename, size: sizeMock[ext] ?? sizeMock.default };
+  } catch {
+    return { isFile: false, filename: '', size: '' };
+  }
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
@@ -80,7 +127,10 @@ interface PersistedTab {
   searchQuery: string; riskLevel: RiskLevel; blackdog: BlackdogData;
 }
 
-function serializeSession(tabs: Tab[], activeTabId: string, history: HistoryEntry[]): string {
+function serializeSession(
+  tabs: Tab[], activeTabId: string, history: HistoryEntry[],
+  bookmarks: BookmarkEntry[], downloads: DownloadEntry[],
+): string {
   return JSON.stringify({
     version: SESSION_VERSION,
     activeTabId,
@@ -90,10 +140,16 @@ function serializeSession(tabs: Tab[], activeTabId: string, history: HistoryEntr
       riskLevel: t.riskLevel, blackdog: t.blackdog,
     })),
     history: history.map(h => ({ ...h, visitedAt: h.visitedAt.toISOString() })),
+    bookmarks: bookmarks.map(b => ({ ...b, savedAt: b.savedAt.toISOString() })),
+    downloads,
   });
 }
 
-function loadPersistedSession(): { tabs: Tab[]; activeTabId: string; history: HistoryEntry[] } | null {
+function loadPersistedSession(settings: SentrixSettings): {
+  tabs: Tab[]; activeTabId: string; history: HistoryEntry[];
+  bookmarks: BookmarkEntry[]; downloads: DownloadEntry[];
+} | null {
+  if (!settings.sessionRestore) return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
@@ -111,10 +167,16 @@ function loadPersistedSession(): { tabs: Tab[]; activeTabId: string; history: Hi
       .map((h: any) => ({ ...h, visitedAt: new Date(h.visitedAt) }))
       .filter((h: HistoryEntry) => !isNaN(h.visitedAt.getTime()));
 
+    const bookmarks: BookmarkEntry[] = (data.bookmarks ?? [])
+      .map((b: any) => ({ ...b, savedAt: new Date(b.savedAt) }))
+      .filter((b: BookmarkEntry) => !isNaN(b.savedAt.getTime()));
+
+    const downloads: DownloadEntry[] = data.downloads ?? [];
+
     const activeTabId = tabs.find(t => t.id === data.activeTabId)
       ? data.activeTabId : tabs[0].id;
 
-    return { tabs, activeTabId, history };
+    return { tabs, activeTabId, history, bookmarks, downloads };
   } catch {
     return null;
   }
@@ -147,6 +209,14 @@ interface BrowserState {
   history: HistoryEntry[];
   clearHistory: () => void;
 
+  bookmarks: BookmarkEntry[];
+  addBookmark: (entry?: Partial<BookmarkEntry>) => void;
+  removeBookmark: (id: string) => void;
+  isBookmarked: (url: string) => boolean;
+
+  downloads: DownloadEntry[];
+  clearDownloads: () => void;
+
   logs: LogEntry[];
   addLog: (text: string, type?: 'info' | 'warn' | 'alert') => void;
   clearLogs: () => void;
@@ -154,6 +224,9 @@ interface BrowserState {
   blackdogPanelOpen: boolean;
   setBlackdogPanelOpen: (v: boolean) => void;
   blackdogStatus: BlackdogStatus;
+
+  settings: SentrixSettings;
+  updateSettings: (patch: Partial<SentrixSettings>) => void;
 
   burnSession: () => void;
 }
@@ -163,13 +236,16 @@ const BrowserContext = createContext<BrowserState | undefined>(undefined);
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function BrowserProvider({ children }: { children: ReactNode }) {
-  const persisted = loadPersistedSession();
+  const [settings, setSettings] = useState<SentrixSettings>(() => loadSettings());
+  const persisted = loadPersistedSession(settings);
 
   const [tabs, setTabs] = useState<Tab[]>(persisted?.tabs ?? [makeTab({ id: 'tab-init' })]);
   const [activeTabId, setActiveTabIdRaw] = useState<string>(persisted?.activeTabId ?? 'tab-init');
   const [history, setHistory] = useState<HistoryEntry[]>(persisted?.history ?? []);
+  const [bookmarks, setBookmarks] = useState<BookmarkEntry[]>(persisted?.bookmarks ?? []);
+  const [downloads, setDownloads] = useState<DownloadEntry[]>(persisted?.downloads ?? []);
   const [logs, setLogs] = useState<LogEntry[]>(makeInitialLogs());
-  const [blackdogPanelOpen, setBlackdogPanelOpen] = useState(true);
+  const [blackdogPanelOpen, setBlackdogPanelOpen] = useState(settings.blackdogPanelOpenByDefault);
   const [isNavigating, setIsNavigating] = useState(false);
   const [blackdogStatus, setBlackdogStatus] = useState<BlackdogStatus>('connecting');
   const navTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -182,18 +258,44 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
 
   const activeTab = tabs.find(t => t.id === activeTabId) ?? tabs[0] ?? makeTab({ id: 'tab-fallback' });
 
-  // BLACKDOG connection simulation (not a real network request)
+  // Apply compact interface on settings change
+  useEffect(() => {
+    applyCompactInterface(settings.compactInterface);
+  }, [settings.compactInterface]);
+
+  // BLACKDOG connection simulation
   useEffect(() => {
     const timer = setTimeout(() => setBlackdogStatus('connected'), 900);
     return () => clearTimeout(timer);
   }, []);
 
-  // Persist to localStorage
+  // Clear data on exit if setting enabled
   useEffect(() => {
+    if (!settings.clearDataOnExit) return;
+    const handler = () => {
+      try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [settings.clearDataOnExit]);
+
+  // Persist to localStorage (respects clearDataOnExit — only persists if not set)
+  useEffect(() => {
+    if (settings.clearDataOnExit) return;
     try {
-      localStorage.setItem(STORAGE_KEY, serializeSession(tabs, activeTabId, history));
-    } catch { /* storage unavailable */ }
-  }, [tabs, activeTabId, history]);
+      localStorage.setItem(STORAGE_KEY, serializeSession(tabs, activeTabId, history, bookmarks, downloads));
+    } catch {}
+  }, [tabs, activeTabId, history, bookmarks, downloads, settings.clearDataOnExit]);
+
+  // ─── Settings ─────────────────────────────────────────────────────────────
+
+  const updateSettings = useCallback((patch: Partial<SentrixSettings>) => {
+    setSettings(prev => {
+      const next = { ...prev, ...patch };
+      saveSettings(next);
+      return next;
+    });
+  }, []);
 
   // ─── Logging ──────────────────────────────────────────────────────────────
 
@@ -255,6 +357,7 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
       if (pageType === 'privacy')   return 'Privacy Report';
       if (pageType === 'vault')     return 'Secure Vault';
       if (pageType === 'settings')  return 'Settings';
+      if (pageType === 'bookmarks') return 'Bookmarks';
       return 'New Tab';
     })();
 
@@ -268,6 +371,7 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
     }));
     setAddressBarUrls(prev => ({ ...prev, [tabId]: url }));
 
+    // Add to history
     if (pageType === 'website' || pageType === 'search') {
       setHistory(prev => [
         { id: Math.random().toString(36).slice(2), title, url, visitedAt: new Date(), riskLevel },
@@ -275,7 +379,25 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
       ].slice(0, 200));
     }
 
-    // Telemetry — clean messages only
+    // Auto-track file downloads
+    if (pageType === 'website') {
+      const { isFile, filename, size } = isFileUrl(url);
+      if (isFile) {
+        const dl: DownloadEntry = {
+          id: Math.random().toString(36).slice(2),
+          name: filename,
+          url,
+          source: getDomainTitle(url),
+          size,
+          status: riskLevel === 'danger' ? 'blocked' : 'downloaded',
+          risk: riskLevel,
+          date: format(new Date(), 'MMM d, HH:mm'),
+        };
+        setDownloads(prev => [dl, ...prev].slice(0, 50));
+        addLog(`${riskLevel === 'danger' ? 'Download blocked' : 'Download tracked'}: ${filename}`, riskLevel === 'danger' ? 'alert' : 'info');
+      }
+    }
+
     const logMsg =
       riskLevel === 'danger'  ? `High-risk domain detected: ${getDomainTitle(url)}` :
       riskLevel === 'caution' ? `Caution — ${getDomainTitle(url)}: ${blackdog.findings[0]}` :
@@ -324,6 +446,43 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
     addLog('Browsing history cleared', 'info');
   }, [addLog]);
 
+  // ─── Bookmarks ────────────────────────────────────────────────────────────
+
+  const addBookmark = useCallback((entry?: Partial<BookmarkEntry>) => {
+    const url = entry?.url ?? activeTab.url;
+    const title = entry?.title ?? activeTab.title;
+    setBookmarks(prev => {
+      if (prev.some(b => b.url === url)) return prev;
+      const bm: BookmarkEntry = {
+        id: Math.random().toString(36).slice(2),
+        title,
+        url,
+        domain: getDomainTitle(url),
+        riskLevel: activeTab.riskLevel,
+        savedAt: new Date(),
+        ...entry,
+      };
+      addLog(`Bookmarked: ${getDomainTitle(url)}`, 'info');
+      return [bm, ...prev].slice(0, 100);
+    });
+  }, [activeTab, addLog]);
+
+  const removeBookmark = useCallback((id: string) => {
+    setBookmarks(prev => prev.filter(b => b.id !== id));
+    addLog('Bookmark removed', 'info');
+  }, [addLog]);
+
+  const isBookmarked = useCallback((url: string) => {
+    return bookmarks.some(b => b.url === url);
+  }, [bookmarks]);
+
+  // ─── Downloads ────────────────────────────────────────────────────────────
+
+  const clearDownloads = useCallback(() => {
+    setDownloads([]);
+    addLog('Downloads list cleared', 'info');
+  }, [addLog]);
+
   // ─── Burn session ─────────────────────────────────────────────────────────
 
   const burnSession = useCallback(() => {
@@ -334,6 +493,8 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
     setActiveTabIdRaw(fresh.id);
     setAddressBarUrls({ [fresh.id]: 'sentrix://newtab' });
     setHistory([]);
+    setBookmarks([]);
+    setDownloads([]);
     clearLogs();
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
     addLog('Session burned — all data sanitized. Environment clean.', 'info');
@@ -355,8 +516,11 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
       searchQuery: activeTab.searchQuery,
       pageType: activeTab.pageType,
       history, clearHistory,
+      bookmarks, addBookmark, removeBookmark, isBookmarked,
+      downloads, clearDownloads,
       logs, addLog, clearLogs,
       blackdogPanelOpen, setBlackdogPanelOpen, blackdogStatus,
+      settings, updateSettings,
       burnSession,
     }}>
       {children}
