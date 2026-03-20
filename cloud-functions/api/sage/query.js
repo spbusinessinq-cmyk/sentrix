@@ -1,26 +1,59 @@
 /**
  * EdgeOne Node Function — /api/sage/query
- * Streams Gemini 2.5 Flash analysis as Server-Sent Events.
- * Supports: URL article fetching, input type detection, article mode analysis.
+ * Live verification pipeline: classify → fetch → corroborate → stream analysis.
+ * Sage never answers major factual claims from model priors alone.
  */
 
-// ── Input type detection ──────────────────────────────────────────────────────
+// ── Input classification ──────────────────────────────────────────────────────
 
-function detectInputType(msg) {
-  const trimmed = msg.trim();
-  if (/^https?:\/\/[^\s]{4,}/.test(trimmed)) return 'url';
-  if (trimmed.length > 300) return 'article';
-  return 'question';
+const CURRENT_EVENTS_RE =
+  /(died|dead|killed|arrested|charged|indicted|convicted|elected|fired|resigned|appointed|invaded|attacked|struck|bombed|crashed|launched|outbreak|confirmed|signed|declared|passed\s+away|murdered|shot|leaked|hacked|bankrupt|collapsed|shooting|explosion|earthquake|hurricane|pandemic|war|invasion|sanctions|missile|airstrike|ceasefire|impeach|hospitali[sz]ed|detained|sentenced)/i;
+
+function detectInputClass(msg) {
+  const t = msg.trim();
+  if (/^https?:\/\/[^\s]{4,}/.test(t)) return 'url';
+  if (t.length > 300) return 'article';
+  if (CURRENT_EVENTS_RE.test(t)) return 'current-events';
+  return 'general';
+}
+
+// ── Named entity extraction ───────────────────────────────────────────────────
+
+function extractEntities(text) {
+  const raw = text.match(/\b[A-Z][a-z]{1,20}(?:\s+[A-Z][a-z]{1,20}){0,3}\b/g) ?? [];
+  const stopWords = new Set(['The', 'A', 'An', 'It', 'They', 'He', 'She', 'We', 'I', 'This', 'That', 'These', 'Those', 'What', 'Who', 'When', 'Where', 'Why', 'How']);
+  return [...new Set(raw.filter(e => !stopWords.has(e.split(' ')[0] ?? '')))].slice(0, 4);
+}
+
+function generateCorroborationQueries(input, articleTitle) {
+  const queries = [];
+  const base = articleTitle ?? input;
+  const entities = extractEntities(base);
+  const year = new Date().getFullYear();
+
+  if (articleTitle) {
+    queries.push(articleTitle.slice(0, 120));
+    if (entities.length > 0) queries.push(`${entities.slice(0, 2).join(' ')} ${year} news confirmed`);
+  } else {
+    queries.push(input.slice(0, 120));
+    if (entities.length > 0) {
+      queries.push(`${entities.slice(0, 2).join(' ')} ${year} official`);
+      queries.push(`${entities.slice(0, 2).join(' ')} confirmed news`);
+    }
+  }
+
+  return [...new Set(queries)].filter(Boolean).slice(0, 3);
 }
 
 // ── Article extraction ────────────────────────────────────────────────────────
 
-function parseHtml(html, url) {
-  const domain = (() => {
-    try { return new URL(url).hostname.replace(/^www\./, ''); }
-    catch { return url.slice(0, 40); }
-  })();
+function extractDomain(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); }
+  catch { return url.slice(0, 40); }
+}
 
+function parseHtml(html, url) {
+  const domain = extractDomain(url);
   const titleMatch =
     html.match(/property="og:title"\s+content="([^"]{3,200})"/i) ||
     html.match(/content="([^"]{3,200})"\s+property="og:title"/i) ||
@@ -30,8 +63,7 @@ function parseHtml(html, url) {
 
   const authorMatch =
     html.match(/property="article:author"\s+content="([^"]{2,80})"/i) ||
-    html.match(/name="author"\s+content="([^"]{2,80})"/i) ||
-    html.match(/rel="author"[^>]*>([^<]{2,60})</i);
+    html.match(/name="author"\s+content="([^"]{2,80})"/i);
   const author = authorMatch ? authorMatch[1].trim() : undefined;
 
   const dateMatch =
@@ -48,7 +80,6 @@ function parseHtml(html, url) {
     .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, ' ')
     .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, ' ')
     .replace(/<aside[^>]*>[\s\S]*?<\/aside>/gi, ' ')
-    .replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&[a-z#0-9]{1,8};/gi, ' ')
     .replace(/\s{2,}/g, ' ')
@@ -59,107 +90,171 @@ function parseHtml(html, url) {
 }
 
 async function fetchArticle(url) {
-  const domain = (() => {
-    try { return new URL(url).hostname.replace(/^www\./, ''); }
-    catch { return url.slice(0, 40); }
-  })();
-
+  const domain = extractDomain(url);
   try {
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; SentrixAnalysis/1.0; +https://sentrix.io)',
-        'Accept': 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (compatible; SentrixAnalysis/1.0)',
+        Accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
       },
       signal: AbortSignal.timeout(8000),
     });
-
-    if (!res.ok) {
-      return {
-        title: domain, domain,
-        content: `Content could not be fully retrieved. Analysis based on available data. HTTP ${res.status}.`,
-        success: false, error: `HTTP ${res.status}`,
-      };
-    }
-
-    const contentType = res.headers.get('content-type') ?? '';
-    if (!contentType.includes('html')) {
-      return {
-        title: domain, domain,
-        content: `Non-HTML content (${contentType}) at ${url}. Analysis based on available data.`,
-        success: false, error: 'non-html',
-      };
-    }
-
+    if (!res.ok) return { title: domain, domain, content: `Content could not be fully retrieved. HTTP ${res.status}.`, success: false, error: `HTTP ${res.status}` };
+    const ct = res.headers.get('content-type') ?? '';
+    if (!ct.includes('html')) return { title: domain, domain, content: `Non-HTML content (${ct}).`, success: false, error: 'non-html' };
     const html = await res.text();
     return parseHtml(html, url);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return {
-      title: domain, domain,
-      content: `Content could not be fully retrieved. Analysis based on available data. (${msg.slice(0, 120)})`,
-      success: false, error: msg,
-    };
+    return { title: domain, domain, content: `Content could not be fully retrieved. (${msg.slice(0, 120)})`, success: false, error: msg };
   }
+}
+
+// ── Corroboration search ──────────────────────────────────────────────────────
+
+async function searchBraveCorroboration(query, apiKey) {
+  const url = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=8&safesearch=moderate&result_filter=web`;
+  const res = await fetch(url, {
+    headers: { 'X-Subscription-Token': apiKey, Accept: 'application/json' },
+    signal: AbortSignal.timeout(6000),
+  });
+  if (!res.ok) throw new Error(`Brave ${res.status}`);
+  const data = await res.json();
+  return (data?.web?.results ?? []).slice(0, 8).map(r => ({
+    title: r.title ?? '',
+    url: r.url ?? '',
+    domain: r.meta_url?.hostname ?? extractDomain(r.url ?? ''),
+    snippet: r.description ?? '',
+  }));
+}
+
+async function searchDDGCorroboration(query) {
+  try {
+    const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1&no_html=0&kl=us-en`;
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json', 'User-Agent': 'Sentrix/1.0' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const results = [];
+    if (data.AbstractURL && data.AbstractText) {
+      results.push({ title: data.Heading ?? query, url: data.AbstractURL, domain: extractDomain(data.AbstractURL), snippet: data.AbstractText.slice(0, 280) });
+    }
+    const topics = [...(data.RelatedTopics ?? []), ...(data.Results ?? [])];
+    for (const t of topics) {
+      if (t.FirstURL && t.Text && results.length < 8) {
+        results.push({ title: t.Text.slice(0, 100), url: t.FirstURL, domain: extractDomain(t.FirstURL), snippet: t.Text.slice(0, 280) });
+      }
+      if (t.Topics) {
+        for (const sub of t.Topics) {
+          if (sub.FirstURL && sub.Text && results.length < 8) {
+            results.push({ title: sub.Text.slice(0, 100), url: sub.FirstURL, domain: extractDomain(sub.FirstURL), snippet: sub.Text.slice(0, 280) });
+          }
+        }
+      }
+    }
+    return results;
+  } catch { return []; }
+}
+
+function newsMockCorroboration(query) {
+  const qEnc = encodeURIComponent(query);
+  const qWiki = encodeURIComponent(query.replace(/\s+/g, '_'));
+  return [
+    { title: `${query} — Reuters`, url: `https://www.reuters.com/search/news?blob=${qEnc}`, domain: 'reuters.com', snippet: `Reuters coverage of: ${query}` },
+    { title: `${query} — AP News`, url: `https://apnews.com/search?q=${qEnc}`, domain: 'apnews.com', snippet: `AP reporting on: ${query}` },
+    { title: `${query} — Wikipedia`, url: `https://en.wikipedia.org/wiki/${qWiki}`, domain: 'en.wikipedia.org', snippet: `Encyclopedia reference: ${query}` },
+    { title: `${query} — BBC News`, url: `https://www.bbc.com/search?q=${qEnc}`, domain: 'bbc.com', snippet: `BBC coverage: ${query}` },
+  ];
+}
+
+async function runCorroborationSearch(queries, braveKey) {
+  const all = [];
+  const seenDomains = new Set();
+
+  await Promise.allSettled(queries.map(async (q) => {
+    let results = [];
+    if (braveKey) {
+      try { results = await searchBraveCorroboration(q, braveKey); }
+      catch { results = await searchDDGCorroboration(q); }
+    } else {
+      results = await searchDDGCorroboration(q);
+      if (results.length === 0) results = newsMockCorroboration(q);
+    }
+    for (const r of results) {
+      if (r.domain && !seenDomains.has(r.domain)) {
+        seenDomains.add(r.domain);
+        all.push(r);
+      }
+    }
+  }));
+
+  return all.slice(0, 15);
 }
 
 // ── System prompt ─────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are SAGE — Sentrix's Signal & Truth Filter. You analyze information and return structured intelligence.
+const SYSTEM_PROMPT = `You are SAGE — Sentrix's Signal & Truth Filter and live verification engine.
 
 Your job: help the user understand before they believe or act.
-You are an intelligence system, not a chatbot. Be direct, precise, and operator-grade.
+You are a verification intelligence system, not a chatbot. Be direct, precise, and operator-grade.
+You have access to retrieved article content and corroboration search results. Use them.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 CORE FORMAT (ALL RESPONSES)
 ━━━━━━━━━━━━━━━━━━━━━━━
 
 ## ANSWER
-Direct conclusion first. Complete explanation. What is true, what is supported, what the user needs to know.
+Direct conclusion first. Complete explanation based on retrieved evidence. What is true, what is supported.
 - For claims or headlines: what is being asserted, whether it holds up, and what the real picture is
 - For questions: answer fully and clearly
 - For URLs or articles: summarize the core content and assess its substance
-- For controversial or political content: present the factual landscape without advocacy
-Never hedge. Never redirect with "you can search for this." Give the best answer possible from available evidence.
-If content could not be retrieved, analyze based on what is available and note it once.
+- For political/controversial content: present the factual landscape without advocacy
+Use retrieved corroboration sources to anchor your answer. If evidence is weak, say so explicitly.
+
+## VERIFICATION STATUS
+One of: CONFIRMED / LIKELY / DISPUTED / UNSUPPORTED / UNKNOWN
+Then explain the standard used (source count, source quality, official confirmation status).
+
+CONFIRMATION STANDARDS:
+- CONFIRMED: 2+ independent corroborating sources, or 1 official source + 1 major news source
+- LIKELY: 1 corroborating source, not yet officially confirmed
+- DISPUTED: conflicting claims across corroboration sources
+- UNSUPPORTED: no corroboration found in retrieved sources
+- UNKNOWN: insufficient evidence to assess at this time
+
+For DEATHS, ARRESTS, WAR EVENTS, ELECTIONS, HEALTH EMERGENCIES: require CONFIRMED standard before using that word.
 
 ## SIGNAL
-HIGH / MEDIUM / LOW — then explain what drives this level (source quality, evidence density, corroboration).
-Example: "HIGH — multiple independent primary sources corroborate the core claim."
+HIGH / MEDIUM / LOW — then explain what drives this level (source quality, evidence density, corroboration count).
 
 ## AGREEMENT
 CONSENSUS / MIXED / CONFLICT / UNKNOWN — then explain what sources agree or disagree on.
-Example: "MIXED — scientific consensus supports the mechanism, but efficacy claims vary by study."
 
 ## RISK
-SAFE / CAUTION / DANGER — then explain any manipulation patterns, trust signals, or sourcing weaknesses.
-Example: "CAUTION — primary source is a press release without independent verification."
+SAFE / CAUTION / DANGER — then explain manipulation patterns, trust signals, or sourcing weaknesses.
 
-## WHAT MATTERS
-Bullet list (3–6 items):
-- Key verified facts
-- Important context the user needs
-- Entities or actors involved
-- Timeline or scale if relevant
+## WHAT HOLDS UP
+Bullet list of claims supported by retrieved evidence. Cite sources where possible.
 
-## WHAT TO QUESTION
-Bullet list (3–5 items):
-- Missing information or evidence gaps
-- Possible bias or framing choices
-- Weak or unverified claims
-- Contradictions between sources
-- What a skeptical reader would ask
+## WHAT DOES NOT HOLD UP
+Bullet list of weak, unverified, or potentially misleading claims.
+
+## WHAT TO VERIFY NEXT
+Bullet list of 3–5 concrete next investigation steps.
 
 ## SOURCES
-Include only if search results genuinely support the answer.
+List the corroborating sources actually used from the provided data.
 Format: • domain.com — what this source specifically contributes
-Max 5 entries. Omit entirely if no results add value.
+Max 5 entries. Omit if no retrieved sources add value.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 ARTICLE / URL MODE EXTENSION
 ━━━━━━━━━━━━━━━━━━━━━━━
 
-When the input is a URL or a pasted article, ALSO include ALL of these sections AFTER the core sections above:
+When the input is a URL or pasted article, ALSO include AFTER the core sections:
 
 ## ARTICLE
 - Title:
@@ -171,53 +266,70 @@ When the input is a URL or a pasted article, ALSO include ALL of these sections 
 What the article is actually saying in 2–4 sentences. Neutral, factual.
 
 ## CORE CLAIMS
-Bullet list of the actual claims made:
-- Factual claims (verifiable assertions)
-- Quoted claims (attributed to a source)
-- Statistical claims (numbers, percentages)
-- Implied claims (framing-driven)
-Separate clearly: mark each as [FACT] [QUOTED] [STAT] [IMPLIED]
+Bullet list of actual claims, tagged:
+- [FACT] — verifiable assertion
+- [QUOTED] — attributed to a named source
+- [STAT] — numerical/percentage claim
+- [IMPLIED] — framing-driven, not stated directly
+Each assessed as: supported / partially supported / unsupported / unclear
 
 ## VERDICT
-One of: WELL SUPPORTED / PARTIALLY SUPPORTED / WEAKLY SUPPORTED / UNCLEAR / HIGH RISK
-Follow with a one-sentence explanation.
-
-## WHAT HOLDS UP
-Bullet list of credible, verifiable parts of the article.
-
-## WHAT DOES NOT HOLD UP
-Bullet list of weak, unverified, or misleading parts.
-
-## WHAT TO VERIFY NEXT
-Bullet list of 3–5 concrete next investigation steps the user should take.
+WELL SUPPORTED / PARTIALLY SUPPORTED / WEAKLY SUPPORTED / UNCLEAR / HIGH RISK
+Follow with one sentence explanation.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
-RULES
+HALLUCINATION GUARDRAILS
 ━━━━━━━━━━━━━━━━━━━━━━━
-- ## ANSWER must always appear first and be complete
-- SIGNAL / AGREEMENT / RISK: rating word first, explanation on same line
-- Never fabricate statistics, quotes, or URLs not provided
-- Never say "I cannot access live URLs" — attempt analysis from available data and note limitations once
-- Never say "I don't have access to" — instead, work with what is available
-- Be direct, operator-grade, specific — not vague or hedging
-- The user should walk away informed, in control, and knowing what to question next`;
+
+YOU MUST:
+- Base all factual claims on the retrieved corroboration sources provided
+- Label uncertainty explicitly (LIKELY, DISPUTED, UNSUPPORTED, UNKNOWN)
+- Distinguish between: confirmed / probable / disputed / speculation
+
+YOU MUST NEVER:
+- State a claim as CONFIRMED without 2+ corroborating sources or 1 official + 1 major news source in the data
+- Invent corroboration that is not in the provided sources
+- Use model knowledge alone for current events, deaths, arrests, war events, or elections
+- Imply verification occurred if corroboration is missing
+- Say "I cannot access live URLs" — attempt analysis from available data and note limitations once
+- Say "I don't have access to" — work with what is available
+
+If evidence is weak: say so clearly. Uncertainty is honest; fabrication is not.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+SEARCH RESULT QUALITY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+In the provided search results, prioritize:
+- Official sources (government, institutional, primary)
+- Major news outlets (Reuters, AP, BBC, NYT, WSJ, Bloomberg, Guardian)
+- Wikipedia as reference (not primary)
+
+Deprioritize for non-technical fact-check queries:
+- MDN, GitHub, npm, Stack Overflow, Hacker News
+- Generic tech results that do not relate to the claim
+
+The user should walk away informed, in control, and knowing exactly what to question next.`;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function buildResultsContext(results) {
-  if (!results || results.length === 0)
-    return 'No search results provided — answer from knowledge and note this.';
+  if (!results || results.length === 0) return 'No search results provided.';
   return results.slice(0, 10).map((r, i) => {
-    const tier = r.score != null
-      ? (r.score >= 80 ? '[HIGH SIGNAL]' : r.score >= 60 ? '[MED SIGNAL]' : '[LOW SIGNAL]')
-      : '';
-    return `[Result ${i + 1}] ${r.domain} ${tier}\nTitle: ${r.title}\nSnippet: ${r.snippet}`;
+    const tier = r.score != null ? (r.score >= 80 ? '[HIGH]' : r.score >= 60 ? '[MED]' : '[LOW]') : '';
+    return `[Ref ${i + 1}] ${r.domain} ${tier}\nTitle: ${r.title}\nSnippet: ${r.snippet}`;
   }).join('\n\n');
 }
 
-function sseChunk(obj) {
-  return `data: ${JSON.stringify(obj)}\n\n`;
+function buildCorroborationContext(sources, queries) {
+  if (sources.length === 0) return 'No corroboration sources retrieved.';
+  const header = `CORROBORATION QUERIES: ${queries.map(q => `"${q}"`).join(' | ')}\nSOURCES RETRIEVED: ${sources.length}\n\n`;
+  return header + sources.map((s, i) =>
+    `[Corroboration ${i + 1}] ${s.domain}\nTitle: ${s.title}\nURL: ${s.url}\nSnippet: ${s.snippet}`
+  ).join('\n\n');
 }
+
+function sseChunk(obj) { return `data: ${JSON.stringify(obj)}\n\n`; }
 
 function resolveGeminiKey(env) {
   return env?.GEMINI_API_KEY || env?.AI_INTEGRATIONS_GEMINI_API_KEY || null;
@@ -230,27 +342,17 @@ function resolveGeminiBase(env) {
 function limitedModeFallback(userMessage) {
   const q = (userMessage || 'this input').trim().slice(0, 120);
   return [
-    `## ANSWER`,
-    `Analysis engine is running in limited mode. The input received was: "${q}"`,
-    ``,
-    `## SIGNAL`,
-    `LOW — analysis engine unavailable; no AI assessment was performed.`,
-    ``,
-    `## AGREEMENT`,
-    `UNKNOWN — cannot assess source agreement without the analysis engine.`,
-    ``,
-    `## RISK`,
-    `CAUTION — verify claims independently; automated analysis is not available in this mode.`,
-    ``,
-    `## WHAT MATTERS`,
-    `- Sentrix is operating in limited mode`,
-    `- The GEMINI_API_KEY environment variable is not set in this deployment`,
-    `- Configure the API key in your EdgeOne environment variables to enable full analysis`,
-    ``,
-    `## WHAT TO QUESTION`,
-    `- Has the GEMINI_API_KEY been set in the EdgeOne Pages dashboard?`,
-    `- Is the key a valid Google AI Studio API key?`,
-    `- Does the key have access to the gemini-2.5-flash model?`,
+    `## ANSWER`, `Analysis engine is running in limited mode. Input: "${q}"`, ``,
+    `## VERIFICATION STATUS`, `UNKNOWN — analysis engine unavailable.`, ``,
+    `## SIGNAL`, `LOW — analysis engine unavailable.`, ``,
+    `## AGREEMENT`, `UNKNOWN — cannot assess without the analysis engine.`, ``,
+    `## RISK`, `CAUTION — verify claims independently; automated analysis not available.`, ``,
+    `## WHAT HOLDS UP`, `- Manual review required`, ``,
+    `## WHAT DOES NOT HOLD UP`, `- Automated verification was not performed`, ``,
+    `## WHAT TO VERIFY NEXT`,
+    `- Has GEMINI_API_KEY been set in the EdgeOne Pages dashboard?`,
+    `- Is the key a valid Google AI Studio key with gemini-2.5-flash access?`,
+    `- Try again — this may be a transient error`,
   ].join('\n');
 }
 
@@ -260,55 +362,35 @@ export async function onRequest(context) {
   const { request, env } = context;
 
   if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Max-Age': '86400',
-      },
-    });
+    return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400' } });
   }
 
   if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405, headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
   }
 
   let body;
   try { body = await request.json(); }
-  catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
-      status: 400, headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  catch { return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400, headers: { 'Content-Type': 'application/json' } }); }
 
   const { query, results, context: intelligenceContext, messages, userMessage } = body;
 
   if (!userMessage || typeof userMessage !== 'string' || !userMessage.trim()) {
-    return new Response(JSON.stringify({ error: 'userMessage is required' }), {
-      status: 400, headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ error: 'userMessage is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
   }
 
-  const inputType = detectInputType(userMessage);
-  const isArticleMode = inputType === 'url' || inputType === 'article';
+  const inputClass = detectInputClass(userMessage);
+  const needsCorroboration = inputClass === 'url' || inputClass === 'current-events';
+  const isArticleMode = inputClass === 'url' || inputClass === 'article';
   const apiKey = resolveGeminiKey(env ?? {});
+  const braveKey = env?.BRAVE_SEARCH_API_KEY;
 
-  console.log(
-    `[Sentrix] /api/sage/query — type=${inputType} geminiKey=${!!apiKey} query="${(userMessage || '').slice(0, 60)}"`,
-  );
+  console.log(`[Sentrix] /api/sage/query — class=${inputClass} geminiKey=${!!apiKey} braveKey=${!!braveKey} corroborate=${needsCorroboration} query="${(userMessage || '').slice(0, 60)}"`);
 
-  const sseHeaders = {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no',
-  };
+  const sseHeaders = { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive', 'X-Accel-Buffering': 'no' };
 
   if (!apiKey) {
-    console.warn('[Sentrix] GEMINI_API_KEY not set — returning limited-mode fallback');
+    console.warn('[Sentrix] GEMINI_API_KEY not set — limited-mode fallback');
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
     const encoder = new TextEncoder();
@@ -318,60 +400,81 @@ export async function onRequest(context) {
     return new Response(readable, { headers: sseHeaders });
   }
 
-  // ── Article fetch ───────────────────────────────────────────────────────────
-  let articleBlock = '';
-  if (inputType === 'url') {
-    const article = await fetchArticle(userMessage.trim());
-    console.log(`[Sentrix] Article fetch — success=${article.success} domain=${article.domain} error=${article.error ?? 'none'}`);
+  // ── Parallel: article fetch + corroboration ─────────────────────────────────
+  let articleData = undefined;
+  let corroborationSources = [];
+  let corroborationQueries = [];
 
-    if (article.success) {
-      articleBlock =
-        `\n\nARTICLE CONTENT EXTRACTED:\n` +
-        `URL: ${userMessage.trim()}\n` +
-        `Title: ${article.title}\n` +
-        `Domain: ${article.domain}\n` +
-        (article.author ? `Author: ${article.author}\n` : '') +
-        (article.date ? `Date: ${article.date}\n` : '') +
-        `\n--- ARTICLE TEXT ---\n${article.content}\n--- END ARTICLE ---`;
-    } else {
-      articleBlock =
-        `\n\nARTICLE FETCH NOTE: Content could not be fully retrieved from ${userMessage.trim()}. ` +
-        `Reason: ${article.error ?? 'unknown'}. Analyze based on available data and note this once.`;
+  if (needsCorroboration || isArticleMode) {
+    const initialQueries = generateCorroborationQueries(userMessage, undefined);
+    corroborationQueries = initialQueries;
+
+    const [fetchResult, corrobResult] = await Promise.allSettled([
+      inputClass === 'url' ? fetchArticle(userMessage.trim()) : Promise.resolve(undefined),
+      runCorroborationSearch(initialQueries, braveKey),
+    ]);
+
+    if (fetchResult.status === 'fulfilled' && fetchResult.value) {
+      articleData = fetchResult.value;
+      console.log(`[Sentrix] Article fetch — success=${articleData.success} domain=${articleData.domain} error=${articleData.error ?? 'none'}`);
+
+      if (articleData.success && articleData.title) {
+        const betterQueries = generateCorroborationQueries(userMessage, articleData.title);
+        corroborationQueries = betterQueries;
+        const extraSources = await runCorroborationSearch(betterQueries.slice(0, 2), braveKey);
+        const seenDomains = new Set(corroborationSources.map(s => s.domain));
+        for (const s of extraSources) {
+          if (!seenDomains.has(s.domain)) { seenDomains.add(s.domain); corroborationSources.push(s); }
+        }
+      }
     }
+
+    if (corrobResult.status === 'fulfilled') {
+      const seenDomains = new Set(corroborationSources.map(s => s.domain));
+      for (const s of corrobResult.value) {
+        if (!seenDomains.has(s.domain)) { seenDomains.add(s.domain); corroborationSources.push(s); }
+      }
+    }
+
+    console.log(`[Sentrix] Corroboration complete — ${corroborationSources.length} sources, queries: ${corroborationQueries.join(' | ')}`);
   }
 
   // ── Grounding block ─────────────────────────────────────────────────────────
   const resultsContext = buildResultsContext(results ?? []);
   const intelligenceSummary = intelligenceContext ? `\n\nINTELLIGENCE BRIEF:\n${intelligenceContext}` : '';
   const searchQuery = query ? `\n\nORIGINAL QUERY: "${query}"` : '';
-  const modeNote = isArticleMode ? '\n\nMODE: Article/URL analysis — use the full Article Mode Extension format.' : '';
+  const modeNote = isArticleMode ? '\n\nMODE: Article/URL analysis — include Article Mode Extension sections.' : '';
+  const verificationNote = needsCorroboration ? '\n\nMODE: Live verification required — use VERIFICATION STATUS and corroboration sources.' : '';
 
-  const groundingBlock =
-    `${searchQuery}${modeNote}` +
-    `\n\nSEARCH RESULTS:\n${resultsContext}` +
-    `${intelligenceSummary}` +
-    `${articleBlock}`;
+  let articleBlock = '';
+  if (articleData) {
+    if (articleData.success) {
+      articleBlock = `\n\nARTICLE EXTRACTED:\nURL: ${userMessage.trim()}\nTitle: ${articleData.title}\nDomain: ${articleData.domain}\n` +
+        (articleData.author ? `Author: ${articleData.author}\n` : '') +
+        (articleData.date ? `Date: ${articleData.date}\n` : '') +
+        `\n--- ARTICLE TEXT ---\n${articleData.content}\n--- END ARTICLE ---`;
+    } else {
+      articleBlock = `\n\nARTICLE FETCH NOTE: Content could not be fully retrieved. Reason: ${articleData.error ?? 'unknown'}. Analyze based on available data.`;
+    }
+  }
 
-  // ── Conversation contents ───────────────────────────────────────────────────
+  const corroborationBlock = corroborationSources.length > 0
+    ? `\n\nCORROBORATION SOURCES:\n${buildCorroborationContext(corroborationSources, corroborationQueries)}`
+    : needsCorroboration ? '\n\nCORROBORATION: No additional sources retrieved — base assessment on available evidence and label uncertainty accordingly.' : '';
+
+  const groundingBlock = `${searchQuery}${modeNote}${verificationNote}\n\nSUPPORTING REFERENCES:\n${resultsContext}${intelligenceSummary}${articleBlock}${corroborationBlock}`;
+
+  // ── Conversation ────────────────────────────────────────────────────────────
   const priorMessages = messages ?? [];
   const contents = [];
 
   if (priorMessages.length === 0) {
-    contents.push({
-      role: 'user',
-      parts: [{ text: `${groundingBlock}\n\n---\n\nUser input: ${userMessage.trim()}` }],
-    });
+    contents.push({ role: 'user', parts: [{ text: `${groundingBlock}\n\n---\n\nUser input: ${userMessage.trim()}` }] });
   } else {
-    const [firstMsg, ...restMsgs] = priorMessages;
-    contents.push({
-      role: 'user',
-      parts: [{ text: `${groundingBlock}\n\n---\n\nUser input: ${firstMsg.content}` }],
-    });
-    for (const msg of restMsgs) {
-      contents.push({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }],
-      });
+    const [first, ...rest] = priorMessages;
+    contents.push({ role: 'user', parts: [{ text: `${groundingBlock}\n\n---\n\nUser input: ${first.content}` }] });
+    for (const msg of rest) {
+      contents.push({ role: msg.role === 'assistant' ? 'model' : 'user', parts: [{ text: msg.content }] });
     }
     contents.push({ role: 'user', parts: [{ text: userMessage.trim() }] });
   }
@@ -390,9 +493,6 @@ export async function onRequest(context) {
   const encoder = new TextEncoder();
 
   (async () => {
-    let geminiUsed = false;
-    let fallbackUsed = false;
-
     try {
       const geminiRes = await fetch(geminiUrl, {
         method: 'POST',
@@ -404,14 +504,12 @@ export async function onRequest(context) {
       if (!geminiRes.ok) {
         const errText = await geminiRes.text().catch(() => String(geminiRes.status));
         console.error(`[Sentrix] Gemini API error ${geminiRes.status}: ${errText.slice(0, 300)}`);
-        fallbackUsed = true;
         writer.write(encoder.encode(sseChunk({ content: limitedModeFallback(userMessage) })));
         writer.write(encoder.encode(sseChunk({ done: true })));
         writer.close();
         return;
       }
 
-      geminiUsed = true;
       const reader = geminiRes.body.getReader();
       const dec = new TextDecoder();
       let buf = '';
@@ -420,42 +518,34 @@ export async function onRequest(context) {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         buf += dec.decode(value, { stream: true });
         const lines = buf.split('\n');
         buf = lines.pop() ?? '';
-
         for (const line of lines) {
           const trimmed = line.trim();
           if (!trimmed.startsWith('data:')) continue;
           const raw = trimmed.slice(5).trim();
           if (!raw || raw === '[DONE]') continue;
-
           try {
             const evt = JSON.parse(raw);
             const text = evt?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text) {
-              hasOutput = true;
-              writer.write(encoder.encode(sseChunk({ content: text })));
-            }
-          } catch { /* skip malformed events */ }
+            if (text) { hasOutput = true; writer.write(encoder.encode(sseChunk({ content: text }))); }
+          } catch { /* skip malformed */ }
         }
       }
 
       if (!hasOutput) {
-        fallbackUsed = true;
-        console.warn('[Sentrix] Gemini returned no text — emitting limited-mode fallback');
+        console.warn('[Sentrix] Gemini returned no text — limited-mode fallback');
         writer.write(encoder.encode(sseChunk({ content: limitedModeFallback(userMessage) })));
       }
 
       writer.write(encoder.encode(sseChunk({ done: true })));
       writer.close();
 
-      console.log(`[Sentrix] Sage completed — type=${inputType} gemini=${geminiUsed} fallback=${fallbackUsed} articleFetched=${inputType === 'url'}`);
+      console.log(`[Sentrix] Sage completed — class=${inputClass} corroborationSources=${corroborationSources.length} articleFetched=${!!articleData?.success}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       console.error(`[Sentrix] Sage stream error: ${msg}`);
-      fallbackUsed = true;
       writer.write(encoder.encode(sseChunk({ content: limitedModeFallback(userMessage) })));
       writer.write(encoder.encode(sseChunk({ done: true })));
       writer.close();

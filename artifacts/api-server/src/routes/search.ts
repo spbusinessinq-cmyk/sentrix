@@ -174,110 +174,46 @@ async function searchDuckDuckGo(query: string): Promise<SearchResult[] | null> {
   }
 }
 
-// ─── Enhanced mock results ────────────────────────────────────────────────────
+// ─── Query type detection ─────────────────────────────────────────────────────
+
+function isTechnicalQuery(q: string): boolean {
+  return /\b(javascript|typescript|react|python|css|html|node\.?js|npm|api|function|component|code|deploy|error|bug|debug|install|package|github|git|docker|kubernetes|sql|database|aws|cloud|server|backend|frontend|webpack|vite|eslint|jest|vitest|ruby|rust|java|swift|kotlin|golang|bash|shell|terminal|regex|algorithm|recursion|dockerfile|terraform|ansible)\b/i.test(q);
+}
+
+// ─── Mock results — news-first for non-technical, tech for technical ──────────
 
 function mockResults(query: string): SearchResult[] {
   const q = query.trim() || "results";
   const qEnc = encodeURIComponent(q);
   const qWiki = encodeURIComponent(q.replace(/\s+/g, "_"));
 
+  if (isTechnicalQuery(q)) {
+    return [
+      { id: 1, title: `${q} — MDN Web Docs`, url: `https://developer.mozilla.org/en-US/search?q=${qEnc}`, domain: "developer.mozilla.org", snippet: `Developer documentation and references for ${q}.`, provider: "mock" },
+      { id: 2, title: `${q} — Wikipedia`, url: `https://en.wikipedia.org/wiki/${qWiki}`, domain: "en.wikipedia.org", snippet: `${q} — overview and key concepts.`, provider: "mock" },
+      { id: 3, title: `${q} — GitHub repositories`, url: `https://github.com/search?q=${qEnc}&type=repositories`, domain: "github.com", snippet: `Open source repositories related to ${q}.`, provider: "mock" },
+      { id: 4, title: `Questions about ${q} — Stack Overflow`, url: `https://stackoverflow.com/search?q=${qEnc}`, domain: "stackoverflow.com", snippet: `Community answers about ${q}.`, provider: "mock" },
+      { id: 5, title: `${q} packages — npm`, url: `https://www.npmjs.com/search?q=${qEnc}`, domain: "npmjs.com", snippet: `JavaScript packages related to ${q}.`, provider: "mock" },
+      { id: 6, title: `${q} — Hacker News`, url: `https://news.ycombinator.com/search?q=${qEnc}`, domain: "news.ycombinator.com", snippet: `Technical discussions about ${q}.`, provider: "mock" },
+      { id: 7, title: `${q} — YouTube`, url: `https://www.youtube.com/results?search_query=${qEnc}`, domain: "youtube.com", snippet: `Video tutorials for ${q}.`, provider: "mock" },
+      { id: 8, title: `${q} — Reddit`, url: `https://www.reddit.com/search?q=${qEnc}`, domain: "reddit.com", snippet: `Community discussions about ${q}.`, provider: "mock" },
+      { id: 9, title: `${q} — DuckDuckGo`, url: `https://duckduckgo.com/?q=${qEnc}`, domain: "duckduckgo.com", snippet: `Search for ${q}.`, provider: "mock" },
+      { id: 10, title: `${q} — Google`, url: `https://www.google.com/search?q=${qEnc}`, domain: "google.com", snippet: `Web search for ${q}.`, provider: "mock" },
+    ];
+  }
+
+  // Non-technical: prioritize news, reference, and official sources
   return [
-    {
-      id: 1,
-      title: `${q} — Wikipedia`,
-      url: `https://en.wikipedia.org/wiki/${qWiki}`,
-      domain: "en.wikipedia.org",
-      snippet: `${q} — overview, history, and key concepts. Wikipedia provides community-maintained encyclopedic content on this topic.`,
-      provider: "mock",
-    },
-    {
-      id: 2,
-      title: `${q} — GitHub repositories`,
-      url: `https://github.com/search?q=${qEnc}&type=repositories`,
-      domain: "github.com",
-      snippet: `Open source repositories related to ${q}. Browse code, issues, pull requests, and community-contributed projects.`,
-      provider: "mock",
-    },
-    {
-      id: 3,
-      title: `${q} — MDN Web Docs`,
-      url: `https://developer.mozilla.org/en-US/search?q=${qEnc}`,
-      domain: "developer.mozilla.org",
-      snippet: `Developer documentation and references for ${q}. Includes technical guides, API references, and browser compatibility tables.`,
-      provider: "mock",
-    },
-    {
-      id: 4,
-      title: `Questions about ${q} — Stack Overflow`,
-      url: `https://stackoverflow.com/search?q=${qEnc}`,
-      domain: "stackoverflow.com",
-      snippet: `Community answers and technical discussion about ${q}. Voted solutions and insights from verified developers and engineers.`,
-      provider: "mock",
-    },
-    {
-      id: 5,
-      title: `${q} — Hacker News discussions`,
-      url: `https://news.ycombinator.com/search?q=${qEnc}`,
-      domain: "news.ycombinator.com",
-      snippet: `Recent technical discussions and news articles about ${q} from the Hacker News community and startup ecosystem.`,
-      provider: "mock",
-    },
-    {
-      id: 6,
-      title: `${q} — Google Search`,
-      url: `https://www.google.com/search?q=${qEnc}`,
-      domain: "google.com",
-      snippet: `Search Google for ${q}. Access the web's largest search index for comprehensive results across all domains.`,
-      provider: "mock",
-    },
-    {
-      id: 7,
-      title: `${q} — Reddit community`,
-      url: `https://www.reddit.com/search?q=${qEnc}`,
-      domain: "reddit.com",
-      snippet: `Community discussions and user perspectives on ${q}. Browse subreddits, posts, and comments from Reddit's global community.`,
-      provider: "mock",
-    },
-    {
-      id: 8,
-      title: `Latest news: ${q} — Reuters`,
-      url: `https://www.reuters.com/search/news?blob=${qEnc}`,
-      domain: "reuters.com",
-      snippet: `Breaking news and journalism about ${q} from Reuters. Trusted global news coverage with rigorous editorial standards.`,
-      provider: "mock",
-    },
-    {
-      id: 9,
-      title: `${q} packages — npm`,
-      url: `https://www.npmjs.com/search?q=${qEnc}`,
-      domain: "npmjs.com",
-      snippet: `JavaScript and Node.js packages related to ${q}. Explore open source modules, documentation, and install commands.`,
-      provider: "mock",
-    },
-    {
-      id: 10,
-      title: `${q} — YouTube`,
-      url: `https://www.youtube.com/results?search_query=${qEnc}`,
-      domain: "youtube.com",
-      snippet: `Video tutorials, explanations, and content related to ${q}. Watch and learn from creators and educators worldwide.`,
-      provider: "mock",
-    },
-    {
-      id: 11,
-      title: `${q} — X / Twitter`,
-      url: `https://x.com/search?q=${qEnc}`,
-      domain: "x.com",
-      snippet: `Real-time posts and discussion threads about ${q} on X (formerly Twitter). Live commentary and community reactions.`,
-      provider: "mock",
-    },
-    {
-      id: 12,
-      title: `${q} — DuckDuckGo web search`,
-      url: `https://duckduckgo.com/?q=${qEnc}`,
-      domain: "duckduckgo.com",
-      snippet: `Search the web for ${q} via DuckDuckGo — privacy-first search engine with no personal data tracking.`,
-      provider: "mock",
-    },
+    { id: 1, title: `${q} — Reuters`, url: `https://www.reuters.com/search/news?blob=${qEnc}`, domain: "reuters.com", snippet: `Breaking news and journalism about ${q} from Reuters. Trusted global news coverage.`, provider: "mock" },
+    { id: 2, title: `${q} — AP News`, url: `https://apnews.com/search?q=${qEnc}`, domain: "apnews.com", snippet: `Associated Press reporting on ${q}. Nonpartisan, fact-based news journalism.`, provider: "mock" },
+    { id: 3, title: `${q} — Wikipedia`, url: `https://en.wikipedia.org/wiki/${qWiki}`, domain: "en.wikipedia.org", snippet: `${q} — overview, history, and key facts. Community-maintained encyclopedia.`, provider: "mock" },
+    { id: 4, title: `${q} — BBC News`, url: `https://www.bbc.com/search?q=${qEnc}`, domain: "bbc.com", snippet: `BBC News coverage of ${q}. Trusted international news and reporting.`, provider: "mock" },
+    { id: 5, title: `${q} — The Guardian`, url: `https://www.theguardian.com/search?q=${qEnc}`, domain: "theguardian.com", snippet: `In-depth reporting and analysis of ${q} from The Guardian.`, provider: "mock" },
+    { id: 6, title: `${q} — NPR`, url: `https://www.npr.org/search?query=${qEnc}`, domain: "npr.org", snippet: `National Public Radio coverage and analysis of ${q}.`, provider: "mock" },
+    { id: 7, title: `${q} — Bloomberg`, url: `https://www.bloomberg.com/search?query=${qEnc}`, domain: "bloomberg.com", snippet: `Business and market coverage of ${q} from Bloomberg.`, provider: "mock" },
+    { id: 8, title: `${q} — Reddit`, url: `https://www.reddit.com/search?q=${qEnc}`, domain: "reddit.com", snippet: `Community discussion and user perspectives on ${q}.`, provider: "mock" },
+    { id: 9, title: `${q} — X / Twitter`, url: `https://x.com/search?q=${qEnc}`, domain: "x.com", snippet: `Real-time posts and reactions about ${q}.`, provider: "mock" },
+    { id: 10, title: `${q} — DuckDuckGo`, url: `https://duckduckgo.com/?q=${qEnc}`, domain: "duckduckgo.com", snippet: `Privacy-first web search for ${q}.`, provider: "mock" },
   ];
 }
 

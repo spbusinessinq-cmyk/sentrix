@@ -1,0 +1,226 @@
+Upgrade Sentrix from analysis-first to fully grounded live verification.
+
+CRITICAL:
+Sage must not answer major factual claims from weak context or model priors alone.
+For current events, deaths, breaking news, and article fact-checking, Sage must retrieve and corroborate before concluding.
+
+Do NOT redesign the UI.
+Do NOT revert to search-first.
+Do NOT remove the current analysis-first layout.
+
+MISSION:
+Make Sage capable of real live verification:
+- article fact-checking
+- current-event confirmation
+- corroboration across multiple sources
+- explicit uncertainty handling
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. LIVE VERIFICATION PIPELINE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For any input that is:
+- a URL
+- a news/current-events claim
+- a death/health/legal/public figure claim
+- a breaking-news style question
+
+Sage must use a verification pipeline:
+
+STEP 1:
+Classify input type:
+- URL
+- article text
+- current-events factual claim
+- general question
+
+STEP 2:
+If URL:
+- fetch article
+- extract title, body, outlet, author, publish date
+
+STEP 3:
+Generate corroboration queries from:
+- title
+- named entities
+- core claims
+
+STEP 4:
+Retrieve corroboration sources
+Target at least 3 distinct sources when possible:
+- primary/official
+- major news
+- secondary supporting source
+
+STEP 5:
+Compare source agreement:
+- same event confirmed?
+- conflicting details?
+- no corroboration?
+
+STEP 6:
+Only then produce final answer.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. STRICT FACT-CHECKING RULES
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For major factual claims, Sage must NOT:
+- answer from memory alone
+- infer from query wording
+- present speculation as fact
+
+Sage must:
+- verify first
+- clearly label uncertainty
+- distinguish:
+  - confirmed
+  - likely
+  - disputed
+  - unsupported
+  - unknown
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. REQUIRED OUTPUT FORMAT FOR LIVE FACT CHECK
+━━━━━━━━━━━━━━━━━━━━━━━
+
+When the input is article/current-events verification, return:
+
+## ANSWER
+Direct conclusion first
+
+## VERIFICATION STATUS
+- CONFIRMED
+- LIKELY
+- DISPUTED
+- UNSUPPORTED
+- UNKNOWN
+
+## SIGNAL
+HIGH / MEDIUM / LOW
+
+## AGREEMENT
+CONSENSUS / MIXED / CONFLICT
+
+## RISK
+SAFE / CAUTION / DANGER
+
+## WHAT HOLDS UP
+Bullets of claims supported by retrieved evidence
+
+## WHAT DOES NOT HOLD UP
+Bullets of weak, unsupported, exaggerated, or false claims
+
+## WHAT TO VERIFY NEXT
+Bullets of unresolved questions / missing evidence
+
+## SOURCES
+List the corroborating sources actually used
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. SPECIAL RULE FOR DEATH / BREAKING NEWS CLAIMS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+If the user asks about:
+- whether someone died
+- arrests
+- lawsuits
+- war / strikes / attacks
+- public health emergencies
+- major political actions
+
+Then Sage must require stronger corroboration:
+- at least 2 independent live sources OR
+- 1 official source + 1 major news source
+
+If this standard is not met:
+- do not state the claim as confirmed
+- mark as LIKELY / DISPUTED / UNKNOWN as appropriate
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. ARTICLE FACT CHECK MODE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+If user pastes a URL and asks:
+- “is this true”
+- “fact check this”
+- “what’s true in this article”
+- “bias check this”
+
+Then Sage must:
+
+A. extract article text
+B. identify core claims
+C. run corroboration search
+D. score each claim
+E. issue a final verdict
+
+Do not answer:
+“I can’t access live URLs”
+unless fetch truly fails.
+
+If fetch fails:
+return structured limited-mode output explaining the failure.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. CLAIM-LEVEL SCORING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For article/current-events mode, break out claims as:
+- [FACT]
+- [QUOTED]
+- [STAT]
+- [IMPLIED]
+
+Each claim should be assessed as:
+- supported
+- partially supported
+- unsupported
+- unclear
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. SEARCH / REFERENCE CHANGES
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Supporting References should now specifically help verification:
+- prioritize corroborating sources
+- de-rank generic irrelevant results
+- de-rank technical/dev results unless query is actually technical
+- do not let MDN/GitHub/npm/Stack Overflow appear for non-technical fact-check queries unless no better references exist
+
+For obvious non-technical fact-checking queries, aggressively penalize irrelevant technical/search artifact results.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. HALLUCINATION GUARDRAILS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Sage must never:
+- treat model knowledge as enough for current events
+- invent corroboration
+- imply verification happened if it did not
+
+If evidence is weak:
+say so clearly.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. LOGGING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add logs for:
+- article fetched yes/no
+- corroboration query list
+- number of corroborating sources retrieved
+- verification status selected
+- fallback used yes/no
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. FINAL GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+After this pass, Sentrix should be able to:
+- fact-check live articles
+- verify breaking claims
+- confirm or dispute major current-event statements
+- explain what holds up and what does not
+
+Sentrix should feel like a live verification engine, not just an analysis UI.
