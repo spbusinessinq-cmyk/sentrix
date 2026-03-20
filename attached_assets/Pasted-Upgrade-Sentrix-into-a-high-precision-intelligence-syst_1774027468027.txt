@@ -1,0 +1,198 @@
+Upgrade Sentrix into a high-precision intelligence system focused on cross-source reasoning, contradiction detection, and signal extraction.
+
+IMPORTANT:
+Do not fabricate facts.
+Do not generate fake insights.
+Do not overclaim certainty.
+All intelligence must be derived from actual result data.
+
+MISSION:
+Make Sentrix feel “scary good” by:
+- comparing sources against each other
+- identifying agreement vs disagreement
+- separating signal from noise
+- exposing structure across results
+- helping the user see what actually matters
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. SOURCE COMPARISON LAYER
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For each search:
+- analyze the top results collectively
+- detect:
+  - overlapping claims/topics
+  - shared narratives
+  - common facts
+  - repeated sources
+
+Group sources by:
+- agreement clusters
+- independent confirmation
+- isolated claims
+
+Expose lightly in UI:
+- “Multiple sources confirm…”
+- “This appears in several independent sources…”
+- “This claim appears isolated…”
+
+No fabrication. Only based on actual results.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. CONTRADICTION DETECTION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Identify when sources differ or conflict.
+
+Detect:
+- conflicting claims
+- different framing
+- disagreement between:
+  - news vs discussion
+  - official vs third-party
+  - reference vs commentary
+
+Expose carefully:
+- “Sources differ on…”
+- “This topic shows mixed reporting”
+- “User-generated sources diverge from reporting”
+
+Do NOT decide truth — only surface disagreement.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. SIGNAL VS NOISE FILTERING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Classify results into:
+
+Signal:
+- high authority
+- primary sources
+- consistent reporting
+
+Noise:
+- repetitive aggregation
+- low-value duplicates
+- shallow discussion
+- irrelevant matches
+
+Adjust ranking:
+- boost signal
+- demote noise
+
+Optionally tag:
+- “High signal”
+- “Low signal / review carefully”
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. TEMPORAL / RECENCY AWARENESS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For queries with time relevance:
+- detect recency signals
+- identify:
+  - latest reporting
+  - older baseline sources
+
+Expose:
+- “Recent reporting indicates…”
+- “Baseline reference (not recent)”
+
+Ensure:
+- new info is not buried under static references
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. ENTITY AND CONTEXT EXTRACTION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+From results:
+- extract key entities:
+  - people
+  - organizations
+  - events
+  - locations
+
+Identify:
+- recurring entities across sources
+- central vs peripheral entities
+
+Expose:
+- “Key entities in this topic: …”
+
+This should be derived from real result content, not invented.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. INTELLIGENCE SUMMARY UPGRADE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Enhance the top summary to include:
+
+- query type
+- source mix
+- signal level
+- agreement vs disagreement
+- recency profile
+
+Example tone:
+- concise
+- analytical
+- grounded
+
+No hype. No fluff.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. ASK SAGE — ANALYTICAL MODE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Upgrade Ask Sage to operate on result context.
+
+Ask Sage should:
+- summarize the topic
+- highlight key signals
+- identify disagreements
+- explain where to start
+- suggest deeper angles
+
+Ask Sage must:
+- reference actual result structure
+- avoid generic answers
+- avoid hallucination
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. DECISION GUIDANCE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add subtle guidance:
+
+- “Start here”
+- “Compare these”
+- “Treat these cautiously”
+
+Based on:
+- authority
+- agreement
+- recency
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. UX CONSTRAINTS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+- do not overload the UI
+- keep outputs concise
+- surface intelligence progressively
+- no fake dashboards
+- no fake metrics
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. OUTPUT GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Return a version of Sentrix where:
+
+- results are not just listed — they are interpreted
+- the system highlights agreement, disagreement, and signal strength
+- weak results are clearly secondary
+- Ask Sage adds real analytical value
+- the user can quickly understand what matters and why
+
+Sentrix should now feel like it sees through information, not just displays it.

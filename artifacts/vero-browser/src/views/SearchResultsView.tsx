@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ShieldCheck, ShieldAlert, Shield, AlertTriangle,
   ExternalLink, Bookmark, BookmarkCheck, FolderPlus, Check,
-  Loader2, AlertCircle, ArrowUpRight, ChevronDown, Plus
+  Loader2, AlertCircle, ArrowUpRight, Plus,
+  ChevronDown, ChevronUp, Zap, GitMerge, AlertOctagon, Sparkles, TrendingUp,
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
@@ -10,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { searchWeb, SearchResultItem } from '@/lib/search';
 import { enrichUrl, postureColor, sourceTypeIcon, Posture, SourceType } from '@/lib/enrichment';
 import { InspectDrawer } from '@/components/InspectDrawer';
+import { analyzeResults, IntelligenceReport, SignalTier } from '@/lib/intelligence';
 
 type FilterKey = 'all' | 'safe' | 'caution' | 'docs' | 'news';
 
@@ -23,6 +25,8 @@ function enrichResult(r: SearchResultItem): EnrichedItem {
   const e = enrichUrl(r.url, r.title, r.snippet);
   return { ...r, posture: e.posture, sourceType: e.sourceType, reasoning: e.reasoning };
 }
+
+// ── Posture badges ─────────────────────────────────────────────────────────────
 
 function ConfidenceBadge({ level }: { level: 'high' | 'medium' | 'low' }) {
   const styles = {
@@ -60,6 +64,59 @@ function SourceTypePill({ type }: { type: SourceType }) {
     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-white/[0.07] bg-white/[0.03] text-[9px] font-mono text-muted-foreground/45 uppercase tracking-wider shrink-0">
       <span className="text-[8px]">{icon}</span>
       {type}
+    </span>
+  );
+}
+
+// ── Signal tier badge ─────────────────────────────────────────────────────────
+
+function SignalTierBadge({ tier }: { tier: SignalTier }) {
+  if (tier === 'primary') return (
+    <span
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold tracking-[0.15em] uppercase shrink-0 border"
+      style={{ color: 'hsl(142 72% 50%)', borderColor: 'rgba(22,163,74,0.35)', background: 'rgba(22,163,74,0.1)' }}
+    >
+      <Zap className="w-2 h-2" />
+      Start here
+    </span>
+  );
+  if (tier === 'high') return (
+    <span
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold tracking-[0.15em] uppercase shrink-0 border"
+      style={{ color: 'rgba(22,163,74,0.6)', borderColor: 'rgba(22,163,74,0.18)', background: 'transparent' }}
+    >
+      High signal
+    </span>
+  );
+  if (tier === 'low') return (
+    <span
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold tracking-[0.12em] uppercase shrink-0 border"
+      style={{ color: 'rgba(148,163,184,0.38)', borderColor: 'rgba(255,255,255,0.06)', background: 'transparent' }}
+    >
+      Low signal
+    </span>
+  );
+  if (tier === 'noise') return (
+    <span
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold tracking-[0.12em] uppercase shrink-0 border"
+      style={{ color: 'rgba(245,158,11,0.55)', borderColor: 'rgba(245,158,11,0.15)', background: 'rgba(245,158,11,0.04)' }}
+    >
+      Review carefully
+    </span>
+  );
+  return null;
+}
+
+// ── Compare tag ───────────────────────────────────────────────────────────────
+
+function CompareBadge() {
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold tracking-[0.12em] uppercase shrink-0 border"
+      style={{ color: 'rgba(139,92,246,0.65)', borderColor: 'rgba(139,92,246,0.2)', background: 'rgba(139,92,246,0.05)' }}
+    >
+      <GitMerge className="w-2 h-2" />
+      Compare
     </span>
   );
 }
@@ -152,13 +209,232 @@ function CollectionPicker({
   );
 }
 
+// ── Intelligence Brief + Ask Sage panel ───────────────────────────────────────
+
+function IntelligenceBrief({ report, query }: { report: IntelligenceReport; query: string }) {
+  const [sageOpen, setSageOpen] = useState(false);
+
+  const signalColor =
+    report.signalLevel === 'strong'   ? 'hsl(142 72% 42%)'  :
+    report.signalLevel === 'moderate' ? '#f59e0b'           : 'rgba(148,163,184,0.5)';
+
+  const agreementIcon =
+    report.agreement === 'divergent' ? <AlertOctagon className="w-3 h-3" /> :
+    report.agreement === 'mixed'     ? <AlertTriangle className="w-3 h-3" /> :
+    <ShieldCheck className="w-3 h-3" />;
+
+  const agreementLabel =
+    report.agreement === 'divergent' ? 'Sources diverge' :
+    report.agreement === 'mixed'     ? 'Mixed sourcing' :
+    'Sources consistent';
+
+  const agreementColor =
+    report.agreement === 'divergent' ? 'rgba(245,158,11,0.65)' :
+    report.agreement === 'mixed'     ? 'rgba(245,158,11,0.45)' :
+    'hsl(142 72% 40%)';
+
+  const recencyLabel =
+    report.recencyProfile === 'recent' ? 'Recent reporting' :
+    report.recencyProfile === 'mixed'  ? 'Some recency signals' :
+    'Reference material';
+
+  return (
+    <div
+      className="shrink-0 border-b"
+      style={{ borderColor: 'rgba(255,255,255,0.05)', background: 'rgba(4,5,8,0.6)' }}
+    >
+      {/* Summary strip */}
+      <div className="px-5 py-3 flex items-center gap-4 flex-wrap">
+        {/* Signal level */}
+        <div className="flex items-center gap-1.5">
+          <TrendingUp className="w-3 h-3" style={{ color: signalColor }} />
+          <span className="text-[10px] font-mono capitalize" style={{ color: signalColor }}>
+            {report.signalLevel} signal
+          </span>
+        </div>
+
+        <div className="w-px h-3 bg-white/[0.08]" />
+
+        {/* Agreement */}
+        <div className="flex items-center gap-1.5" style={{ color: agreementColor }}>
+          {agreementIcon}
+          <span className="text-[10px] font-mono">{agreementLabel}</span>
+        </div>
+
+        <div className="w-px h-3 bg-white/[0.08]" />
+
+        {/* Recency */}
+        <span className="text-[10px] font-mono text-muted-foreground/40">{recencyLabel}</span>
+
+        {/* Source mix */}
+        {report.sourceMix && (
+          <>
+            <div className="w-px h-3 bg-white/[0.08]" />
+            <span className="text-[10px] font-mono text-muted-foreground/35">{report.sourceMix}</span>
+          </>
+        )}
+
+        {/* Ask Sage toggle */}
+        <button
+          onClick={() => setSageOpen(v => !v)}
+          className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all duration-150 cursor-pointer"
+          style={{
+            background: sageOpen ? 'rgba(139,92,246,0.1)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${sageOpen ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.08)'}`,
+            color: sageOpen ? 'rgba(139,92,246,0.85)' : 'rgba(148,163,184,0.5)',
+          }}
+        >
+          <Sparkles className="w-3 h-3" />
+          <span className="text-[9px] font-mono uppercase tracking-[0.15em]">Ask Sage</span>
+          {sageOpen ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
+        </button>
+      </div>
+
+      {/* Top findings strip (always visible) */}
+      {report.topFindings.length > 0 && (
+        <div
+          className="px-5 pb-2.5 flex flex-col gap-1"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.03)' }}
+        >
+          {report.topFindings.map((f, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <div className="w-1 h-1 rounded-full bg-primary/35 mt-[5px] shrink-0" />
+              <span className="text-[10px] font-mono text-muted-foreground/45 leading-relaxed">{f}</span>
+            </div>
+          ))}
+          {report.disagreements.map((d, i) => (
+            <div key={`d-${i}`} className="flex items-start gap-2">
+              <AlertTriangle className="w-2.5 h-2.5 text-amber-500/40 mt-[2px] shrink-0" />
+              <span className="text-[10px] font-mono leading-relaxed" style={{ color: 'rgba(245,158,11,0.5)' }}>{d}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Ask Sage expanded panel */}
+      <AnimatePresence>
+        {sageOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.18 }}
+            style={{ overflow: 'hidden', borderTop: '1px solid rgba(139,92,246,0.12)' }}
+          >
+            <div
+              className="px-5 py-4"
+              style={{ background: 'rgba(139,92,246,0.03)' }}
+            >
+              {/* SAGE header */}
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="w-3.5 h-3.5" style={{ color: 'rgba(139,92,246,0.7)' }} />
+                <span
+                  className="text-[9px] font-mono font-bold uppercase tracking-[0.2em]"
+                  style={{ color: 'rgba(139,92,246,0.65)' }}
+                >
+                  SAGE · Intelligence Analysis
+                </span>
+                <span className="text-[8px] font-mono text-muted-foreground/25 ml-1">
+                  derived from result structure · no fabrication
+                </span>
+              </div>
+
+              {/* Summary */}
+              <p className="text-[11px] font-mono leading-relaxed text-foreground/55 mb-4">
+                {report.sageSummary}
+              </p>
+
+              <div className="grid grid-cols-1 gap-4">
+                {/* Key signals */}
+                <div>
+                  <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-2">Key signals</div>
+                  <div className="flex flex-col gap-1.5">
+                    {report.sageSignals.map((s, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <div className="w-1 h-1 rounded-full mt-[5px] shrink-0" style={{ background: 'rgba(139,92,246,0.5)' }} />
+                        <span className="text-[10px] font-mono text-foreground/50 leading-relaxed">{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Divergences */}
+                {report.sageDivergences.length > 0 && (
+                  <div>
+                    <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-2">Divergence</div>
+                    <div className="flex flex-col gap-1.5">
+                      {report.sageDivergences.map((d, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <AlertTriangle className="w-2.5 h-2.5 mt-[2px] shrink-0" style={{ color: 'rgba(245,158,11,0.5)' }} />
+                          <span className="text-[10px] font-mono leading-relaxed" style={{ color: 'rgba(245,158,11,0.55)' }}>{d}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Where to start */}
+                <div>
+                  <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-2">Where to start</div>
+                  <p className="text-[10px] font-mono leading-relaxed" style={{ color: 'hsl(142 72% 40%)', opacity: 0.75 }}>
+                    {report.sageGuidance}
+                  </p>
+                </div>
+
+                {/* Deeper angles */}
+                {report.sageDeeperAngles.length > 0 && (
+                  <div>
+                    <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-2">Dig deeper</div>
+                    <div className="flex flex-col gap-1.5">
+                      {report.sageDeeperAngles.map((a, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <div className="w-1 h-1 rounded-full mt-[5px] shrink-0 bg-muted-foreground/25" />
+                          <span className="text-[10px] font-mono text-muted-foreground/40 leading-relaxed">{a}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Key entities */}
+              {report.keyEntities.length > 0 && (
+                <div className="mt-4 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/25 mb-2">Recurring terms</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {report.keyEntities.map(e => (
+                      <span
+                        key={e}
+                        className="px-2 py-0.5 rounded text-[9px] font-mono"
+                        style={{
+                          background: 'rgba(255,255,255,0.04)',
+                          border: '1px solid rgba(255,255,255,0.07)',
+                          color: 'rgba(148,163,184,0.5)',
+                        }}
+                      >
+                        {e}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ── Result card ───────────────────────────────────────────────────────────────
 function ResultCard({
-  result, index, onInspect,
+  result, index, onInspect, tier, compare,
 }: {
   result: EnrichedItem;
   index: number;
   onInspect: () => void;
+  tier?: SignalTier;
+  compare?: boolean;
 }) {
   const {
     isSaved, savedItems,
@@ -207,7 +483,11 @@ function ResultCard({
     setColPickerOpen(false);
   };
 
+  const isPrimary = tier === 'primary';
+  const isNoise   = tier === 'noise' || tier === 'low';
+
   const accentColor =
+    isPrimary          ? 'hsl(142 72% 44%)' :
     result.posture === 'SAFE'    ? 'hsl(142 72% 40%)' :
     result.posture === 'CAUTION' ? '#f59e0b' :
     result.posture === 'DANGER'  ? '#ef4444' :
@@ -222,13 +502,21 @@ function ResultCard({
         'group relative border rounded-xl overflow-visible transition-all duration-150',
         isBlocked
           ? 'border-red-500/15 bg-black/30'
-          : 'border-white/[0.05] bg-black/20 hover:bg-black/28 hover:border-white/[0.09]'
+          : isPrimary
+            ? 'border-primary/20 bg-black/20 hover:bg-black/28 hover:border-primary/30'
+            : isNoise
+              ? 'border-white/[0.04] bg-black/15 hover:bg-black/22 opacity-80 hover:opacity-100'
+              : 'border-white/[0.05] bg-black/20 hover:bg-black/28 hover:border-white/[0.09]'
       )}
+      style={isPrimary ? { boxShadow: '0 0 0 1px rgba(22,163,74,0.08), 0 2px 12px rgba(22,163,74,0.04)' } : undefined}
     >
       {/* Left accent */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-[2px] rounded-l-xl opacity-35 group-hover:opacity-65 transition-opacity pointer-events-none"
-        style={{ background: accentColor }}
+        className="absolute left-0 top-0 bottom-0 w-[2px] rounded-l-xl transition-opacity pointer-events-none"
+        style={{
+          background: accentColor,
+          opacity: isPrimary ? 0.6 : 0.35,
+        }}
       />
 
       <div className="pl-4 pr-4 pt-4 pb-0 overflow-hidden rounded-xl">
@@ -240,19 +528,23 @@ function ResultCard({
           <PostureBadge posture={result.posture} />
           <SourceTypePill type={result.sourceType} />
           <ConfidenceBadge level={result.confidence} />
+          {tier && tier !== 'normal' && <SignalTierBadge tier={tier} />}
+          {compare && !isPrimary && <CompareBadge />}
           {result.provider === 'brave' && (
             <span className="text-[8px] font-mono text-muted-foreground/20 uppercase tracking-widest">live</span>
           )}
         </div>
 
-        {/* Title — click opens Inspect */}
+        {/* Title */}
         <button
           onClick={e => { e.stopPropagation(); if (!isBlocked) onInspect(); }}
           className={twMerge(
             'text-left w-full text-[13px] font-semibold leading-snug mb-2 block transition-colors',
             isBlocked
               ? 'text-red-400/70 line-through decoration-red-500/30 cursor-not-allowed'
-              : 'text-foreground/82 hover:text-foreground/100 cursor-pointer'
+              : isPrimary
+                ? 'text-foreground/90 hover:text-foreground cursor-pointer'
+                : 'text-foreground/82 hover:text-foreground/100 cursor-pointer'
           )}
           disabled={isBlocked}
           title={isBlocked ? undefined : 'Click to inspect'}
@@ -296,7 +588,7 @@ function ResultCard({
                 onClick={handleBookmark}
               />
 
-              {/* Collect — with per-card dropdown */}
+              {/* Collect */}
               <div className="relative">
                 <FooterAction
                   label={collectFlash.flashing ? 'Added!' : saved ? 'Collected' : 'Collect'}
@@ -395,6 +687,25 @@ export function SearchResultsView() {
 
   useEffect(() => { doSearch(); }, [safeQuery]);
 
+  // ── Intelligence analysis ──────────────────────────────────────────────────
+  const intelligence = useMemo(() => {
+    if (allResults.length === 0) return null;
+    return analyzeResults(
+      allResults.map(r => ({
+        id: r.id,
+        domain: r.domain,
+        title: r.title,
+        snippet: r.snippet,
+        score: r.score,
+        confidence: r.confidence,
+        posture: r.posture,
+        sourceType: r.sourceType,
+        category: r.category,
+      })),
+      safeQuery
+    );
+  }, [allResults, safeQuery]);
+
   const filtered = allResults.filter(r => {
     if (filter === 'safe')    return r.posture === 'SAFE';
     if (filter === 'caution') return r.posture === 'CAUTION' || r.posture === 'UNKNOWN';
@@ -478,6 +789,11 @@ export function SearchResultsView() {
         </div>
       </div>
 
+      {/* ── Intelligence Brief ──────────────────────────────────────────── */}
+      {!loading && !error && intelligence && (
+        <IntelligenceBrief report={intelligence} query={safeQuery} />
+      )}
+
       {/* Investigation Mode banner */}
       {investigationMode && (() => {
         const activeInv = investigations.find(i => i.id === activeInvestigationId);
@@ -543,6 +859,8 @@ export function SearchResultsView() {
             result={r}
             index={i}
             onInspect={() => setInspectTarget({ url: r.url, title: r.title, snippet: r.snippet })}
+            tier={intelligence?.signalTiers.get(r.id)}
+            compare={intelligence?.compareTheseIds.includes(r.id) && intelligence?.signalTiers.get(r.id) !== 'primary'}
           />
         ))}
 
