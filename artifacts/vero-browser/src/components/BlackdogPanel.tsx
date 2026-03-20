@@ -190,10 +190,10 @@ export function BlackdogPanel() {
 
             <div className="flex-1 overflow-y-auto px-3.5 py-3 flex flex-col gap-2">
               {[
-                { label: 'BLACKDOG Engine connected', detail: 'v4.1.2 — operational', ok: true },
-                { label: 'Session encrypted', detail: 'TLS 1.3 active end-to-end', ok: true },
-                { label: 'Tab isolation active', detail: 'Per-tab session boundaries', ok: true },
-                { label: 'Protection enabled', detail: 'Monitoring all page interactions', ok: true },
+                { label: 'BLACKDOG Engine online', detail: 'v4.1.2 — operational', ok: true },
+                { label: 'Risk classification active', detail: 'URL heuristics running per request', ok: true },
+                { label: 'Tab isolation active', detail: 'Per-tab navigation and session state', ok: true },
+                { label: 'High-risk blocking enabled', detail: 'Danger-rated domains intercepted', ok: true },
               ].map((msg, i) => (
                 <div
                   key={i}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Eye, ShieldCheck, Lock, Cpu, Flame, Clock } from 'lucide-react';
+import { Shield, Eye, ShieldCheck, Lock, Cpu, Flame, Clock, CheckCircle2 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
 import { format } from 'date-fns';
@@ -138,19 +138,17 @@ export function PrivacyReportView() {
         <div>
           <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-1">Sentrix Session Policies</div>
           <div className="text-[10px] font-mono text-muted-foreground/30 mb-3 leading-relaxed">
-            These are protections Sentrix directly owns and enforces in this session. They do not require browser-engine access.
+            These are protections Sentrix directly owns and enforces in this session. They are always active and are not user-configurable.
           </div>
           <div className="flex flex-col gap-0.5">
             {SENTRIX_POLICIES.map(p => (
-              <div key={p.label} className="flex items-start gap-3 px-3 py-2.5 rounded hover:bg-white/[0.02] transition-colors">
-                <ShieldCheck className="w-3.5 h-3.5 text-primary/60 shrink-0 mt-0.5" />
+              <div key={p.label} className="flex items-start gap-3 px-3 py-2.5 rounded">
+                <CheckCircle2 className="w-3.5 h-3.5 text-primary/60 shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <div className="text-[12px] font-medium text-foreground/70">{p.label}</div>
                   <div className="text-[10px] font-mono text-muted-foreground/40 leading-relaxed">{p.description}</div>
                 </div>
-                <div className="w-8 h-4 rounded-full bg-primary/30 flex items-center justify-end pr-0.5 shrink-0 mt-0.5">
-                  <div className="w-3 h-3 rounded-full bg-primary" />
-                </div>
+                <span className="text-[9px] font-mono uppercase tracking-wider text-primary/50 shrink-0 mt-1">Active</span>
               </div>
             ))}
           </div>

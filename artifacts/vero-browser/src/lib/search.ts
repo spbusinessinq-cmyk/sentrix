@@ -1,3 +1,5 @@
+import { apiUrl } from './api-client';
+
 export interface SearchResultItem {
   id: number;
   title: string;
@@ -271,7 +273,7 @@ export async function searchWeb(query: string): Promise<SearchResponse> {
 
 async function _doSearch(query: string): Promise<SearchResponse> {
   try {
-    const resp = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+    const resp = await fetch(apiUrl(`/api/search?q=${encodeURIComponent(query)}`), {
       signal: AbortSignal.timeout(12000),
     });
     if (!resp.ok) throw new Error(`Search API ${resp.status}`);

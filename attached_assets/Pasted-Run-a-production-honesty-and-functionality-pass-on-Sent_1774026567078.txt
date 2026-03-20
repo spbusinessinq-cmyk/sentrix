@@ -1,0 +1,181 @@
+Run a production honesty and functionality pass on Sentrix.
+
+IMPORTANT:
+Do not redesign the product from scratch.
+Do not add fake behavior.
+Do not leave decorative controls that appear interactive but do nothing.
+Do not keep any browser chrome elements that imply native browser behavior if they are not real.
+
+MISSION:
+Make Sentrix feel fully intentional, trustworthy, and production-real by:
+1. fixing production search/backend connection architecture
+2. removing fake browser controls and fake visual affordances
+3. making every visible control either truly functional or clearly non-interactive
+4. ensuring all settings and privacy items are honest and accurate
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. PRODUCTION API / SEARCH FIX
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Implement a production-safe API connection layer using:
+VITE_API_BASE_URL
+
+Requirements:
+- create a centralized API client layer
+- all search requests must use the resolved API base URL
+- no production reliance on local /api/* routes
+- if search backend is not configured, show a clear controlled error
+- preserve current search UI, ranking, inspect, save, and collection behavior
+- no silent failures
+
+Behavior:
+- in development, support local API base
+- in production, use VITE_API_BASE_URL
+- no hardcoded localhost in production
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. REMOVE FAKE BROWSER CHROME / FAKE TRAFFIC LIGHTS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Audit the top-left browser-style controls and any similar fake browser chrome elements.
+
+If the red / yellow / green window controls are purely decorative and do not perform real actions:
+- remove them completely
+
+OR, if retained:
+- they must map to real meaningful actions in the web app
+- but do NOT fake native desktop window management in a browser environment
+
+Preferred for now:
+- remove fake traffic lights entirely
+- keep the header clean and product-focused
+
+Also remove any other fake browser-native visual elements that imply behavior Sentrix does not truly have.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. HONEST INTERACTIVITY RULE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Apply this rule across the app:
+
+If a control looks clickable, it must work.
+If it does not work, either:
+- wire it properly
+- convert it into a read-only status element
+- or remove it
+
+Audit:
+- top bar controls
+- sidebar icons
+- search result actions
+- privacy/settings toggles
+- bookmarks controls
+- collection controls
+- investigation controls
+- footer/system links
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. SETTINGS / PRIVACY CONTROLS MUST BE REAL OR READ-ONLY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Audit every privacy/settings item currently shown.
+
+If a setting is truly implemented:
+- make sure it toggles
+- persists
+- and visibly affects app behavior where appropriate
+
+If it is NOT truly implemented:
+- do NOT leave it as a fake toggle
+- convert it to:
+  - status row
+  - policy indicator
+  - or remove it
+
+Examples to audit:
+- Tab session isolation
+- Burn session
+- Heuristic URL risk classification
+- High-risk domain blocking
+- Session persistence control
+- Download risk tracking
+- any privacy/session policy switches
+
+The UI must never imply user control where none exists.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. PRIVACY REPORT MUST BE HONEST
+━━━━━━━━━━━━━━━━━━━━━━━
+
+The Privacy Report should only show:
+- real counts based on actual session/app data
+- real active policies owned by Sentrix
+- real BLACKDOG connection status only
+- no fake blocked site counts if they are not actually tracked
+- no fake engine telemetry
+
+If some metric is not real, remove it or relabel it honestly.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. BLACKDOG MUST REMAIN MINIMAL AND TRUE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+BLACKDOG remains:
+- hidden engine
+- status only
+
+Allowed:
+- BLACKDOG ACTIVE
+- ENGINE ONLINE
+- SESSION PROTECTED
+- MONITORING ACTIVE
+
+Not allowed:
+- fake detections
+- fake logs
+- fake counts
+- fake engine controls
+- fake analysis theater
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. CLEAN PRODUCT IDENTITY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Make Sentrix feel like:
+- an intelligence search engine
+- a decision layer
+- a research workspace
+
+NOT:
+- a fake browser
+- a pretend desktop app
+- a simulated SOC console
+
+Remove visual confusion that pulls it back toward “browser mockup.”
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. UX HARDENING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For all real controls:
+- ensure proper hover state
+- ensure click state
+- ensure keyboard/focus behavior where reasonable
+- ensure immediate visible feedback
+
+For removed controls:
+- rebalance spacing and alignment cleanly
+- do not leave awkward gaps
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. OUTPUT GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Return a version of Sentrix where:
+- production search architecture is correctly wired for live deployment
+- no fake browser controls remain
+- no decorative interactive-looking elements remain unless they truly function
+- settings/privacy controls are either real or honestly presented as status-only
+- the product feels clean, trustworthy, and intentional
+
+Sentrix should now feel like a real product with zero fake affordances.

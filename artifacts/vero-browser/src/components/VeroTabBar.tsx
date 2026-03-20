@@ -16,24 +16,15 @@ export function VeroTabBar() {
         boxShadow: '0 1px 0 rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.025)',
       }}
     >
-      {/* Window controls + brand */}
-      <div className="flex items-center gap-4 px-3.5 border-r border-white/[0.05] shrink-0">
-        <div className="flex items-center gap-[5px]">
-          <div className="w-[11px] h-[11px] rounded-full bg-[#FF5F57]" />
-          <div className="w-[11px] h-[11px] rounded-full bg-[#FEBC2E]" />
-          <div className="w-[11px] h-[11px] rounded-full bg-[#28C840]" />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Shield className="w-3 h-3" style={{ color: 'hsl(142 72% 38%)', opacity: 0.8 }} />
-          <div>
-            <span
-              className="text-[10px] font-bold tracking-[0.22em] uppercase"
-              style={{ color: 'hsl(142 72% 42%)', opacity: 0.85, fontFamily: "'JetBrains Mono', monospace" }}
-            >
-              SENTRIX
-            </span>
-          </div>
-        </div>
+      {/* Brand */}
+      <div className="flex items-center gap-2.5 px-3.5 border-r border-white/[0.05] shrink-0">
+        <Shield className="w-3 h-3" style={{ color: 'hsl(142 72% 38%)', opacity: 0.8 }} />
+        <span
+          className="text-[10px] font-bold tracking-[0.22em] uppercase"
+          style={{ color: 'hsl(142 72% 42%)', opacity: 0.85, fontFamily: "'JetBrains Mono', monospace" }}
+        >
+          SENTRIX
+        </span>
       </div>
 
       {/* Tab strip */}
