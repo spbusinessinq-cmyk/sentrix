@@ -1,0 +1,67 @@
+Run a hard production debugging pass for Sentrix live search and Sage.
+
+IMPORTANT:
+Do not work on visual polish.
+Do not work on layout.
+Do not work on copy.
+Only debug the live production runtime and API routing.
+
+MISSION:
+Find and fix why sentrix.live still shows:
+- Search API unreachable
+- Offline / reference fallback
+- possible insecure/mixed-content behavior
+
+GOAL:
+Make live Sentrix search and Sage work for real in production.
+
+REQUIREMENTS:
+
+1. VERIFY LIVE API ENDPOINTS
+- test and log the exact runtime behavior of:
+  - /api/healthz
+  - /api/search?q=test
+  - /api/sage/query
+- confirm whether each returns JSON or HTML in production
+- surface the exact failing URL and status code
+
+2. VERIFY FRONTEND REQUEST TARGETS
+- log the exact resolved URL used by:
+  - search client
+  - sage client
+- confirm whether production is calling:
+  - same-origin https://sentrix.live/api/...
+  - a bad relative static route
+  - or an insecure http:// URL
+
+3. VERIFY DEPLOYMENT ENTRYPOINT
+- confirm the live deployment is actually running the api-server process
+- confirm Express is listening on process.env.PORT / 0.0.0.0
+- confirm the production server serves:
+  - /api/* as JSON
+  - frontend assets as static files
+  - SPA fallback only for non-API routes
+
+4. PREVENT API FALLTHROUGH
+- ensure /api/* can never return index.html
+- if route missing, return JSON error only
+- never allow html-as-json in production
+
+5. FIX MIXED CONTENT IF PRESENT
+- search codebase for any remaining http:// usage
+- ensure all live requests are https:// only
+- remove any insecure asset or request
+
+6. ADD LIVE DEBUG VISIBILITY
+- frontend console should log exact failing URL + status
+- backend should log when /api/search and /api/sage/query are hit in production
+- make it obvious whether the live app is talking to the real API server
+
+OUTPUT GOAL:
+Return a production-safe Sentrix deployment where:
+- /api/search works live
+- /api/sage/query works live
+- /api/healthz returns JSON live
+- no html-as-json issue exists
+- no mixed-content issue exists
+- search no longer falls into offline fallback unless upstream provider truly fails
