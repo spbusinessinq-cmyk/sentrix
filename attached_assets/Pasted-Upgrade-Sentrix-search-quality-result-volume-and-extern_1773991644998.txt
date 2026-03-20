@@ -1,0 +1,163 @@
+Upgrade Sentrix search quality, result volume, and external routing behavior.
+
+Do NOT redesign UI.
+Do NOT add fake data.
+This pass replaces weak results with real search data and fixes domain routing.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. REAL SEARCH RESULTS (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Replace the current mock/limited results system.
+
+Integrate a real search API:
+
+PRIMARY OPTION:
+- DuckDuckGo Instant Answer API (free, no key)
+- Endpoint: https://api.duckduckgo.com/?q={query}&format=json
+
+SECONDARY (if needed for better results):
+- SerpAPI or Brave Search API (if key available)
+
+IMPLEMENT:
+
+- Fetch real results based on query
+- Parse:
+  - RelatedTopics
+  - Results
+  - AbstractText
+  - Heading
+
+- Convert into Sentrix result objects:
+  - title
+  - url
+  - snippet
+  - domain
+
+IMPORTANT:
+- Remove hard limit of 5 results
+- Show 10–20 results per query minimum
+- Add pagination or “Load more” button
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. RESULT QUALITY IMPROVEMENT
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For each result:
+
+- Clean titles (no raw URLs as titles)
+- Extract domain cleanly (e.g. nytimes.com, github.com)
+- Improve snippet fallback:
+  - if no snippet → generate short summary from title/domain
+  - NEVER leave blank
+
+Sort results:
+
+- prioritize:
+  - known domains (wikipedia, major news, docs)
+  - https sites
+- deprioritize junk/empty entries
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. INTELLIGENCE LAYER (UPGRADE)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Improve classification logic using:
+
+- domain patterns:
+  - github.com → Documentation
+  - wikipedia.org → Reference
+  - nytimes.com → News
+  - stackoverflow.com → Forum
+
+- keyword hints from query
+
+Enhance reasoning:
+- short, human-readable
+- no generic filler
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. INCREASE RESULTS COUNT + UX
+━━━━━━━━━━━━━━━━━━━━━━━
+
+- Default: show 10 results
+- Add:
+  - “Load more” button OR infinite scroll
+- Update filter tabs counts dynamically (All / Safe / Review etc.)
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. FIX DOMAIN LINK (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+The footer link:
+rsrintel.com Intelligence Network
+
+ISSUE:
+It does not route properly.
+
+FIX:
+
+- Replace any internal router navigation with:
+  window.open("https://www.rsrintel.com", "_blank")
+
+OR
+
+- If staying in-app:
+  force full redirect:
+  window.location.href = "https://www.rsrintel.com"
+
+DO NOT:
+- route through Sentrix internal navigation
+- treat it like a search query
+
+Ensure:
+- clicking ALWAYS opens the real site
+- no hash routing interference
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. URL DETECTION HARDENING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Improve URL detection logic:
+
+Recognize:
+- domain.com
+- www.domain.com
+- https://domain.com
+- sub.domain.com
+- IP addresses
+
+Before search:
+- test input with regex
+- if URL → open externally immediately
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. FAIL-SAFE HANDLING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+If search API fails:
+- show fallback message:
+  “Unable to fetch live results”
+- do NOT show fake data
+- allow retry button
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. KEEP PERFORMANCE CLEAN
+━━━━━━━━━━━━━━━━━━━━━━━
+
+- debounce search input (300–500ms)
+- avoid duplicate API calls
+- cache recent searches in memory
+
+━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+After this pass:
+
+- Searches return real, relevant results (10–20+)
+- Results feel comparable to a lightweight search engine
+- No more weak or empty results
+- rsrintel.com link always opens correctly
+- URL typing behaves like a real browser
+- Sentrix feels like a legitimate intelligence search system

@@ -254,11 +254,9 @@ export function HomeView() {
         {/* Intelligence Network footer */}
         <div className="w-full mt-auto pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
           <div className="flex items-center justify-between">
-            <a
-              href="https://rsrintel.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-[10px] font-mono transition-colors"
+            <button
+              onClick={() => window.open('https://www.rsrintel.com', '_blank', 'noopener,noreferrer')}
+              className="flex items-center gap-2 text-[10px] font-mono transition-colors cursor-pointer"
               style={{ color: 'rgba(148,163,184,0.28)' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'rgba(22,163,74,0.55)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'rgba(148,163,184,0.28)')}
@@ -266,7 +264,7 @@ export function HomeView() {
               <Shield className="w-3 h-3 shrink-0" />
               rsrintel.com — Intelligence Network
               <ExternalLink className="w-2.5 h-2.5" />
-            </a>
+            </button>
             <button
               onClick={burnSession}
               className="flex items-center gap-1.5 text-[10px] font-mono transition-colors"

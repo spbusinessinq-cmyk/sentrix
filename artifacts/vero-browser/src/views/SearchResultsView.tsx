@@ -350,31 +350,36 @@ function FooterAction({
 
 // ── Main view ─────────────────────────────────────────────────────────────────
 
+const PAGE_SIZE = 10;
+
 export function SearchResultsView() {
   const { searchQuery } = useBrowserState();
-  const [results, setResults] = useState<EnrichedItem[]>([]);
+  const [allResults, setAllResults] = useState<EnrichedItem[]>([]);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
-  const [provider, setProvider] = useState<'brave' | 'mock'>('mock');
+  const [provider, setProvider] = useState<'brave' | 'duckduckgo' | 'mock'>('mock');
   const [filter, setFilter] = useState<FilterKey>('all');
   const [inspectTarget, setInspectTarget] = useState<{ url: string; title: string; snippet: string } | null>(null);
 
   const safeQuery = searchQuery ?? '';
 
-  useEffect(() => {
+  const doSearch = () => {
     if (!safeQuery) return;
-    setLoading(true); setError(false); setFilter('all');
+    setLoading(true); setError(false); setFilter('all'); setVisibleCount(PAGE_SIZE);
     searchWeb(safeQuery)
       .then(resp => {
-        setResults(resp.results.map(enrichResult));
-        setProvider(resp.provider);
+        setAllResults(resp.results.map(enrichResult));
+        setProvider(resp.provider as any);
         setError(!!resp.error && resp.results.length === 0);
       })
-      .catch(() => { setError(true); setResults([]); })
+      .catch(() => { setError(true); setAllResults([]); })
       .finally(() => setLoading(false));
-  }, [safeQuery]);
+  };
 
-  const filtered = results.filter(r => {
+  useEffect(() => { doSearch(); }, [safeQuery]);
+
+  const filtered = allResults.filter(r => {
     if (filter === 'safe')    return r.posture === 'SAFE';
     if (filter === 'caution') return r.posture === 'CAUTION' || r.posture === 'UNKNOWN';
     if (filter === 'docs')    return r.sourceType === 'Documentation' || r.sourceType === 'Reference';
@@ -382,12 +387,15 @@ export function SearchResultsView() {
     return true;
   });
 
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = filtered.length > visibleCount;
+
   const counts = {
-    all:     results.length,
-    safe:    results.filter(r => r.posture === 'SAFE').length,
-    caution: results.filter(r => r.posture === 'CAUTION' || r.posture === 'UNKNOWN').length,
-    docs:    results.filter(r => r.sourceType === 'Documentation' || r.sourceType === 'Reference').length,
-    news:    results.filter(r => r.sourceType === 'News').length,
+    all:     allResults.length,
+    safe:    allResults.filter(r => r.posture === 'SAFE').length,
+    caution: allResults.filter(r => r.posture === 'CAUTION' || r.posture === 'UNKNOWN').length,
+    docs:    allResults.filter(r => r.sourceType === 'Documentation' || r.sourceType === 'Reference').length,
+    news:    allResults.filter(r => r.sourceType === 'News').length,
   };
 
   const filters: { key: FilterKey; label: string }[] = [
@@ -413,6 +421,8 @@ export function SearchResultsView() {
               <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-muted-foreground/35">
                 Intelligence Search
                 {provider === 'brave' && <span className="text-primary/30 ml-2">· Brave Search</span>}
+                {provider === 'duckduckgo' && <span className="text-primary/30 ml-2">· DuckDuckGo</span>}
+                {provider === 'mock' && <span className="text-muted-foreground/22 ml-2">· Heuristic</span>}
               </span>
             </div>
             <h2 className="text-[15px] font-semibold text-foreground/85 leading-tight truncate">
@@ -423,7 +433,7 @@ export function SearchResultsView() {
             <Loader2 className="w-4 h-4 text-primary/50 animate-spin mt-1 shrink-0 ml-4" />
           ) : (
             <div className="text-right shrink-0 ml-4">
-              <div className="text-[10px] font-mono text-muted-foreground/28">{results.length} results</div>
+              <div className="text-[10px] font-mono text-muted-foreground/28">{allResults.length} results</div>
               <div className="text-[10px] font-mono text-primary/45 mt-0.5">{counts.safe} safe</div>
             </div>
           )}
@@ -463,13 +473,24 @@ export function SearchResultsView() {
         )}
 
         {!loading && error && (
-          <div className="flex items-center justify-center py-14 gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-500/50" />
-            <span className="text-[12px] font-mono text-muted-foreground/40">Search unavailable — check your connection</span>
+          <div className="flex flex-col items-center justify-center py-14 gap-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-500/50" />
+              <span className="text-[12px] font-mono text-muted-foreground/40">Unable to fetch live results</span>
+            </div>
+            <button
+              onClick={() => doSearch()}
+              className="px-3 py-1.5 text-[11px] font-mono rounded border cursor-pointer transition-colors"
+              style={{ borderColor: 'rgba(22,163,74,0.3)', color: 'rgba(22,163,74,0.7)', background: 'rgba(22,163,74,0.06)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(22,163,74,0.12)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(22,163,74,0.06)'; }}
+            >
+              Retry search
+            </button>
           </div>
         )}
 
-        {!loading && !error && filtered.map((r, i) => (
+        {!loading && !error && visible.map((r, i) => (
           <ResultCard
             key={r.id}
             result={r}
@@ -478,17 +499,30 @@ export function SearchResultsView() {
           />
         ))}
 
-        {!loading && !error && filtered.length === 0 && results.length > 0 && (
+        {!loading && !error && filtered.length === 0 && allResults.length > 0 && (
           <div className="text-center py-14 text-muted-foreground/28 font-mono text-[12px]">
             — no results match this filter —
           </div>
         )}
 
-        {!loading && !error && results.length > 0 && (
+        {/* Load more */}
+        {!loading && !error && hasMore && (
+          <button
+            onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+            className="w-full py-2.5 text-[11px] font-mono rounded border cursor-pointer transition-colors mt-1"
+            style={{ borderColor: 'rgba(255,255,255,0.06)', color: 'rgba(148,163,184,0.45)', background: 'transparent' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(22,163,74,0.25)'; e.currentTarget.style.color = 'rgba(22,163,74,0.7)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(148,163,184,0.45)'; }}
+          >
+            Load more — {filtered.length - visibleCount} remaining
+          </button>
+        )}
+
+        {!loading && !error && allResults.length > 0 && !hasMore && (
           <div className="flex items-center gap-2 py-3 border-t border-white/[0.04] mt-2">
             <ShieldCheck className="w-3 h-3 text-primary/25" />
             <span className="text-[10px] font-mono text-muted-foreground/22">
-              Results enriched with heuristic classification · click title to inspect · Open to visit externally
+              {provider === 'duckduckgo' ? 'DuckDuckGo Instant Answers' : provider === 'brave' ? 'Brave Search' : 'Heuristic classification'} · click title to inspect · Open visits externally
             </span>
           </div>
         )}
