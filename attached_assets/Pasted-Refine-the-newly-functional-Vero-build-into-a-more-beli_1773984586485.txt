@@ -1,0 +1,81 @@
+Refine the newly functional Vero build into a more believable, demo-ready browser beta by focusing on the two most important user flows: Search Results and Website View.
+
+IMPORTANT:
+Do not rebuild the whole app.
+Do not redesign the visual system.
+Do not change the core architecture that is already working.
+Build on top of the current functional version.
+
+MISSION:
+Make Vero feel real by making the search-to-site workflow polished, interactive, and consistent with the BLACKDOG-driven browser experience.
+
+PRIORITIES:
+1. Search Results View
+2. Website View
+3. Dynamic BLACKDOG state updates tied to those views
+4. Better history + recent item behavior
+5. Stronger demo-ready flow
+
+SEARCH RESULTS VIEW REQUIREMENTS:
+- Make the search results page feel more real, more premium, and more tactical
+- Show current query clearly
+- Keep filter controls such as:
+  - All
+  - Safe
+  - News
+  - Docs
+- Improve result card design and hierarchy
+- Each result card must include:
+  - title
+  - domain
+  - summary snippet
+  - SAFE / CAUTION / DANGER / UNKNOWN label
+  - short BLACKDOG reason
+- Clicking a result should open Website View in the active tab
+- Update the tab title based on the selected result
+- Add hover and active states so results feel clickable and polished
+- Make results feel like Vero, not like a generic search engine clone
+
+WEBSITE VIEW REQUIREMENTS:
+- Improve the dedicated website page view so it feels like a browser is actually displaying a site
+- Show:
+  - page title
+  - current URL
+  - page content area
+  - optional page meta information
+- If the page is CAUTION or DANGER, show an inspection banner or warning strip
+- If SAFE, show a more restrained clean state
+- The content area can remain mocked, but it must feel like a believable site render, not a placeholder block
+- Add stronger page inspection hierarchy within the main view
+
+BLACKDOG STATE REQUIREMENTS:
+- When a result is opened, update the BLACKDOG panel dynamically
+- Update:
+  - page risk
+  - trackers blocked
+  - scripts flagged
+  - redirects
+  - telemetry lines
+  - page inspection summary
+- Keep this mocked but believable based on URL/query pattern logic
+- Make transitions between states feel smoother and more intentional
+
+HISTORY / RECENT BEHAVIOR:
+- Improve recent page behavior
+- Opening search results and sites should update history cleanly
+- Recent items should reflect user movement through the app more clearly
+- Burn session should still clear everything correctly
+
+UI / PRODUCT FEEL:
+- Maintain the existing slick, tactical, glassy Vero aesthetic
+- Do not redesign the app
+- Improve usability, hierarchy, and realism
+- Avoid generic search layouts
+- Avoid placeholder-looking website blocks
+- Keep everything sharp, believable, and premium
+
+OUTPUT GOAL:
+Return the improved implementation so Vero now has a strong functional flow from:
+Home → Search Results → Website View → History / Recent updates → BLACKDOG panel updates
+
+The result should feel like a real browser beta experience, not just a styled shell.
