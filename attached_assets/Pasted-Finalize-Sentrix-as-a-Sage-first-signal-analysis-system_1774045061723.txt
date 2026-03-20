@@ -1,0 +1,226 @@
+Finalize Sentrix as a Sage-first signal analysis system.
+
+CRITICAL:
+Do NOT redesign the whole product.
+Do NOT revert to a search-engine-first experience.
+Do NOT require Brave Search.
+Brave is intentionally optional and may remain unset.
+
+CURRENT PRODUCT DECISION:
+Sentrix is now analysis-first.
+The core experience is:
+- user enters a claim, headline, URL, pasted text, or question
+- Sage analyzes it
+- Sentrix returns structured clarity output
+- references are secondary
+
+MISSION:
+Make Sentrix launch-ready with Gemini-powered Sage as the primary engine.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. API / ENVIRONMENT LOGIC
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Use EdgeOne environment variables:
+
+- GEMINI_API_KEY (required)
+- BRAVE_SEARCH_API_KEY (optional, may be absent)
+
+Requirements:
+
+1. If GEMINI_API_KEY exists:
+- /api/sage/query must use it
+- Sage must work live in production
+
+2. If GEMINI_API_KEY is missing:
+- do NOT crash
+- do NOT blank the UI
+- return a structured limited-mode fallback response
+- log a server-side warning
+
+3. If BRAVE_SEARCH_API_KEY is missing:
+- this must NOT be treated as an error
+- Sentrix should continue in Sage-first analysis mode normally
+- no scary search-provider warning should dominate the UI
+
+4. /api/healthz must return JSON with:
+- status
+- sageReady
+- hasGeminiKey
+- hasBraveKey
+- analysisMode: true
+- timestamp
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. SAGE-FIRST PRODUCT BEHAVIOR
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Sentrix is NOT a search engine homepage anymore.
+
+Primary promise:
+- Analyze before you believe.
+
+Primary action:
+- analyze input with Sage
+
+Accepted inputs:
+- claim
+- headline
+- URL
+- pasted article text
+- question
+
+Sage must be the main engine and main visual focus.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. ANALYSIS OUTPUT FORMAT
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Every Sage response must render in this structure:
+
+## ANSWER
+Direct explanation first
+
+## SIGNAL
+HIGH / MEDIUM / LOW with a concise reason
+
+## AGREEMENT
+CONSENSUS / MIXED / CONFLICT with a concise reason
+
+## RISK
+SAFE / CAUTION / DANGER with a concise reason
+
+## WHAT MATTERS
+Always visible bullet list of:
+- key facts
+- relevant context
+- entities involved
+
+## WHAT TO QUESTION
+Always visible bullet list of:
+- ambiguity
+- weak assumptions
+- missing context
+- contradiction points
+
+## SOURCES
+Secondary only
+
+If the model output is malformed:
+- normalize it before render
+- do not show broken formatting to the user
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. KILL ARTICLE-FIRST BEHAVIOR
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Current problem:
+article/result cards still appear underneath the analysis and make the product feel like search.
+
+Fix this.
+
+Requirements:
+
+1. Analyze mode must NOT auto-show the raw article/result card stack by default.
+
+2. Move cards/sources into a secondary section called:
+- Supporting References
+or
+- Reference Material
+
+3. Supporting References must be:
+- collapsed by default
+- visually secondary
+- below the analysis output
+
+4. The analysis output must remain the primary focus on screen.
+
+5. Search/result cards can still exist internally, but they must not dominate the analysis flow.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. URL HANDLING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+KEEP current URL behavior:
+
+- if user types a direct URL/domain intended for navigation, preserve the existing open-externally behavior
+- do NOT break the current URL detection logic
+
+But for Analyze input:
+- if user pastes a URL into the analysis box, treat it as analysis input for Sage
+- do not auto-navigate away from the analysis flow
+
+This means:
+- address bar behavior stays as-is
+- analysis input behavior remains Sage-first
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. UX / COPY CLEANUP
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep the homepage and results aligned with analysis-first positioning.
+
+Use language like:
+- Analyze input
+- Analysis output
+- Supporting references
+- Signal
+- Agreement
+- Risk
+
+Avoid language that implies:
+- generic web search
+- article browsing
+- link-first behavior
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. FAILURE HANDLING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+If Sage API fails:
+- do NOT leave “thinking…” stuck
+- do NOT show raw errors
+- do NOT blank out the panel
+
+Instead:
+- return a structured limited-mode analysis response
+- keep the UI calm and usable
+
+Optional subtle label:
+- Limited mode
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. PRODUCTION LOGGING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add clear logs for:
+- Sage route hit
+- Gemini key present: yes/no
+- Brave key present: yes/no
+- fallback mode used: yes/no
+
+Client logs:
+- exact /api/sage/query URL used
+- exact failure reason if request fails
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. FINAL VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+At the end, confirm all of this:
+
+- /api/healthz returns JSON
+- sageReady is true when GEMINI_API_KEY is set
+- Analyze mode is Sage-first
+- Supporting References are collapsed/secondary
+- no article cards auto-dump under the analysis output
+- direct URL behavior in the address bar still works
+- analysis input box does not navigate away
+- Sentrix feels like a truth filter / signal analysis system
+
+GOAL:
+Launch Sentrix as a clean Sage-powered analysis product:
+- not search-first
+- not article-first
+- not dependent on Brave
+- stable, focused, and usable

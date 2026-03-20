@@ -6,10 +6,14 @@
 export async function onRequest(context) {
   const env = context.env ?? {};
 
-  const sageReady = !!(
+  const hasGeminiKey = !!(
     env.GEMINI_API_KEY ||
-    env.AI_INTEGRATIONS_GEMINI_API_KEY ||
-    env.AI_INTEGRATIONS_GEMINI_BASE_URL
+    env.AI_INTEGRATIONS_GEMINI_API_KEY
+  );
+  const hasBraveKey = !!env.BRAVE_SEARCH_API_KEY;
+
+  console.log(
+    `[Sentrix] /api/healthz — geminiKey=${hasGeminiKey} braveKey=${hasBraveKey}`,
   );
 
   return new Response(
@@ -17,8 +21,11 @@ export async function onRequest(context) {
       status: 'ok',
       platform: 'edgeone-pages',
       environment: env.NODE_ENV ?? 'production',
+      analysisMode: true,
+      sageReady: hasGeminiKey,
+      hasGeminiKey,
+      hasBraveKey,
       searchReady: true,
-      sageReady,
       timestamp: new Date().toISOString(),
     }),
     {

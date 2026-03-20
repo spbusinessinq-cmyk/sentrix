@@ -2,6 +2,7 @@
  * EdgeOne Node Function — /api/sage/query
  * Streams Gemini 2.5 Flash analysis as Server-Sent Events.
  * Credentials stay server-side only.
+ * Fails gracefully into a structured limited-mode response.
  */
 
 const SYSTEM_PROMPT = `You are SAGE — Sentrix's Signal & Truth Filter. You analyze information and return structured intelligence that helps users understand before they trust or act.
@@ -77,18 +78,38 @@ function sseChunk(obj) {
 }
 
 function resolveGeminiKey(env) {
-  return (
-    env?.GEMINI_API_KEY ||
-    env?.AI_INTEGRATIONS_GEMINI_API_KEY ||
-    null
-  );
+  return env?.GEMINI_API_KEY || env?.AI_INTEGRATIONS_GEMINI_API_KEY || null;
 }
 
 function resolveGeminiBase(env) {
-  return (
-    env?.AI_INTEGRATIONS_GEMINI_BASE_URL ||
-    'https://generativelanguage.googleapis.com'
-  );
+  return env?.AI_INTEGRATIONS_GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com';
+}
+
+function limitedModeFallback(userMessage) {
+  const q = (userMessage || 'this input').trim().slice(0, 120);
+  return [
+    `## ANSWER`,
+    `Analysis engine is running in limited mode — the Gemini API key is not configured for this deployment. The input received was: "${q}"`,
+    ``,
+    `## SIGNAL`,
+    `LOW — analysis engine unavailable; no AI assessment was performed.`,
+    ``,
+    `## AGREEMENT`,
+    `MIXED — cannot assess source agreement without the analysis engine.`,
+    ``,
+    `## RISK`,
+    `CAUTION — verify claims independently; automated analysis is not available in this mode.`,
+    ``,
+    `## WHAT MATTERS`,
+    `- Sentrix is operating in limited mode`,
+    `- The GEMINI_API_KEY environment variable is not set in this deployment`,
+    `- Configure the API key in your EdgeOne environment variables to enable full analysis`,
+    ``,
+    `## WHAT TO QUESTION`,
+    `- Has the GEMINI_API_KEY been set in the EdgeOne Pages dashboard?`,
+    `- Is the key a valid Google AI Studio API key?`,
+    `- Does the key have access to the gemini-2.5-flash model?`,
+  ].join('\n');
 }
 
 export async function onRequest(context) {
@@ -132,23 +153,32 @@ export async function onRequest(context) {
   }
 
   const apiKey = resolveGeminiKey(env ?? {});
-  const geminiBase = resolveGeminiBase(env ?? {});
+  const hasBraveKey = !!(env?.BRAVE_SEARCH_API_KEY);
+
+  console.log(
+    `[Sentrix] /api/sage/query — geminiKey=${!!apiKey} braveKey=${hasBraveKey} fallback=${!apiKey} query="${(userMessage || '').slice(0, 60)}"`,
+  );
+
+  const sseHeaders = {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  };
 
   if (!apiKey) {
+    console.warn('[Sentrix] GEMINI_API_KEY not set — returning limited-mode fallback');
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
     const encoder = new TextEncoder();
-    writer.write(encoder.encode(sseChunk({ error: 'Sage is not configured — GEMINI_API_KEY is missing in EdgeOne environment variables' })));
+    const fallback = limitedModeFallback(userMessage);
+    writer.write(encoder.encode(sseChunk({ content: fallback })));
+    writer.write(encoder.encode(sseChunk({ done: true })));
     writer.close();
-    return new Response(readable, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      },
-    });
+    return new Response(readable, { headers: sseHeaders });
   }
 
+  const geminiBase = resolveGeminiBase(env ?? {});
   const resultsContext = buildResultsContext(results ?? []);
   const intelligenceSummary = intelligenceContext ? `\n\nINTELLIGENCE BRIEF:\n${intelligenceContext}` : '';
   const searchQuery = query ? `\n\nORIGINAL SEARCH QUERY: "${query}"` : '';
@@ -203,7 +233,10 @@ export async function onRequest(context) {
 
       if (!geminiRes.ok) {
         const errText = await geminiRes.text().catch(() => String(geminiRes.status));
-        writer.write(encoder.encode(sseChunk({ error: `Gemini API error (${geminiRes.status}): ${errText.slice(0, 200)}` })));
+        console.error(`[Sentrix] Gemini API error ${geminiRes.status}: ${errText.slice(0, 300)}`);
+        const fallback = limitedModeFallback(userMessage);
+        writer.write(encoder.encode(sseChunk({ content: fallback })));
+        writer.write(encoder.encode(sseChunk({ done: true })));
         writer.close();
         return;
       }
@@ -211,6 +244,7 @@ export async function onRequest(context) {
       const reader = geminiRes.body.getReader();
       const dec = new TextDecoder();
       let buf = '';
+      let hasOutput = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -230,6 +264,7 @@ export async function onRequest(context) {
             const evt = JSON.parse(raw);
             const text = evt?.candidates?.[0]?.content?.parts?.[0]?.text;
             if (text) {
+              hasOutput = true;
               writer.write(encoder.encode(sseChunk({ content: text })));
             }
           } catch {
@@ -238,21 +273,22 @@ export async function onRequest(context) {
         }
       }
 
+      if (!hasOutput) {
+        console.warn('[Sentrix] Gemini returned no text — emitting limited-mode fallback');
+        writer.write(encoder.encode(sseChunk({ content: limitedModeFallback(userMessage) })));
+      }
+
       writer.write(encoder.encode(sseChunk({ done: true })));
       writer.close();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
-      writer.write(encoder.encode(sseChunk({ error: `Sage analysis failed — ${msg}` })));
+      console.error(`[Sentrix] Sage stream error: ${msg}`);
+      const fallback = limitedModeFallback(userMessage);
+      writer.write(encoder.encode(sseChunk({ content: fallback })));
+      writer.write(encoder.encode(sseChunk({ done: true })));
       writer.close();
     }
   })();
 
-  return new Response(readable, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no',
-    },
-  });
+  return new Response(readable, { headers: sseHeaders });
 }

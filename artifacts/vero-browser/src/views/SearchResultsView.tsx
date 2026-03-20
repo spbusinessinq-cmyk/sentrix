@@ -3,7 +3,7 @@ import {
   ShieldCheck, ShieldAlert, Shield, AlertTriangle,
   Bookmark, BookmarkCheck, FolderPlus, Check,
   Loader2, AlertCircle, ArrowUpRight, Plus,
-  ChevronDown, ChevronUp, Zap, Sparkles,
+  ChevronDown, ChevronUp, ChevronRight, Zap, Sparkles,
   Send, X, RotateCcw, Lock, GitMerge,
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
@@ -678,13 +678,13 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
 
   return (
     <motion.div
-      initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.2, ease: 'easeOut' }}
-      className="shrink-0 flex flex-col border-b"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.15, ease: 'easeOut' }}
+      className="flex-1 min-h-0 flex flex-col"
       style={{
-        maxHeight: '540px', borderColor: 'rgba(139,92,246,0.12)',
+        borderColor: 'rgba(139,92,246,0.12)',
         background: 'rgba(7,5,16,0.98)',
-        borderTop: '1px solid rgba(139,92,246,0.1)',
+        borderTop: '1px solid rgba(139,92,246,0.08)',
         overflow: 'hidden',
       }}
     >
@@ -984,8 +984,9 @@ export function SearchResultsView() {
   const [filter, setFilter]             = useState<FilterKey>('all');
   const [inspectTarget, setInspectTarget] = useState<{ url: string; title: string; snippet: string } | null>(null);
   const [briefExpanded, setBriefExpanded] = useState(true);
-  const [sageOpen, setSageOpen]           = useState(false);
+  const [sageOpen, setSageOpen]           = useState(true);
   const [autoSendMsg, setAutoSendMsg]     = useState<string | null>(null);
+  const [refsOpen, setRefsOpen]           = useState(false);
 
   const safeQuery = searchQuery ?? '';
 
@@ -1004,14 +1005,10 @@ export function SearchResultsView() {
   };
 
   useEffect(() => {
-    if (sageMode) {
-      setSageOpen(true);
-      setAutoSendMsg(safeQuery); // auto-send the query to Sage as the first question
-      setSageMode(false);
-    } else {
-      setSageOpen(false);
-      setAutoSendMsg(null);
-    }
+    setSageMode(false);
+    setSageOpen(true);
+    setAutoSendMsg(safeQuery);
+    setRefsOpen(false);
     doSearch();
   }, [safeQuery]);
 
@@ -1071,66 +1068,30 @@ export function SearchResultsView() {
   return (
     <div className="h-full flex flex-col overflow-hidden bg-background">
 
-      {/* Sticky header */}
-      <div className="shrink-0 px-5 pt-4 pb-0 border-b border-white/[0.05]"
+      {/* Header — analysis-first: query + loading only */}
+      <div className="shrink-0 px-5 pt-4 pb-3 border-b border-white/[0.05]"
         style={{ background: 'rgba(6,7,10,0.97)', backdropFilter: 'blur(8px)' }}>
-        <div className="flex items-start justify-between mb-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <ShieldCheck className="w-3 h-3 shrink-0" style={{ color: 'rgba(148,163,184,0.28)' }} />
-              <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-muted-foreground/35">
-                Signal Analysis
-                {provider === 'brave' && !error && <span className="text-muted-foreground/22 ml-2">· Brave Search</span>}
-                {provider === 'duckduckgo' && !error && <span className="text-muted-foreground/22 ml-2">· DuckDuckGo</span>}
-                {(provider === 'mock' && !error) && <span className="text-muted-foreground/18 ml-2">· Heuristic</span>}
-                {error && <span className="ml-2" style={{ color: 'rgba(245,158,11,0.55)' }}>· Offline — reference results only</span>}
-              </span>
-            </div>
-            <h2 className="text-[15px] font-semibold text-foreground/85 leading-tight truncate">"{safeQuery || '—'}"</h2>
-          </div>
-          {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin mt-1 shrink-0 ml-4" style={{ color: 'rgba(148,163,184,0.40)' }} />
-          ) : (
-            <div className="text-right shrink-0 ml-4">
-              <div className="text-[10px] font-mono text-muted-foreground/28">{allResults.length} results</div>
-              <div className="text-[10px] font-mono mt-0.5" style={{ color: 'rgba(56,189,248,0.50)' }}>{counts.safe} safe</div>
-            </div>
-          )}
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="w-3 h-3 shrink-0" style={{ color: 'rgba(148,163,184,0.28)' }} />
+          <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-muted-foreground/35 flex-1 min-w-0">
+            Signal Analysis
+          </span>
+          {loading && <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" style={{ color: 'rgba(148,163,184,0.35)' }} />}
         </div>
-
-        {/* Filter tabs */}
-        <div className="flex items-center gap-0 -mx-1">
-          {filters.map(f => (
-            <button key={f.key} onClick={() => setFilter(f.key)}
-              className={twMerge('relative px-3 py-2.5 text-[11px] font-mono tracking-wide transition-all flex items-center gap-1.5 cursor-pointer',
-                filter === f.key ? 'text-foreground/85' : 'text-muted-foreground/32 hover:text-muted-foreground/62')}>
-              {f.icon}{f.label}
-              <span className={twMerge('text-[9px] font-bold tabular-nums', filter === f.key ? 'text-primary/60' : 'text-muted-foreground/22')}>
-                {counts[f.key]}
-              </span>
-              {filter === f.key && <motion.div layoutId="search-filter-tab" className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-primary/60 rounded-full" />}
-            </button>
-          ))}
-        </div>
+        <h2 className="text-[15px] font-semibold text-foreground/85 leading-tight mt-1 pr-4" style={{ wordBreak: 'break-word' }}>
+          "{safeQuery || '—'}"
+        </h2>
       </div>
 
-      {/* Intelligence Brief */}
-      {!loading && !error && intelligence && (
-        <IntelligenceBrief report={intelligence} expanded={briefExpanded} onToggle={() => setBriefExpanded(v => !v)}
-          sageOpen={sageOpen} onToggleSage={() => setSageOpen(v => !v)} />
-      )}
-
-      {/* Ask Sage Chat Panel */}
+      {/* Analysis Output — Sage always-on, takes all remaining space */}
       <AnimatePresence>
-        {!loading && !error && sageOpen && (
-          <SageChat
-            open={sageOpen}
-            query={safeQuery} results={sageResults} context={sageContext}
-            onClose={() => setSageOpen(false)}
-            initialMessage={autoSendMsg}
-            onClearInitialMessage={() => setAutoSendMsg(null)}
-          />
-        )}
+        <SageChat
+          open={sageOpen}
+          query={safeQuery} results={sageResults} context={sageContext}
+          onClose={() => setSageOpen(false)}
+          initialMessage={autoSendMsg}
+          onClearInitialMessage={() => setAutoSendMsg(null)}
+        />
       </AnimatePresence>
 
       {/* Investigation Mode banner */}
@@ -1140,7 +1101,7 @@ export function SearchResultsView() {
         return (
           <button onClick={() => navigate('sentrix://investigations')}
             className="shrink-0 flex items-center gap-2 px-5 py-2 text-left hover:opacity-90 transition-opacity"
-            style={{ background: 'rgba(56,189,248,0.05)', borderBottom: '1px solid rgba(56,189,248,0.14)' }}>
+            style={{ background: 'rgba(56,189,248,0.05)', borderTop: '1px solid rgba(56,189,248,0.12)' }}>
             <span className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ background: '#38BDF8' }} />
             <span className="text-[10px] font-mono tracking-[0.1em]" style={{ color: 'rgba(56,189,248,0.80)' }}>INVESTIGATION MODE</span>
             {activeInv && <span className="text-[10px] font-mono text-muted-foreground/50">· {activeInv.name} ({invSourceCount} source{invSourceCount !== 1 ? 's' : ''})</span>}
@@ -1149,62 +1110,93 @@ export function SearchResultsView() {
         );
       })()}
 
-      {/* Results — dimmed when Sage is in focus */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-2"
-        style={{ transition: 'opacity 200ms ease-out', opacity: sageOpen ? 0.52 : 1, pointerEvents: sageOpen ? 'none' : 'auto' }}>
-        {loading && (
-          <div className="flex items-center justify-center py-16 gap-2.5">
-            <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'rgba(148,163,184,0.40)' }} />
-            <span className="text-[12px] font-mono text-muted-foreground/35">Analyzing results…</span>
-          </div>
-        )}
-        {!loading && error && allResults.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-14 gap-3">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-500/50" />
-              <span className="text-[12px] font-mono text-muted-foreground/40">
-                Search API unreachable — check console for the failing URL
-              </span>
-            </div>
-            <button onClick={() => doSearch()}
-              className="px-3 py-1.5 text-[11px] font-mono rounded border cursor-pointer transition-colors"
-              style={{ borderColor: 'rgba(255,255,255,0.14)', color: 'rgba(200,205,210,0.80)', background: 'rgba(255,255,255,0.04)' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}>
-              Retry
-            </button>
-          </div>
-        )}
-        {!loading && allResults.length > 0 && visible.map((r, i) => (
-          <ResultCard key={r.id} result={r} index={i}
-            onInspect={() => setInspectTarget({ url: r.url, title: r.title, snippet: r.snippet })}
-            tier={intelligence?.signalTiers.get(r.id)}
-            compare={intelligence?.compareTheseIds.includes(r.id) && intelligence?.signalTiers.get(r.id) !== 'primary'} />
-        ))}
-        {!loading && allResults.length > 0 && filtered.length === 0 && (
-          <div className="text-center py-14">
-            <p className="text-muted-foreground/28 font-mono text-[12px] mb-2">— no results match this filter —</p>
-            {filter === 'strict' && <p className="text-muted-foreground/22 font-mono text-[10px]">Strict mode shows only high-confidence, SAFE-rated results</p>}
-          </div>
-        )}
-        {!loading && allResults.length > 0 && hasMore && (
-          <button onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
-            className="w-full py-2.5 text-[11px] font-mono rounded border cursor-pointer transition-colors mt-1"
-            style={{ borderColor: 'rgba(255,255,255,0.06)', color: 'rgba(148,163,184,0.45)', background: 'transparent' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; e.currentTarget.style.color = 'rgba(200,205,210,0.75)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(148,163,184,0.45)'; }}>
-            Load more — {filtered.length - visibleCount} remaining
-          </button>
-        )}
-        {!loading && allResults.length > 0 && !hasMore && (
-          <div className="flex items-center gap-2 py-3 border-t border-white/[0.04] mt-2">
-            <ShieldCheck className="w-3 h-3" style={{ color: 'rgba(148,163,184,0.22)' }} />
-            <span className="text-[10px] font-mono text-muted-foreground/22">
-              {error ? 'Offline mode' : provider === 'duckduckgo' ? 'DuckDuckGo' : provider === 'brave' ? 'Brave Search' : 'Heuristic'} · click title to inspect · Open visits externally
+      {/* Supporting References — collapsed by default, always secondary */}
+      <div className="shrink-0 border-t" style={{ borderColor: 'rgba(255,255,255,0.055)', background: 'rgba(4,5,8,0.85)' }}>
+        <button
+          onClick={() => setRefsOpen(v => !v)}
+          className="w-full flex items-center gap-2 px-5 py-2.5 cursor-pointer hover:bg-white/[0.02] transition-colors"
+        >
+          {refsOpen
+            ? <ChevronDown className="w-3 h-3 shrink-0" style={{ color: 'rgba(148,163,184,0.35)' }} />
+            : <ChevronRight className="w-3 h-3 shrink-0" style={{ color: 'rgba(148,163,184,0.35)' }} />}
+          <span className="text-[9px] font-mono uppercase tracking-[0.22em]" style={{ color: 'rgba(148,163,184,0.40)' }}>
+            Supporting References
+          </span>
+          {!loading && allResults.length > 0 && (
+            <span className="text-[9px] font-mono ml-1" style={{ color: 'rgba(148,163,184,0.22)' }}>
+              · {allResults.length}
             </span>
+          )}
+          {loading && <Loader2 className="w-2.5 h-2.5 animate-spin ml-1" style={{ color: 'rgba(148,163,184,0.25)' }} />}
+          <div className="ml-auto flex items-center gap-3">
+            {/* Filter tabs — inside the refs toggle row */}
+            {refsOpen && filters.map(f => (
+              <button key={f.key} onClick={e => { e.stopPropagation(); setFilter(f.key); }}
+                className={twMerge('flex items-center gap-1 text-[9px] font-mono tracking-wide transition-all cursor-pointer px-1.5 py-0.5 rounded',
+                  filter === f.key
+                    ? 'text-foreground/70'
+                    : 'text-muted-foreground/28 hover:text-muted-foreground/55')}>
+                {f.icon}{f.label}
+                <span className={twMerge('text-[8px] font-bold tabular-nums', filter === f.key ? 'text-primary/55' : 'text-muted-foreground/18')}>
+                  {counts[f.key]}
+                </span>
+              </button>
+            ))}
           </div>
-        )}
+        </button>
       </div>
+
+      {/* References panel — visible only when refsOpen */}
+      <AnimatePresence>
+        {refsOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="shrink-0 overflow-hidden"
+            style={{ maxHeight: '340px' }}
+          >
+            <div className="overflow-y-auto px-5 py-3 flex flex-col gap-2" style={{ maxHeight: '340px' }}>
+              {!loading && error && allResults.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-8 gap-3">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-500/50" />
+                    <span className="text-[11px] font-mono text-muted-foreground/40">
+                      Reference sources unavailable
+                    </span>
+                  </div>
+                  <button onClick={() => doSearch()}
+                    className="px-3 py-1.5 text-[11px] font-mono rounded border cursor-pointer transition-colors"
+                    style={{ borderColor: 'rgba(255,255,255,0.14)', color: 'rgba(200,205,210,0.80)', background: 'rgba(255,255,255,0.04)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}>
+                    Retry
+                  </button>
+                </div>
+              )}
+              {!loading && allResults.length > 0 && filtered.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground/28 font-mono text-[11px]">— no references match this filter —</p>
+                </div>
+              )}
+              {!loading && allResults.length > 0 && visible.map((r, i) => (
+                <ResultCard key={r.id} result={r} index={i}
+                  onInspect={() => setInspectTarget({ url: r.url, title: r.title, snippet: r.snippet })}
+                  tier={intelligence?.signalTiers.get(r.id)}
+                  compare={intelligence?.compareTheseIds.includes(r.id) && intelligence?.signalTiers.get(r.id) !== 'primary'} />
+              ))}
+              {!loading && allResults.length > 0 && hasMore && (
+                <button onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+                  className="w-full py-2 text-[11px] font-mono rounded border cursor-pointer transition-colors"
+                  style={{ borderColor: 'rgba(255,255,255,0.06)', color: 'rgba(148,163,184,0.45)', background: 'transparent' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; e.currentTarget.style.color = 'rgba(200,205,210,0.75)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(148,163,184,0.45)'; }}>
+                  Load more — {filtered.length - visibleCount} remaining
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Inspect drawer */}
       <AnimatePresence>
