@@ -1,0 +1,289 @@
+Implement a major interaction wiring, intelligence workflow, and URL-routing pass for Sentrix.
+
+IMPORTANT:
+Do not redesign the UI from scratch.
+Do not break the current visual identity.
+Do not add fake telemetry, fake detections, or fake BLACKDOG claims.
+This pass is about making Sentrix actually function like a real intelligence search product.
+
+MISSION:
+Take the current Sentrix Intelligence Search Engine and make all core interactions work reliably:
+- searching
+- clicking results
+- inspecting results
+- saving/bookmarking results
+- adding results to collections
+- handling direct URLs correctly
+
+PRIMARY GOALS:
+1. Fix all dead/non-clickable search result interactions
+2. Make result cards and actions behave like a real product
+3. Add clean URL-vs-search input behavior
+4. Strengthen the actual intelligence value of results and inspect views
+5. Ensure save/bookmark/collection flows work visibly and persistently
+6. Make the product feel operational, not just styled
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. URL INPUT VS SEARCH INPUT (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Implement clean input behavior for the main Sentrix search/address bar.
+
+RULES:
+
+A. If the user input looks like a URL:
+Examples:
+- google.com
+- www.google.com
+- openai.com
+- rsrintel.com
+- https://example.com
+- 192.168.1.1
+
+THEN:
+- normalize the URL (auto-add https:// if needed)
+- immediately open it externally in a new browser tab
+- do NOT route it to Sentrix search results
+- do NOT route it into Website View first
+- do NOT show preview first
+
+B. If the user input looks like a search query:
+Examples:
+- obama
+- best vpn 2026
+- how to harden a router
+
+THEN:
+- route to Sentrix search results
+- use the real search API
+- show intelligence-enriched results inside Sentrix
+
+OPTIONAL:
+- If a URL is classified as DANGER by simple pattern logic, show a minimal confirmation modal before external open:
+  - “This destination may be unsafe”
+  - Continue / Cancel
+Keep this simple and honest if implemented.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. SEARCH RESULT CARDS MUST BE FULLY INTERACTIVE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Every search result card must support real working interaction.
+
+IMPLEMENT:
+- Clicking the result title triggers the primary action
+- Clicking “Open externally” immediately opens the target in a new browser tab
+- Clicking “Inspect” opens the inspect drawer/panel for that exact result
+- Clicking “Save” stores the item as a saved intelligence item
+- Clicking “Bookmark” stores it as a bookmark
+- Clicking “Add to Collection” opens the collection picker and actually adds it
+
+Make sure buttons have proper pointer behavior, hover states, click handlers, and visible success feedback.
+No dead UI.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. DEFINE PRIMARY RESULT ACTIONS CLEARLY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Set a clear product interaction model for results:
+
+- Title click = Inspect OR Open externally
+Choose one and apply it consistently across all results.
+Recommended:
+- Title click = Inspect
+- Dedicated Open button = Open externally
+
+Also allow the entire result card to have a sensible click target if appropriate, but avoid accidental misclick behavior.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. INSPECT DRAWER / PANEL MUST BE REAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+The Inspect experience must feel useful and operational.
+
+When Inspect is clicked, open a real panel/drawer/modal that shows:
+
+- full URL
+- root domain
+- protocol
+- source type
+- posture/risk label
+- reasoning
+- signal list
+- recommendation / quick assessment
+- actions:
+  - Open externally
+  - Save
+  - Bookmark
+  - Add to Collection
+  - Copy URL
+
+The inspect view must populate from the exact selected result.
+No placeholders.
+No dead controls.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. MAKE “INTELLIGENCE” ACTUALLY USEFUL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For every result, generate a simple but useful intelligence object using real inputs already available:
+
+Use:
+- result URL
+- domain
+- protocol
+- search provider metadata/snippet
+- keyword heuristics
+
+Generate:
+- source type
+- posture/risk
+- reasoning line
+- signals
+- recommendation
+
+Possible source types:
+- News
+- Documentation
+- Reference
+- Commercial
+- Forum
+- Download
+- Unknown
+
+Possible posture labels:
+- SAFE
+- CAUTION
+- UNKNOWN
+- DANGER
+
+Possible recommendations:
+- Open normally
+- Inspect before opening
+- Use caution
+- Avoid unless necessary
+
+Do not invent deep threat intel.
+Keep it transparent, believable, and useful.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. SAVE / BOOKMARK / COLLECTION FLOWS MUST WORK
+━━━━━━━━━━━━━━━━━━━━━━━
+
+A. Save
+- Saves the result as a saved intelligence item
+- Show visible success state
+- Persist locally
+
+B. Bookmark
+- Saves as bookmark
+- Update bookmark state immediately
+- Persist locally
+
+C. Add to Collection
+- Open collection picker
+- Allow adding to existing collection
+- Allow creating a new collection inline if not already implemented
+- Persist locally
+- Show visible success feedback
+
+D. Collections view
+- Items added from search results must actually appear
+- Counts must update
+- Removal must work
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. QUICK ACTIONS / HOME ACTIONS MUST STILL WORK
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Preserve and verify:
+- Link Check
+- Bookmarks
+- Collections
+- Privacy Report
+- Burn Session
+
+Make sure these are all wired and not decorative.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. SEARCH RESULTS PAGE MUST FEEL OPERATIONAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Improve result usability:
+- ensure buttons are clearly clickable
+- ensure spacing does not block clicks
+- ensure overlays are not intercepting pointer events
+- ensure hover/focus states are obvious
+- ensure keyboard focus works where reasonable
+
+If any current layout layer is preventing clicks, fix z-index, pointer-events, or event binding issues.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. PERSISTENCE + FEEDBACK
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For all important actions:
+- save
+- bookmark
+- add to collection
+- open externally
+- inspect
+
+Add immediate visible feedback such as:
+- saved state change
+- icon fill change
+- toast or inline confirmation
+- updated counts
+
+Everything should feel responsive and obvious.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. KEEP BLACKDOG MINIMAL AND HONEST
+━━━━━━━━━━━━━━━━━━━━━━━
+
+BLACKDOG remains:
+- hidden engine
+- status only
+
+Allowed:
+- BLACKDOG ACTIVE
+- ENGINE ONLINE
+- SESSION PROTECTED
+
+Not allowed:
+- fake detections
+- fake logs
+- fake counts
+- fake engine controls
+
+Do not let this pass drift into fake security theater.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+11. PRESERVE DESIGN + CURRENT PRODUCT DIRECTION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep:
+- Sentrix branding
+- intelligence search engine identity
+- dark tactical premium UI
+- green glow discipline
+- glassy panels
+- sidebar structure
+- recent searches / saved sections
+- current result card style where possible
+
+This is a functionality pass, not a redesign.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Return a version of Sentrix where:
+- typing a URL opens it externally immediately
+- typing a search query stays inside Sentrix and runs intelligence search
+- search result cards and all actions actually work
+- Inspect is a real useful workflow
+- Save / Bookmark / Add to Collection persist and give visible feedback
+- the product feels operational, responsive, and real
+
+Sentrix should now feel like a working Intelligence Search Engine, not a static intelligence UI.

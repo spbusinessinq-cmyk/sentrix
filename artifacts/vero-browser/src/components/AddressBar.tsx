@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export function AddressBar() {
   const {
-    currentUrl, navigate, setAddressBarUrl,
+    currentUrl, navigate, navigateOrOpen, setAddressBarUrl,
     riskLevel, pageType,
     navigateBack, navigateForward, canGoBack, canGoForward, isNavigating,
     addBookmark, removeBookmark, isBookmarked, bookmarks,
@@ -24,7 +24,7 @@ export function AddressBar() {
   }, [currentUrl, focused]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') { navigate(inputValue.trim()); e.currentTarget.blur(); }
+    if (e.key === 'Enter') { navigateOrOpen(inputValue.trim()); e.currentTarget.blur(); }
     if (e.key === 'Escape') { setInputValue(currentUrl); e.currentTarget.blur(); }
   };
 

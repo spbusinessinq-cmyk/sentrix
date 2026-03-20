@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ShieldCheck, ShieldAlert, Shield, AlertTriangle,
-  ExternalLink, Bookmark, BookmarkCheck, FolderPlus,
-  Loader2, AlertCircle, ArrowUpRight
+  ExternalLink, Bookmark, BookmarkCheck, FolderPlus, Check,
+  Loader2, AlertCircle, ArrowUpRight, ChevronDown, Plus
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
@@ -21,39 +21,135 @@ interface EnrichedItem extends SearchResultItem {
 
 function enrichResult(r: SearchResultItem): EnrichedItem {
   const e = enrichUrl(r.url, r.title, r.snippet);
-  return {
-    ...r,
-    posture: e.posture,
-    sourceType: e.sourceType,
-    reasoning: e.reasoning,
-  };
+  return { ...r, posture: e.posture, sourceType: e.sourceType, reasoning: e.reasoning };
 }
 
 function PostureBadge({ posture }: { posture: Posture }) {
   const c = postureColor(posture);
-  const Icon = posture === 'SAFE' ? ShieldCheck : posture === 'DANGER' ? ShieldAlert : posture === 'CAUTION' ? AlertTriangle : Shield;
+  const Icon =
+    posture === 'SAFE'    ? ShieldCheck :
+    posture === 'DANGER'  ? ShieldAlert :
+    posture === 'CAUTION' ? AlertTriangle : Shield;
   return (
-    <div className={twMerge('flex items-center gap-1 px-1.5 py-0.5 rounded border text-[9px] font-bold tracking-[0.12em] uppercase shrink-0', c.text, c.border, c.bg)}>
+    <span className={twMerge('inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[9px] font-bold tracking-[0.12em] uppercase shrink-0', c.text, c.border, c.bg)}>
       <Icon className="w-2.5 h-2.5" />
       {posture}
-    </div>
+    </span>
   );
 }
 
 function SourceTypePill({ type }: { type: SourceType }) {
   const icon = sourceTypeIcon(type);
   return (
-    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-white/[0.07] bg-white/[0.03] text-[9px] font-mono text-muted-foreground/45 uppercase tracking-wider shrink-0">
+    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-white/[0.07] bg-white/[0.03] text-[9px] font-mono text-muted-foreground/45 uppercase tracking-wider shrink-0">
       <span className="text-[8px]">{icon}</span>
       {type}
     </span>
   );
 }
 
-function ResultCard({ result, index, onInspect }: {
-  result: EnrichedItem; index: number; onInspect: () => void;
+// ── Flash feedback hook ────────────────────────────────────────────────────────
+function useFlash(duration = 1200) {
+  const [flashing, setFlashing] = useState(false);
+  const trigger = () => { setFlashing(true); setTimeout(() => setFlashing(false), duration); };
+  return { flashing, trigger };
+}
+
+// ── Per-card collection picker ─────────────────────────────────────────────────
+function CollectionPicker({
+  onAdd, onCreateAndAdd, collections, open, onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+  collections: Array<{ id: string; name: string; color: string; itemCount: number }>;
+  onAdd: (colId: string) => void;
+  onCreateAndAdd: (name: string) => void;
 }) {
-  const { navigate, saveItem, isSaved, unsaveItem, savedItems, addBookmark, isBookmarked, bookmarks, removeBookmark } = useBrowserState();
+  const [newMode, setNewMode] = useState(false);
+  const [newName, setNewName] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) { setNewMode(false); setNewName(''); return; }
+    const handle = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      ref={ref}
+      className="absolute bottom-full mb-2 right-0 w-48 rounded-xl overflow-hidden shadow-2xl z-30"
+      style={{ background: 'rgba(8,9,13,0.99)', border: '1px solid rgba(255,255,255,0.1)' }}
+      onClick={e => e.stopPropagation()}
+    >
+      <div className="px-3 pt-2.5 pb-1">
+        <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35 mb-1.5">Add to Collection</div>
+      </div>
+      {collections.map(col => (
+        <button
+          key={col.id}
+          onClick={() => { onAdd(col.id); onClose(); }}
+          className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-white/[0.05] transition-colors text-left"
+        >
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: col.color }} />
+          <span className="text-[11px] font-mono text-foreground/65 flex-1 truncate">{col.name}</span>
+          <span className="text-[10px] font-mono text-muted-foreground/30">{col.itemCount}</span>
+        </button>
+      ))}
+      <div className="border-t border-white/[0.06]">
+        {newMode ? (
+          <div className="flex items-center gap-2 px-3 py-2">
+            <input
+              autoFocus
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && newName.trim()) { onCreateAndAdd(newName.trim()); onClose(); }
+                if (e.key === 'Escape') setNewMode(false);
+              }}
+              placeholder="Collection name…"
+              className="flex-1 bg-transparent text-[11px] font-mono text-foreground/70 outline-none placeholder:text-muted-foreground/25"
+            />
+            <button
+              onClick={() => { if (newName.trim()) { onCreateAndAdd(newName.trim()); onClose(); } }}
+              className="text-primary/70 hover:text-primary transition-colors"
+            >
+              <Check className="w-3 h-3" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setNewMode(true)}
+            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-white/[0.04] transition-colors"
+          >
+            <Plus className="w-3 h-3 text-muted-foreground/40" />
+            <span className="text-[11px] font-mono text-muted-foreground/40">New collection…</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Result card ───────────────────────────────────────────────────────────────
+function ResultCard({
+  result, index, onInspect,
+}: {
+  result: EnrichedItem;
+  index: number;
+  onInspect: () => void;
+}) {
+  const {
+    saveItem, isSaved, unsaveItem, savedItems,
+    addBookmark, isBookmarked, bookmarks, removeBookmark,
+    addToCollection, createCollection, collections,
+  } = useBrowserState();
+
   const saved = isSaved(result.url);
   const savedObj = savedItems.find(s => s.url === result.url);
   const bookmarked = isBookmarked(result.url);
@@ -61,17 +157,46 @@ function ResultCard({ result, index, onInspect }: {
   const isBlocked = result.posture === 'DANGER';
   const c = postureColor(result.posture);
 
-  const handleSave = (e: React.MouseEvent) => {
+  const [colPickerOpen, setColPickerOpen] = useState(false);
+  const saveFlash = useFlash();
+  const bookmarkFlash = useFlash();
+  const collectFlash = useFlash();
+
+  const handleSaveItem = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (saved && savedObj) { unsaveItem(savedObj.id); return; }
     saveItem({ title: result.title, url: result.url, domain: result.domain, posture: result.posture, sourceType: result.sourceType, reasoning: result.reasoning });
+    saveFlash.trigger();
   };
 
   const handleBookmark = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (bookmarked && bookmarkObj) { removeBookmark(bookmarkObj.id); return; }
     addBookmark({ title: result.title, url: result.url, domain: result.domain });
+    bookmarkFlash.trigger();
   };
+
+  const handleAddToCollection = (colId: string) => {
+    if (!saved) {
+      saveItem({ title: result.title, url: result.url, domain: result.domain, posture: result.posture, sourceType: result.sourceType, reasoning: result.reasoning });
+    }
+    setTimeout(() => {
+      const si = savedItems.find(s => s.url === result.url);
+      if (si) addToCollection(si.id, colId);
+    }, 30);
+    collectFlash.trigger();
+  };
+
+  const handleCreateAndAddToCollection = (name: string) => {
+    const col = createCollection(name);
+    handleAddToCollection(col.id);
+  };
+
+  const accentColor =
+    result.posture === 'SAFE'    ? 'hsl(142 72% 40%)' :
+    result.posture === 'CAUTION' ? '#f59e0b' :
+    result.posture === 'DANGER'  ? '#ef4444' :
+    'rgba(148,163,184,0.3)';
 
   return (
     <motion.div
@@ -79,7 +204,7 @@ function ResultCard({ result, index, onInspect }: {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.03, duration: 0.18 }}
       className={twMerge(
-        'group relative border rounded-xl overflow-hidden transition-all duration-150',
+        'group relative border rounded-xl overflow-visible transition-all duration-150',
         isBlocked
           ? 'border-red-500/15 bg-black/30'
           : 'border-white/[0.05] bg-black/20 hover:bg-black/28 hover:border-white/[0.09]'
@@ -87,14 +212,16 @@ function ResultCard({ result, index, onInspect }: {
     >
       {/* Left accent */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-[2px] opacity-40 group-hover:opacity-70 transition-opacity"
-        style={{ background: result.posture === 'SAFE' ? 'hsl(142 72% 40%)' : result.posture === 'CAUTION' ? '#f59e0b' : result.posture === 'DANGER' ? '#ef4444' : 'rgba(148,163,184,0.3)' }}
+        className="absolute left-0 top-0 bottom-0 w-[2px] rounded-l-xl opacity-35 group-hover:opacity-65 transition-opacity pointer-events-none"
+        style={{ background: accentColor }}
       />
 
-      <div className="pl-4 pr-4 pt-4 pb-0 ml-0.5">
+      <div className="pl-4 pr-4 pt-4 pb-0 overflow-hidden rounded-xl">
         {/* Domain + tags */}
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <span className={twMerge('text-[10px] font-mono', c.text, 'opacity-80 truncate')}>{result.domain}</span>
+          <span className={twMerge('text-[10px] font-mono truncate', c.text)} style={{ opacity: 0.75 }}>
+            {result.domain}
+          </span>
           <PostureBadge posture={result.posture} />
           <SourceTypePill type={result.sourceType} />
           {result.provider === 'brave' && (
@@ -102,108 +229,149 @@ function ResultCard({ result, index, onInspect }: {
           )}
         </div>
 
-        {/* Title */}
-        <div
+        {/* Title — click opens Inspect */}
+        <button
+          onClick={e => { e.stopPropagation(); if (!isBlocked) onInspect(); }}
           className={twMerge(
-            'text-[13px] font-semibold leading-snug mb-2',
-            isBlocked ? 'text-red-400/70 line-through decoration-red-500/30' : 'text-foreground/82'
+            'text-left w-full text-[13px] font-semibold leading-snug mb-2 block transition-colors',
+            isBlocked
+              ? 'text-red-400/70 line-through decoration-red-500/30 cursor-not-allowed'
+              : 'text-foreground/82 hover:text-foreground/100 cursor-pointer'
           )}
+          disabled={isBlocked}
+          title={isBlocked ? undefined : 'Click to inspect'}
         >
           {result.title}
-        </div>
+        </button>
 
         {/* Snippet */}
-        <p className={twMerge('text-[12px] leading-relaxed mb-3', isBlocked ? 'text-muted-foreground/25 line-through' : 'text-foreground/45')}>
+        <p className={twMerge(
+          'text-[12px] leading-relaxed mb-0',
+          isBlocked ? 'text-muted-foreground/25 line-through' : 'text-foreground/42'
+        )}>
           {result.snippet}
         </p>
 
-        {/* Footer bar */}
+        {/* Footer action bar */}
         <div className={twMerge(
-          'flex items-center justify-between gap-3 py-2.5 px-3 mx-[-1rem] border-t',
+          'flex items-center justify-between gap-2 py-2.5 px-3 mt-3 mx-[-1rem] border-t',
           isBlocked ? 'border-red-500/10 bg-red-500/[0.04]' : 'border-white/[0.04] bg-black/20'
         )}>
           {/* Reasoning */}
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            <ShieldCheck className={twMerge('w-2.5 h-2.5 shrink-0', c.text, 'opacity-60')} />
-            <span className="text-[10px] font-mono text-muted-foreground/40 truncate">{result.reasoning}</span>
+            <ShieldCheck className={twMerge('w-2.5 h-2.5 shrink-0 opacity-50', c.text)} />
+            <span className="text-[10px] font-mono text-muted-foreground/38 truncate">{result.reasoning}</span>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2 shrink-0">
-            {!isBlocked && (
-              <>
-                <ResultAction
-                  icon={bookmarked ? <BookmarkCheck className="w-3 h-3" /> : <Bookmark className="w-3 h-3" />}
-                  label="Save"
-                  active={bookmarked}
-                  onClick={handleBookmark}
+          {/* Action buttons */}
+          {isBlocked ? (
+            <span className="text-[9px] font-mono text-red-500/70 uppercase font-bold tracking-widest shrink-0">
+              HIGH RISK
+            </span>
+          ) : (
+            <div className="flex items-center gap-3 shrink-0">
+              {/* Bookmark */}
+              <FooterAction
+                label={bookmarkFlash.flashing ? 'Saved!' : bookmarked ? 'Saved' : 'Save'}
+                active={bookmarked || bookmarkFlash.flashing}
+                icon={bookmarked || bookmarkFlash.flashing
+                  ? <BookmarkCheck className="w-3 h-3" />
+                  : <Bookmark className="w-3 h-3" />}
+                onClick={handleBookmark}
+              />
+
+              {/* Collect — with per-card dropdown */}
+              <div className="relative">
+                <FooterAction
+                  label={collectFlash.flashing ? 'Added!' : saved ? 'Collected' : 'Collect'}
+                  active={saved || collectFlash.flashing}
+                  icon={collectFlash.flashing
+                    ? <Check className="w-3 h-3" />
+                    : <FolderPlus className="w-3 h-3" />}
+                  onClick={e => { e.stopPropagation(); setColPickerOpen(v => !v); }}
                 />
-                <ResultAction
-                  icon={<FolderPlus className="w-3 h-3" />}
-                  label="Collect"
-                  active={saved}
-                  onClick={handleSave}
+                <CollectionPicker
+                  open={colPickerOpen}
+                  onClose={() => setColPickerOpen(false)}
+                  collections={collections}
+                  onAdd={handleAddToCollection}
+                  onCreateAndAdd={handleCreateAndAddToCollection}
                 />
-                <ResultAction
-                  icon={<Shield className="w-3 h-3" />}
-                  label="Inspect"
-                  onClick={onInspect}
-                />
-                <a
-                  href={result.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={e => e.stopPropagation()}
-                  className="flex items-center gap-1 text-[9px] font-mono text-primary/50 hover:text-primary uppercase tracking-widest transition-colors"
-                >
-                  Open <ArrowUpRight className="w-2.5 h-2.5" />
-                </a>
-              </>
-            )}
-            {isBlocked && <span className="text-[9px] font-mono text-red-500/70 uppercase font-bold tracking-widest">BLOCKED</span>}
-          </div>
+              </div>
+
+              {/* Inspect */}
+              <FooterAction
+                label="Inspect"
+                icon={<Shield className="w-3 h-3" />}
+                onClick={e => { e.stopPropagation(); onInspect(); }}
+              />
+
+              {/* Open externally */}
+              <a
+                href={result.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                className="flex items-center gap-1 text-[9px] font-mono text-primary/50 hover:text-primary uppercase tracking-widest transition-colors cursor-pointer"
+              >
+                Open <ArrowUpRight className="w-2.5 h-2.5" />
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
   );
 }
 
-function ResultAction({ icon, label, active, onClick }: {
-  icon: React.ReactNode; label: string; active?: boolean; onClick?: (e: React.MouseEvent) => void;
+function FooterAction({
+  icon, label, active, onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  active?: boolean;
+  onClick?: (e: React.MouseEvent) => void;
 }) {
   return (
     <button
       onClick={e => { e.stopPropagation(); onClick?.(e); }}
       className={twMerge(
-        'flex items-center gap-1 text-[9px] font-mono uppercase tracking-widest transition-colors',
-        active ? 'text-primary/70' : 'text-muted-foreground/30 hover:text-muted-foreground/70'
+        'flex items-center gap-1 text-[9px] font-mono uppercase tracking-widest transition-all duration-200 cursor-pointer select-none',
+        active
+          ? 'text-primary/80'
+          : 'text-muted-foreground/30 hover:text-muted-foreground/75'
       )}
     >
-      {icon}{label}
+      {icon}
+      <span>{label}</span>
     </button>
   );
 }
 
+// ── Main view ─────────────────────────────────────────────────────────────────
+
 export function SearchResultsView() {
-  const { searchQuery, navigate } = useBrowserState();
+  const { searchQuery } = useBrowserState();
   const [results, setResults] = useState<EnrichedItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [provider, setProvider] = useState<'brave' | 'mock'>('mock');
   const [filter, setFilter] = useState<FilterKey>('all');
-  const [inspectUrl, setInspectUrl] = useState<{ url: string; title: string; snippet: string } | null>(null);
+  const [inspectTarget, setInspectTarget] = useState<{ url: string; title: string; snippet: string } | null>(null);
 
   const safeQuery = searchQuery ?? '';
 
   useEffect(() => {
     if (!safeQuery) return;
     setLoading(true); setError(false); setFilter('all');
-    searchWeb(safeQuery).then(resp => {
-      setResults(resp.results.map(enrichResult));
-      setProvider(resp.provider);
-      setError(!!resp.error && resp.results.length === 0);
-    }).catch(() => { setError(true); setResults([]); })
-     .finally(() => setLoading(false));
+    searchWeb(safeQuery)
+      .then(resp => {
+        setResults(resp.results.map(enrichResult));
+        setProvider(resp.provider);
+        setError(!!resp.error && resp.results.length === 0);
+      })
+      .catch(() => { setError(true); setResults([]); })
+      .finally(() => setLoading(false));
   }, [safeQuery]);
 
   const filtered = results.filter(r => {
@@ -232,21 +400,22 @@ export function SearchResultsView() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-background">
-      {/* Sticky header */}
+
+      {/* ── Sticky header ───────────────────────────────────────────────── */}
       <div
         className="shrink-0 px-5 pt-4 pb-0 border-b border-white/[0.05]"
-        style={{ background: 'rgba(6,7,10,0.95)', backdropFilter: 'blur(8px)' }}
+        style={{ background: 'rgba(6,7,10,0.97)', backdropFilter: 'blur(8px)' }}
       >
         <div className="flex items-start justify-between mb-3">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
               <ShieldCheck className="w-3 h-3 text-primary/40 shrink-0" />
               <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-muted-foreground/35">
-                Sentrix Intelligence Search
-                {provider === 'brave' && <span className="text-primary/35 ml-2">· Brave Search</span>}
+                Intelligence Search
+                {provider === 'brave' && <span className="text-primary/30 ml-2">· Brave Search</span>}
               </span>
             </div>
-            <h2 className="text-[15px] font-semibold text-foreground/88 leading-tight truncate">
+            <h2 className="text-[15px] font-semibold text-foreground/85 leading-tight truncate">
               "{safeQuery || '—'}"
             </h2>
           </div>
@@ -254,46 +423,47 @@ export function SearchResultsView() {
             <Loader2 className="w-4 h-4 text-primary/50 animate-spin mt-1 shrink-0 ml-4" />
           ) : (
             <div className="text-right shrink-0 ml-4">
-              <div className="text-[10px] font-mono text-muted-foreground/30">{results.length} results</div>
-              <div className="text-[10px] font-mono text-primary/50 mt-0.5">{counts.safe} safe</div>
+              <div className="text-[10px] font-mono text-muted-foreground/28">{results.length} results</div>
+              <div className="text-[10px] font-mono text-primary/45 mt-0.5">{counts.safe} safe</div>
             </div>
           )}
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-0.5 -mx-1">
+        {/* Filter tabs */}
+        <div className="flex items-center gap-0 -mx-1">
           {filters.map(f => (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
               className={twMerge(
-                'relative px-3 py-2.5 text-[11px] font-mono tracking-wide transition-all flex items-center gap-1.5',
-                filter === f.key ? 'text-foreground/88' : 'text-muted-foreground/35 hover:text-muted-foreground/65'
+                'relative px-3 py-2.5 text-[11px] font-mono tracking-wide transition-all flex items-center gap-1.5 cursor-pointer',
+                filter === f.key ? 'text-foreground/85' : 'text-muted-foreground/32 hover:text-muted-foreground/62'
               )}
             >
               {f.label}
-              <span className={twMerge('text-[9px] font-bold tabular-nums', filter === f.key ? 'text-primary/65' : 'text-muted-foreground/25')}>
+              <span className={twMerge('text-[9px] font-bold tabular-nums', filter === f.key ? 'text-primary/60' : 'text-muted-foreground/22')}>
                 {counts[f.key]}
               </span>
               {filter === f.key && (
-                <motion.div layoutId="search-filter" className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-primary/65" />
+                <motion.div layoutId="search-filter-tab" className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-primary/60 rounded-full" />
               )}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Results */}
+      {/* ── Results ─────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-2.5">
+
         {loading && (
           <div className="flex items-center justify-center py-16 gap-2.5">
             <Loader2 className="w-4 h-4 text-primary/50 animate-spin" />
-            <span className="text-[12px] font-mono text-muted-foreground/35">Searching…</span>
+            <span className="text-[12px] font-mono text-muted-foreground/35">Analyzing results…</span>
           </div>
         )}
 
         {!loading && error && (
-          <div className="flex items-center justify-center py-12 gap-2">
+          <div className="flex items-center justify-center py-14 gap-2">
             <AlertCircle className="w-4 h-4 text-amber-500/50" />
             <span className="text-[12px] font-mono text-muted-foreground/40">Search unavailable — check your connection</span>
           </div>
@@ -304,7 +474,7 @@ export function SearchResultsView() {
             key={r.id}
             result={r}
             index={i}
-            onInspect={() => setInspectUrl({ url: r.url, title: r.title, snippet: r.snippet })}
+            onInspect={() => setInspectTarget({ url: r.url, title: r.title, snippet: r.snippet })}
           />
         ))}
 
@@ -316,21 +486,22 @@ export function SearchResultsView() {
 
         {!loading && !error && results.length > 0 && (
           <div className="flex items-center gap-2 py-3 border-t border-white/[0.04] mt-2">
-            <ShieldCheck className="w-3 h-3 text-primary/30" />
-            <span className="text-[10px] font-mono text-muted-foreground/25">
-              Results enriched with heuristic domain classification. Open externally to view live pages.
+            <ShieldCheck className="w-3 h-3 text-primary/25" />
+            <span className="text-[10px] font-mono text-muted-foreground/22">
+              Results enriched with heuristic classification · click title to inspect · Open to visit externally
             </span>
           </div>
         )}
       </div>
 
+      {/* ── Inspect drawer ───────────────────────────────────────────────── */}
       <AnimatePresence>
-        {inspectUrl && (
+        {inspectTarget && (
           <InspectDrawer
-            url={inspectUrl.url}
-            title={inspectUrl.title}
-            snippet={inspectUrl.snippet}
-            onClose={() => setInspectUrl(null)}
+            url={inspectTarget.url}
+            title={inspectTarget.title}
+            snippet={inspectTarget.snippet}
+            onClose={() => setInspectTarget(null)}
           />
         )}
       </AnimatePresence>

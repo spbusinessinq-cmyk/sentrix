@@ -254,6 +254,7 @@ interface BrowserState {
   updateSettings: (patch: Partial<SentrixSettings>) => void;
 
   burnSession: () => void;
+  navigateOrOpen: (input: string) => void;
 }
 
 const BrowserContext = createContext<BrowserState | undefined>(undefined);
@@ -479,6 +480,25 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
     addLog('Session burned — environment sanitized', 'info');
   }, [clearLogs, addLog]);
 
+  // URL input → open externally; search/sentrix input → internal navigate
+  const navigateOrOpen = useCallback((input: string) => {
+    const { pageType, url, searchQuery } = classifyInput(input);
+    if (pageType === 'website') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      // Log it and add to history
+      setHistory(prev => [{
+        id: Math.random().toString(36).slice(2),
+        title: getDomainTitle(url),
+        url,
+        visitedAt: new Date(),
+        riskLevel: 'unknown',
+      }, ...prev].slice(0, 200));
+      addLog(`Opened externally: ${getDomainTitle(url)}`, 'info');
+    } else {
+      navigate(input);
+    }
+  }, [navigate, addLog]);
+
   const currentUrl = addressBarUrls[activeTabId] ?? activeTab.url;
   const canGoBack = (activeTab.navBack ?? []).length > 0;
   const canGoForward = (activeTab.navForward ?? []).length > 0;
@@ -503,7 +523,7 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
       logs, addLog, clearLogs,
       blackdogPanelOpen, setBlackdogPanelOpen, blackdogStatus,
       settings, updateSettings,
-      burnSession,
+      burnSession, navigateOrOpen,
     }}>
       {children}
     </BrowserContext.Provider>

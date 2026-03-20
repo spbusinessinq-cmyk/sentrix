@@ -17,7 +17,7 @@ const RISK_DOT: Record<string, string> = {
 
 export function HomeView() {
   const {
-    navigate, history, bookmarks, savedItems, collections,
+    navigate, navigateOrOpen, history, bookmarks, savedItems, collections,
     blackdogStatus, burnSession, settings,
   } = useBrowserState();
 
@@ -34,7 +34,7 @@ export function HomeView() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) navigate(query.trim());
+    if (query.trim()) navigateOrOpen(query.trim());
   };
 
   const bdConnected = blackdogStatus === 'connected';

@@ -169,8 +169,13 @@ export function InspectDrawer({ url, title, snippet, onClose, onNavigate }: Insp
                 <span className="text-[10px] font-mono text-muted-foreground/45 leading-relaxed">{note}</span>
               </div>
             ))}
-            <div className="text-[9px] font-mono text-muted-foreground/22 mt-3 pt-2 border-t border-white/[0.04]">
-              Heuristic classification — URL patterns and domain signals only.
+            <div className="mt-3 pt-2 border-t border-white/[0.04] flex items-center justify-between">
+              <div className="text-[9px] font-mono text-muted-foreground/22">
+                Heuristic — URL patterns &amp; domain signals only
+              </div>
+              <div className={twMerge('text-[9px] font-bold uppercase tracking-widest font-mono', colors.text, 'opacity-70')}>
+                → {enriched.recommendation}
+              </div>
             </div>
           </div>
 

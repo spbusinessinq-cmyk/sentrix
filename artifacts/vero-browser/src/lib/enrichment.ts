@@ -18,11 +18,14 @@ export type SourceType =
 
 export type Posture = 'SAFE' | 'CAUTION' | 'UNKNOWN' | 'DANGER';
 
+export type Recommendation = 'Open normally' | 'Inspect before opening' | 'Use caution' | 'Avoid unless necessary';
+
 export interface EnrichedResult {
   posture: Posture;
   sourceType: SourceType;
   reasoning: string;
   notes: string[];
+  recommendation: Recommendation;
   protocol: string;
   rootDomain: string;
   isHttps: boolean;
@@ -125,7 +128,7 @@ export function enrichUrl(url: string, title?: string, snippet?: string): Enrich
     reasoning = 'High-risk keyword patterns detected in URL or content';
     notes.push('Contains terms associated with malicious or piracy content');
     sourceType = 'Unknown';
-    return { posture, sourceType, reasoning, notes, protocol, rootDomain, isHttps };
+    return { posture, sourceType, reasoning, notes, recommendation: 'Avoid unless necessary', protocol, rootDomain, isHttps };
   }
 
   // ── Source type classification ────────────────────────────────────────────
@@ -194,7 +197,13 @@ export function enrichUrl(url: string, title?: string, snippet?: string): Enrich
     notes.push('No strong domain classification signals — HTTPS confirmed');
   }
 
-  return { posture, sourceType, reasoning, notes, protocol, rootDomain, isHttps };
+  const recommendation: Recommendation =
+    posture === 'DANGER'  ? 'Avoid unless necessary' :
+    posture === 'CAUTION' ? 'Use caution' :
+    posture === 'SAFE'    ? 'Open normally' :
+    'Inspect before opening';
+
+  return { posture, sourceType, reasoning, notes, recommendation, protocol, rootDomain, isHttps };
 }
 
 export function postureColor(posture: Posture): { text: string; border: string; bg: string } {
