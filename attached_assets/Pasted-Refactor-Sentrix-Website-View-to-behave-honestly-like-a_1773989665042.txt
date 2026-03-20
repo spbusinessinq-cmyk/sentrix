@@ -1,0 +1,66 @@
+Refactor Sentrix Website View to behave honestly like a secure browser shell.
+
+IMPORTANT:
+Do not redesign the app.
+Do not change the overall Sentrix visual identity.
+Do not add fake site-specific navigation or fake page chrome.
+
+MISSION:
+Make URL navigation feel credible and browser-like by removing fake rendered site layouts and replacing them with a clean, honest real-page / blocked-page flow.
+
+REQUIREMENTS:
+
+1. REAL PAGE FIRST
+- When a user enters a URL, Sentrix should first attempt real live rendering where possible
+- Use the existing live/embed approach where supported
+
+2. BLOCKED PAGE FALLBACK
+- If a site cannot be embedded due to X-Frame-Options, CSP, or similar restrictions, show a clean fallback page inside Sentrix
+- The fallback must clearly explain:
+  - the site cannot be rendered inside Sentrix
+  - this is due to the site’s embedding restrictions
+- Provide:
+  - Open externally
+  - Copy URL
+  - Return to search or previous page
+
+3. REMOVE FAKE SITE CHROME
+- Remove fake page navigation elements that do not function, such as:
+  - Home / About / Services / Contact
+  - Talk / Read / Edit source / View history
+  - fake reference buttons
+- Do not present a fake live page UI
+
+4. HONEST PREVIEW MODE
+- If Preview mode remains, it must be clearly labeled as a Sentrix preview or structural summary
+- It must not imitate the site’s real navigation
+- It should only show honest information such as:
+  - page title
+  - URL
+  - source/domain
+  - simple classification
+  - optional extracted summary if available
+
+5. KEEP BLACKDOG MINIMAL
+- BLACKDOG remains status-only
+- no fake detections
+- no fake tracker/script counts
+- no fake telemetry
+
+6. PRESERVE EXISTING FUNCTIONALITY
+- tabs
+- address bar
+- search
+- bookmarks
+- downloads
+- settings
+- privacy report
+- session persistence
+- burn session
+
+OUTPUT GOAL:
+Return a Sentrix Website View that feels honest, stable, and credible as a secure browser shell:
+- real page when possible
+- blocked fallback when not
+- no fake site UI
+- no misleading preview behavior
