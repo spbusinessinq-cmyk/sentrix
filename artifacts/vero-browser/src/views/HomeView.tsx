@@ -9,10 +9,6 @@ import { format } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LinkCheckModal } from '@/components/LinkCheckModal';
 
-// Pink primary
-const PINK     = 'hsl(322 84% 65%)';
-const PINK_DIM = 'rgba(224, 64, 151, 0.75)';
-
 const RISK_DOT: Record<string, string> = {
   safe:    'hsl(142 72% 38%)',  // green — real safety indicator
   caution: '#f59e0b',
@@ -99,19 +95,16 @@ export function HomeView() {
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
               style={{
-                background: 'rgba(224,64,151,0.08)',
-                border: '1px solid rgba(224,64,151,0.18)',
-                boxShadow: '0 0 24px rgba(224,64,151,0.1)',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.09)',
               }}
             >
-              {/* Shield icon — security symbol, stays neutral/pink brand */}
-              <Shield className="w-5 h-5" style={{ color: PINK_DIM }} />
+              <Shield className="w-5 h-5" style={{ color: 'rgba(200,205,210,0.55)' }} />
             </div>
             <span
               className="text-[28px] font-bold tracking-[0.2em] uppercase"
               style={{
-                color: PINK,
-                textShadow: '0 0 40px rgba(224,64,151,0.25)',
+                color: '#E6E8EB',
                 fontFamily: "'JetBrains Mono', monospace",
               }}
             >
@@ -119,8 +112,7 @@ export function HomeView() {
             </span>
           </div>
           <h1 className="text-[20px] font-semibold text-foreground/80 leading-tight mb-2">
-            Search clearly.{' '}
-            <span style={{ color: PINK }}>Decide before you click.</span>
+            Search clearly. Decide before you click.
           </h1>
           <p className="text-[11px] font-mono text-muted-foreground/35 tracking-wide">
             Intelligence-powered search with BLACKDOG analysis.
@@ -133,9 +125,9 @@ export function HomeView() {
             className="relative flex items-center rounded-xl overflow-hidden"
             style={{
               background: focused ? 'rgba(0,0,0,0.58)' : 'rgba(0,0,0,0.38)',
-              border: `1px solid ${focused ? 'rgba(224,64,151,0.22)' : 'rgba(255,255,255,0.065)'}`,
+              border: `1px solid ${focused ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.065)'}`,
               boxShadow: focused
-                ? '0 0 0 1px rgba(224,64,151,0.08), 0 0 28px rgba(224,64,151,0.04)'
+                ? '0 0 0 1px rgba(255,255,255,0.04), 0 0 28px rgba(255,255,255,0.02)'
                 : 'none',
               transition: 'border-color 150ms ease-out, box-shadow 150ms ease-out, background 150ms ease-out',
             }}
@@ -143,7 +135,7 @@ export function HomeView() {
             <div className="pl-5 pr-3.5 shrink-0">
               <Search
                 className="w-4 h-4 transition-colors duration-200"
-                style={{ color: focused ? PINK_DIM : 'rgba(148,163,184,0.3)' }}
+                style={{ color: focused ? 'rgba(200,205,210,0.65)' : 'rgba(148,163,184,0.3)' }}
               />
             </div>
             <input
@@ -171,9 +163,9 @@ export function HomeView() {
                     type="submit"
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold tracking-[0.12em] uppercase transition-all cursor-pointer"
                     style={{
-                      background: 'rgba(224,64,151,0.1)',
-                      border: '1px solid rgba(224,64,151,0.28)',
-                      color: PINK,
+                      background: 'rgba(255,255,255,0.07)',
+                      border: '1px solid rgba(255,255,255,0.14)',
+                      color: 'rgba(200,205,210,0.85)',
                     }}
                   >
                     Search <ArrowRight className="w-3 h-3" />
@@ -202,7 +194,7 @@ export function HomeView() {
         <div
           className="w-full mb-7 rounded-2xl overflow-hidden"
           style={{
-            background: 'linear-gradient(135deg, rgba(139,92,246,0.06) 0%, rgba(224,64,151,0.04) 100%)',
+            background: 'linear-gradient(135deg, rgba(139,92,246,0.07) 0%, rgba(139,92,246,0.03) 100%)',
             border: '1px solid rgba(139,92,246,0.18)',
             boxShadow: sageFocused ? '0 0 0 1px rgba(139,92,246,0.25), 0 0 30px rgba(139,92,246,0.08)' : 'none',
           }}
@@ -370,7 +362,7 @@ export function HomeView() {
               onClick={() => window.open('https://www.rsrintel.com', '_blank', 'noopener,noreferrer')}
               className="flex items-center gap-2 text-[10px] font-mono transition-colors cursor-pointer"
               style={{ color: 'rgba(148,163,184,0.28)' }}
-              onMouseEnter={e => (e.currentTarget.style.color = PINK_DIM)}
+              onMouseEnter={e => (e.currentTarget.style.color = 'rgba(200,205,210,0.65)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'rgba(148,163,184,0.28)')}
             >
               <Shield className="w-3 h-3 shrink-0" />
@@ -434,7 +426,7 @@ function QuickAction({ icon, label, desc, onClick }: { icon: React.ReactNode; la
       style={{ background: 'rgba(0,0,0,0.28)', border: '1px solid rgba(255,255,255,0.055)' }}
       onMouseEnter={e => {
         e.currentTarget.style.background = 'rgba(0,0,0,0.4)';
-        e.currentTarget.style.borderColor = 'rgba(224,64,151,0.15)';
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)';
       }}
       onMouseLeave={e => {
         e.currentTarget.style.background = 'rgba(0,0,0,0.28)';

@@ -15,13 +15,13 @@ import { InspectDrawer } from '@/components/InspectDrawer';
 import { analyzeResults, IntelligenceReport, SignalTier } from '@/lib/intelligence';
 import { streamSageQuery, SageMessage, SageResult } from '@/lib/sage-client';
 
-// ── Color tokens ─────────────────────────────────────────────────────────────
-const PINK         = 'hsl(322 84% 65%)';
-const PINK_04      = 'rgba(224,64,151,0.04)';
-const PINK_08      = 'rgba(224,64,151,0.08)';
-const PINK_18      = 'rgba(224,64,151,0.18)';
-const PINK_25      = 'rgba(224,64,151,0.25)';
-const PINK_06      = 'rgba(224,64,151,0.06)';
+// ── Color tokens — neutral steel white (primary), purple for Sage only ────────
+const STEEL        = '#E6E8EB';
+const STEEL_04     = 'rgba(255,255,255,0.04)';
+const STEEL_06     = 'rgba(255,255,255,0.06)';
+const STEEL_08     = 'rgba(255,255,255,0.08)';
+const STEEL_18     = 'rgba(255,255,255,0.18)';
+const STEEL_25     = 'rgba(255,255,255,0.22)';
 // Sage/AI accent stays purple
 const SAGE_COLOR   = 'rgba(139,92,246,0.85)';
 const SAGE_BORDER  = 'rgba(139,92,246,0.25)';
@@ -239,7 +239,7 @@ function IntelligenceBrief({ report, expanded, onToggle, sageOpen, onToggleSage 
             <div className="px-5 py-3 flex flex-col gap-1.5">
               {report.topFindings.map((f, i) => (
                 <div key={i} className="flex items-start gap-2">
-                  <div className="w-1 h-1 rounded-full mt-[5px] shrink-0" style={{ background: PINK_18 }} />
+                  <div className="w-1 h-1 rounded-full mt-[5px] shrink-0" style={{ background: 'rgba(255,255,255,0.22)' }} />
                   <span className="text-[10px] font-mono text-muted-foreground/45 leading-relaxed">{f}</span>
                 </div>
               ))}
@@ -594,7 +594,7 @@ function ResultCard({ result, index, onInspect, tier, compare }: {
         border: isBlocked
           ? '1px solid rgba(239,68,68,0.12)'
           : isPrimary
-          ? `1px solid ${cardHovered ? 'rgba(224,64,151,0.18)' : 'rgba(224,64,151,0.10)'}`
+          ? `1px solid ${cardHovered ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.08)'}`
           : '1px solid rgba(255,255,255,0.055)',
         background: isBlocked
           ? 'rgba(0,0,0,0.28)'
@@ -604,16 +604,16 @@ function ResultCard({ result, index, onInspect, tier, compare }: {
           ? 'rgba(0,0,0,0.14)'
           : 'rgba(0,0,0,0.20)',
         boxShadow: isPrimary && cardHovered
-          ? '0 0 24px rgba(224,64,151,0.06), 0 0 0 1px rgba(224,64,151,0.08)'
+          ? '0 0 24px rgba(255,255,255,0.02), 0 0 0 1px rgba(255,255,255,0.06)'
           : 'none',
         opacity: isNoise ? (cardHovered ? 1 : 0.78) : 1,
         transition: 'border-color 150ms ease-out, box-shadow 150ms ease-out, opacity 150ms ease-out, background 150ms ease-out',
       }}
     >
-      {/* Left accent bar — primary (pink) and danger (red) only */}
+      {/* Left accent bar — primary (white) and danger (red) only */}
       {isPrimary && (
         <div className="absolute left-0 top-[4px] bottom-[4px] w-[1.5px] rounded-full pointer-events-none"
-          style={{ background: 'rgba(224,64,151,0.55)' }} />
+          style={{ background: 'rgba(255,255,255,0.30)' }} />
       )}
       {isBlocked && (
         <div className="absolute left-0 top-[4px] bottom-[4px] w-[1.5px] rounded-full pointer-events-none"
@@ -687,9 +687,9 @@ function ResultCard({ result, index, onInspect, tier, compare }: {
               <FooterAction label="Inspect" icon={<Shield className="w-3 h-3" />} onClick={e => { e.stopPropagation(); onInspect(); }} />
               <a href={result.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
                 className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-widest cursor-pointer"
-                style={{ color: 'rgba(224,64,151,0.45)', transition: 'color 150ms ease-out' }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'rgba(224,64,151,0.85)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(224,64,151,0.45)')}>
+                style={{ color: 'rgba(200,205,210,0.42)', transition: 'color 150ms ease-out' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'rgba(200,205,210,0.82)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(200,205,210,0.42)')}>
                 Open <ArrowUpRight className="w-2.5 h-2.5" />
               </a>
             </div>
@@ -818,7 +818,7 @@ export function SearchResultsView() {
         <div className="flex items-start justify-between mb-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <ShieldCheck className="w-3 h-3 shrink-0" style={{ color: PINK_18 }} />
+              <ShieldCheck className="w-3 h-3 shrink-0" style={{ color: 'rgba(148,163,184,0.28)' }} />
               <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-muted-foreground/35">
                 Intelligence Search
                 {provider === 'brave' && <span className="text-muted-foreground/22 ml-2">· Brave Search</span>}
@@ -829,7 +829,7 @@ export function SearchResultsView() {
             <h2 className="text-[15px] font-semibold text-foreground/85 leading-tight truncate">"{safeQuery || '—'}"</h2>
           </div>
           {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin mt-1 shrink-0 ml-4" style={{ color: PINK_18 }} />
+            <Loader2 className="w-4 h-4 animate-spin mt-1 shrink-0 ml-4" style={{ color: 'rgba(148,163,184,0.40)' }} />
           ) : (
             <div className="text-right shrink-0 ml-4">
               <div className="text-[10px] font-mono text-muted-foreground/28">{allResults.length} results</div>
@@ -895,7 +895,7 @@ export function SearchResultsView() {
         style={{ transition: 'opacity 200ms ease-out', opacity: sageOpen ? 0.52 : 1, pointerEvents: sageOpen ? 'none' : 'auto' }}>
         {loading && (
           <div className="flex items-center justify-center py-16 gap-2.5">
-            <Loader2 className="w-4 h-4 animate-spin" style={{ color: PINK_18 }} />
+            <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'rgba(148,163,184,0.40)' }} />
             <span className="text-[12px] font-mono text-muted-foreground/35">Analyzing results…</span>
           </div>
         )}
@@ -907,9 +907,9 @@ export function SearchResultsView() {
             </div>
             <button onClick={() => doSearch()}
               className="px-3 py-1.5 text-[11px] font-mono rounded border cursor-pointer transition-colors"
-              style={{ borderColor: PINK_25, color: PINK, background: PINK_06 }}
-              onMouseEnter={e => { e.currentTarget.style.background = PINK_08; }}
-              onMouseLeave={e => { e.currentTarget.style.background = PINK_06; }}>
+              style={{ borderColor: 'rgba(255,255,255,0.14)', color: 'rgba(200,205,210,0.80)', background: 'rgba(255,255,255,0.04)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}>
               Retry search
             </button>
           </div>
@@ -930,14 +930,14 @@ export function SearchResultsView() {
           <button onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
             className="w-full py-2.5 text-[11px] font-mono rounded border cursor-pointer transition-colors mt-1"
             style={{ borderColor: 'rgba(255,255,255,0.06)', color: 'rgba(148,163,184,0.45)', background: 'transparent' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = PINK_25; e.currentTarget.style.color = PINK; }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; e.currentTarget.style.color = 'rgba(200,205,210,0.75)'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(148,163,184,0.45)'; }}>
             Load more — {filtered.length - visibleCount} remaining
           </button>
         )}
         {!loading && !error && allResults.length > 0 && !hasMore && (
           <div className="flex items-center gap-2 py-3 border-t border-white/[0.04] mt-2">
-            <ShieldCheck className="w-3 h-3" style={{ color: PINK_18 }} />
+            <ShieldCheck className="w-3 h-3" style={{ color: 'rgba(148,163,184,0.22)' }} />
             <span className="text-[10px] font-mono text-muted-foreground/22">
               {provider === 'duckduckgo' ? 'DuckDuckGo' : provider === 'brave' ? 'Brave Search' : 'Heuristic'} · click title to inspect · Open visits externally
             </span>

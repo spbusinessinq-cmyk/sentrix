@@ -1,0 +1,216 @@
+You are refining Sentrix into a high-end, classified intelligence interface.
+
+Remove all brand-styled color identity (pink). The system must feel neutral, controlled, and authoritative.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+CORE PRINCIPLE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+This is NOT a product UI.
+This is a SYSTEM.
+
+- minimal color
+- maximum clarity
+- no visual noise
+- no stylistic experimentation
+
+━━━━━━━━━━━━━━━━━━━━━━━
+COLOR SYSTEM (STRICT)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+PRIMARY (UI / Identity):
+Neutral white / steel
+
+- #E6E8EB (primary text)
+- #C9CDD2 (secondary text)
+- #9AA3AF (labels / muted)
+
+SECONDARY (AI / Intelligence ONLY):
+Purple
+
+- #7C3AED
+- #8B5CF6
+
+Used ONLY for:
+- Ask Sage
+- AI panels
+- intelligence sections
+
+SYSTEM STATUS (MEANING ONLY):
+Green
+
+- #22C55E
+- #16A34A
+
+Used ONLY for:
+- SAFE labels
+- ACTIVE system states
+- BLACKDOG panel
+
+WARNING:
+- #F59E0B (caution)
+- #EF4444 (danger)
+
+BACKGROUND:
+- #05060A
+- #0A0F1A
+- #0D1117
+
+━━━━━━━━━━━━━━━━━━━━━━━
+MANDATORY REMOVALS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+1. REMOVE ALL PINK
+
+- delete all pink colors
+- remove pink borders, glows, accents
+- remove pink gradients
+
+2. REMOVE GREEN AS DESIGN
+
+- no green borders
+- no green glows
+- no green highlights
+
+Green is ONLY for:
+→ meaning (SAFE / ACTIVE)
+
+━━━━━━━━━━━━━━━━━━━━━━━
+SIDEBAR (CRITICAL FIX)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Current issue: sidebar defines system identity incorrectly
+
+Fix:
+
+- default icons: muted gray (#9AA3AF)
+- active icon:
+  - white (#E6E8EB)
+  - subtle background highlight (dark gray, not green)
+
+- remove ALL green glow from sidebar
+- remove colored borders
+
+Goal:
+→ sidebar feels neutral, not thematic
+
+━━━━━━━━━━━━━━━━━━━━━━━
+SEARCH BAR
+━━━━━━━━━━━━━━━━━━━━━━━
+
+- border: subtle gray
+- focus:
+  - soft white glow
+  - NOT colored
+
+- placeholder: muted gray
+- input text: clean white
+
+━━━━━━━━━━━━━━━━━━━━━━━
+RESULT CARDS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+- border: rgba(255,255,255,0.055)
+- no color accents by default
+
+Primary ("Start here"):
+
+- slightly brighter title
+- subtle left accent:
+  → VERY soft white or faint purple
+  → NOT green
+
+- no glow unless hovered
+
+━━━━━━━━━━━━━━━━━━━━━━━
+ASK SAGE (ONLY COLOR FEATURE)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+This is the ONLY place color is allowed to stand out.
+
+- border: purple
+- glow: subtle purple
+- label: “AI – SAGE”
+
+Sage panel:
+
+- slightly darker background
+- clear separation from UI
+
+Answer:
+
+- largest text block
+- clean white
+- no color clutter
+
+━━━━━━━━━━━━━━━━━━━━━━━
+BLACKDOG PANEL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep green — but ONLY here.
+
+Adjust:
+
+- reduce glow intensity
+- make indicators subtle
+
+Goal:
+→ looks like telemetry, not decoration
+
+━━━━━━━━━━━━━━━━━━━━━━━
+BUTTON SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Primary:
+
+- white/gray base
+- subtle hover brightness
+
+Secondary (AI):
+
+- purple accent (only for Sage)
+
+No neon, no glow spam
+
+━━━━━━━━━━━━━━━━━━━━━━━
+GLOW RULE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+- reduce all glow by ~50%
+- increase blur
+- lower opacity
+
+Goal:
+→ soft, diffused, premium
+
+━━━━━━━━━━━━━━━━━━━━━━━
+FINAL CONSISTENCY CHECK
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Verify:
+
+- no pink exists anywhere
+- green only appears where meaningful
+- sidebar is neutral
+- Sage is the only colorful component
+- UI feels restrained and controlled
+
+━━━━━━━━━━━━━━━━━━━━━━━
+END STATE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Sentrix should feel like:
+
+- an internal intelligence terminal
+- a tool used for real decisions
+- something serious users trust
+
+NOT:
+
+- a brand
+- a startup product
+- a stylized UI
+
+Restraint = power
+Neutrality = authority
+Clarity = dominance
