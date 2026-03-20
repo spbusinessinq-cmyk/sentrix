@@ -776,7 +776,7 @@ function FooterAction({ icon, label, active, onClick }: {
 const PAGE_SIZE = 10;
 
 export function SearchResultsView() {
-  const { searchQuery, investigationMode, investigations, activeInvestigationId, savedItems, navigate } = useBrowserState();
+  const { searchQuery, investigationMode, investigations, activeInvestigationId, savedItems, navigate, sageMode, setSageMode } = useBrowserState();
   const [allResults, setAllResults] = useState<EnrichedItem[]>([]);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loading, setLoading] = useState(false);
@@ -794,7 +794,7 @@ export function SearchResultsView() {
   const doSearch = () => {
     if (!safeQuery) return;
     setLoading(true); setError(false); setFilter('all'); setVisibleCount(PAGE_SIZE);
-    setSageOpen(false); setBriefExpanded(false);
+    setBriefExpanded(false);
     searchWeb(safeQuery)
       .then(resp => {
         setAllResults(resp.results.map(enrichResult));
@@ -805,7 +805,16 @@ export function SearchResultsView() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { doSearch(); }, [safeQuery]);
+  useEffect(() => {
+    // If navigated from Ask Sage homepage action, auto-open Sage
+    if (sageMode) {
+      setSageOpen(true);
+      setSageMode(false);
+    } else {
+      setSageOpen(false);
+    }
+    doSearch();
+  }, [safeQuery]);
 
   // Intelligence analysis
   const intelligence = useMemo(() => {

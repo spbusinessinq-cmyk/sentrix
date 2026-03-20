@@ -316,6 +316,12 @@ interface BrowserState {
 
   burnSession: () => void;
   navigateOrOpen: (input: string) => void;
+
+  /** Transient flag — when true, SearchResultsView auto-opens Sage on mount */
+  sageMode: boolean;
+  setSageMode: (v: boolean) => void;
+  /** Navigate to search results with Sage pre-opened */
+  navigateToSage: (query: string) => void;
 }
 
 const BrowserContext = createContext<BrowserState | undefined>(undefined);
@@ -352,6 +358,7 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
   const [investigations, setInvestigations] = useState<Investigation[]>(() => loadInvestigations());
   const [investigationMode, setInvestigationMode] = useState(false);
   const [activeInvestigationId, setActiveInvestigationId] = useState<string | null>(null);
+  const [sageMode, setSageMode] = useState(false);
   const investigationModeRef = useRef(false);
   const activeInvestigationIdRef = useRef<string | null>(null);
 
@@ -722,6 +729,12 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
     addLog('Session burned — environment sanitized', 'info');
   }, [clearLogs, addLog]);
 
+  // Navigate to search with Sage pre-opened
+  const navigateToSage = useCallback((query: string) => {
+    setSageMode(true);
+    navigate(query);
+  }, [navigate]);
+
   // URL input → open externally; search/sentrix input → internal navigate
   const navigateOrOpen = useCallback((input: string) => {
     const { pageType, url, searchQuery } = classifyInput(input);
@@ -770,6 +783,7 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
       blackdogPanelOpen, setBlackdogPanelOpen, blackdogStatus,
       settings, updateSettings,
       burnSession, navigateOrOpen,
+      sageMode, setSageMode, navigateToSage,
     }}>
       {children}
     </BrowserContext.Provider>

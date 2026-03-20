@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Search, Shield, Link as LinkIcon, BookOpen,
-  Layers, Activity, Clock, ExternalLink, ArrowRight, Flame
+  Layers, Clock, ExternalLink, ArrowRight, Flame,
+  Sparkles,
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { format } from 'date-fns';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { LinkCheckModal } from '@/components/LinkCheckModal';
 
 const RISK_DOT: Record<string, string> = {
@@ -15,26 +16,44 @@ const RISK_DOT: Record<string, string> = {
   unknown: 'rgba(148,163,184,0.25)',
 };
 
+const SAGE_STARTERS = [
+  'Summarize this topic for me',
+  'What should I verify first?',
+  'Turn this into an investigation angle',
+];
+
 export function HomeView() {
   const {
-    navigate, navigateOrOpen, history, bookmarks, savedItems, collections,
+    navigate, navigateOrOpen, navigateToSage,
+    history, bookmarks, savedItems, collections,
     blackdogStatus, burnSession, settings,
   } = useBrowserState();
 
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const [linkCheckOpen, setLinkCheckOpen] = useState(false);
+  const [sageInputVal, setSageInputVal] = useState('');
+  const [sageFocused, setSageFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sageInputRef = useRef<HTMLInputElement>(null);
 
-  // Focus search bar on load
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 120);
     return () => clearTimeout(t);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) navigateOrOpen(query.trim());
+  };
+
+  const handleAskSageFromSearch = () => {
+    if (query.trim()) navigateToSage(query.trim());
+  };
+
+  const handleSageModuleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (sageInputVal.trim()) navigateToSage(sageInputVal.trim());
   };
 
   const bdConnected = blackdogStatus === 'connected';
@@ -74,10 +93,10 @@ export function HomeView() {
       </div>
 
       {/* ── Main content ──────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col items-center px-6 pt-12 pb-10 max-w-2xl mx-auto w-full">
+      <div className="flex-1 flex flex-col items-center px-6 pt-10 pb-10 max-w-2xl mx-auto w-full">
 
         {/* Brand */}
-        <div className="flex flex-col items-center text-center mb-10">
+        <div className="flex flex-col items-center text-center mb-8">
           <div className="flex items-center gap-3 mb-4">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
@@ -110,8 +129,8 @@ export function HomeView() {
           </p>
         </div>
 
-        {/* Search bar */}
-        <form onSubmit={handleSubmit} className="w-full mb-8">
+        {/* ── Search bar (dual-action) ─────────────────────────────────────── */}
+        <form onSubmit={handleSearchSubmit} className="w-full mb-3">
           <div
             className="relative flex items-center rounded-2xl overflow-hidden transition-all duration-200"
             style={{
@@ -141,21 +160,148 @@ export function HomeView() {
               spellCheck={false}
               autoComplete="off"
             />
-            {query && (
-              <button
-                type="submit"
-                className="flex items-center gap-1.5 mr-2 px-3.5 py-1.5 rounded-xl text-[10px] font-bold tracking-[0.12em] uppercase transition-all"
-                style={{
-                  background: 'rgba(22,163,74,0.1)',
-                  border: '1px solid rgba(22,163,74,0.22)',
-                  color: 'hsl(142 72% 44%)',
-                }}
-              >
-                Go <ArrowRight className="w-3 h-3" />
-              </button>
-            )}
+            <AnimatePresence>
+              {query.trim() && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.12 }}
+                  className="flex items-center gap-1.5 mr-2 shrink-0"
+                >
+                  {/* Search button */}
+                  <button
+                    type="submit"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold tracking-[0.12em] uppercase transition-all cursor-pointer"
+                    style={{
+                      background: 'rgba(22,163,74,0.1)',
+                      border: '1px solid rgba(22,163,74,0.22)',
+                      color: 'hsl(142 72% 44%)',
+                    }}
+                  >
+                    Search <ArrowRight className="w-3 h-3" />
+                  </button>
+                  {/* Ask Sage button */}
+                  <button
+                    type="button"
+                    onClick={handleAskSageFromSearch}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold tracking-[0.12em] uppercase transition-all cursor-pointer"
+                    style={{
+                      background: 'rgba(139,92,246,0.1)',
+                      border: '1px solid rgba(139,92,246,0.28)',
+                      color: 'rgba(139,92,246,0.85)',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = 'rgba(139,92,246,0.18)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = 'rgba(139,92,246,0.1)';
+                    }}
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    Ask Sage
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </form>
+
+        {/* ── Ask Sage module ──────────────────────────────────────────────── */}
+        <div
+          className="w-full mb-7 rounded-2xl overflow-hidden"
+          style={{
+            background: 'rgba(139,92,246,0.04)',
+            border: '1px solid rgba(139,92,246,0.14)',
+          }}
+        >
+          {/* Module header */}
+          <div className="flex items-center gap-2.5 px-4 pt-3.5 pb-2">
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+              style={{
+                background: 'rgba(139,92,246,0.12)',
+                border: '1px solid rgba(139,92,246,0.2)',
+              }}
+            >
+              <Sparkles className="w-3.5 h-3.5" style={{ color: 'rgba(139,92,246,0.85)' }} />
+            </div>
+            <div>
+              <div className="text-[12px] font-semibold" style={{ color: 'rgba(139,92,246,0.85)' }}>
+                Ask Sage
+              </div>
+              <div className="text-[10px] font-mono" style={{ color: 'rgba(148,163,184,0.4)' }}>
+                Get a grounded answer, summary, or investigation angle.
+              </div>
+            </div>
+          </div>
+
+          {/* Starter prompts */}
+          <div className="flex flex-wrap gap-1.5 px-4 pb-3">
+            {SAGE_STARTERS.map(starter => (
+              <button
+                key={starter}
+                onClick={() => navigateToSage(starter)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-mono transition-all cursor-pointer"
+                style={{
+                  background: 'rgba(139,92,246,0.06)',
+                  border: '1px solid rgba(139,92,246,0.16)',
+                  color: 'rgba(139,92,246,0.7)',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(139,92,246,0.14)';
+                  e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)';
+                  e.currentTarget.style.color = 'rgba(139,92,246,0.95)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(139,92,246,0.06)';
+                  e.currentTarget.style.borderColor = 'rgba(139,92,246,0.16)';
+                  e.currentTarget.style.color = 'rgba(139,92,246,0.7)';
+                }}
+              >
+                {starter}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom sage input */}
+          <form onSubmit={handleSageModuleSubmit}>
+            <div
+              className="flex items-center mx-3 mb-3 rounded-xl overflow-hidden transition-all"
+              style={{
+                background: 'rgba(0,0,0,0.3)',
+                border: `1px solid ${sageFocused ? 'rgba(139,92,246,0.3)' : 'rgba(139,92,246,0.1)'}`,
+              }}
+            >
+              <input
+                ref={sageInputRef}
+                type="text"
+                value={sageInputVal}
+                onChange={e => setSageInputVal(e.target.value)}
+                onFocus={() => setSageFocused(true)}
+                onBlur={() => setSageFocused(false)}
+                placeholder="Or type your own question…"
+                className="flex-1 bg-transparent border-none outline-none px-3.5 py-2.5 text-[12px] font-mono text-foreground/70 placeholder:text-muted-foreground/22"
+                spellCheck={false}
+                autoComplete="off"
+              />
+              {sageInputVal.trim() && (
+                <button
+                  type="submit"
+                  className="flex items-center gap-1.5 mr-2 px-2.5 py-1.5 rounded-lg text-[9px] font-bold tracking-[0.1em] uppercase cursor-pointer transition-all"
+                  style={{
+                    background: 'rgba(139,92,246,0.15)',
+                    border: '1px solid rgba(139,92,246,0.3)',
+                    color: 'rgba(139,92,246,0.9)',
+                  }}
+                >
+                  <Sparkles className="w-2.5 h-2.5" />
+                  Ask
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
 
         {/* Quick Actions */}
         <div className="w-full mb-8">
