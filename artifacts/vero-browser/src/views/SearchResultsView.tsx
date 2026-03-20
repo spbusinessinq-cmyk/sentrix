@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   ShieldCheck, ShieldAlert, Shield, AlertTriangle,
-  ExternalLink, Bookmark, BookmarkCheck, FolderPlus, Check,
+  Bookmark, BookmarkCheck, FolderPlus, Check,
   Loader2, AlertCircle, ArrowUpRight, Plus,
-  ChevronDown, ChevronUp, Zap, GitMerge, Sparkles, TrendingUp,
+  ChevronDown, ChevronUp, Zap, Sparkles,
   Send, X, RotateCcw, Lock,
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
@@ -207,14 +207,13 @@ function IntelligenceBrief({ report, expanded, onToggle, sageOpen, onToggleSage 
 
   return (
     <div className="shrink-0 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)', background: 'rgba(4,5,8,0.6)' }}>
-      <div className="px-5 py-2.5 flex items-center gap-3 flex-wrap">
-        <TrendingUp className="w-3 h-3 shrink-0" style={{ color: signalColor }} />
+      <div className="px-5 py-2 flex items-center gap-3 flex-wrap">
         <span className="text-[10px] font-mono capitalize" style={{ color: signalColor }}>{report.signalLevel} signal</span>
-        <div className="w-px h-3 bg-white/[0.08]" />
+        <div className="w-px h-3 bg-white/[0.06]" />
         <span className="text-[10px] font-mono" style={{ color: agreementColor }}>{agreementLabel}</span>
-        <div className="w-px h-3 bg-white/[0.08]" />
-        <span className="text-[10px] font-mono text-muted-foreground/40">{recencyLabel}</span>
-        {report.sourceMix && (<><div className="w-px h-3 bg-white/[0.08]" /><span className="text-[10px] font-mono text-muted-foreground/30">{report.sourceMix}</span></>)}
+        <div className="w-px h-3 bg-white/[0.06]" />
+        <span className="text-[10px] font-mono" style={{ color: 'rgba(148,163,184,0.35)' }}>{recencyLabel}</span>
+        {report.sourceMix && (<><div className="w-px h-3 bg-white/[0.06]" /><span className="text-[10px] font-mono" style={{ color: 'rgba(148,163,184,0.25)' }}>{report.sourceMix}</span></>)}
         <div className="flex items-center gap-2 ml-auto">
           <button onClick={onToggleSage}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all duration-150 cursor-pointer"
@@ -277,39 +276,36 @@ function SageAnswerBlock({ msg }: { msg: RichSageMessage }) {
 
   if (!p || !p.answer) {
     return (
-      <p className="text-[12px] font-mono leading-relaxed whitespace-pre-wrap" style={{ color: 'rgba(148,163,184,0.75)' }}>
+      <p className="text-[13px] leading-relaxed whitespace-pre-wrap" style={{ color: 'rgba(200,200,212,0.72)', lineHeight: '1.72' }}>
         {msg.content}
       </p>
     );
   }
 
   return (
-    <div className="flex flex-col gap-2.5">
-      {/* ANSWER — primary, dominant */}
-      <div>
-        <div className="flex items-center gap-1.5 mb-2">
-          <span className="text-[8px] font-mono uppercase tracking-[0.2em] font-bold" style={{ color: SAGE_COLOR }}>Answer</span>
-        </div>
-        <div
-          className="text-[13px] leading-relaxed whitespace-pre-wrap"
-          style={{ color: 'rgba(220,220,230,0.88)', fontFamily: "'Inter', sans-serif", lineHeight: '1.65' }}
-        >
-          {p.answer}
-        </div>
+    <div className="flex flex-col gap-3">
+      {/* ANSWER — dominant, large, readable */}
+      <div className="text-[14px] whitespace-pre-wrap"
+        style={{ color: 'rgba(222,222,232,0.90)', lineHeight: '1.75', fontFamily: "'Inter', sans-serif", fontWeight: 400 }}>
+        {p.answer}
       </div>
 
-      {/* SOURCES — collapsible */}
+      {/* SOURCES — collapsible, starts open */}
       {p.sources && (
-        <div className="border-t pt-2" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-          <button
-            onClick={() => setSourcesOpen(v => !v)}
-            className="flex items-center gap-1.5 w-full text-left mb-1.5 cursor-pointer"
-          >
-            <span className="text-[8px] font-mono uppercase tracking-[0.2em] font-bold" style={{ color: 'rgba(148,163,184,0.45)' }}>Sources</span>
-            {sourcesOpen ? <ChevronUp className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.3)' }} /> : <ChevronDown className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.3)' }} />}
+        <div className="border-t pt-3" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+          <button onClick={() => setSourcesOpen(v => !v)}
+            className="flex items-center gap-2 w-full text-left mb-2 cursor-pointer group/hd">
+            <span className="text-[8px] font-mono uppercase tracking-[0.22em]"
+              style={{ color: sourcesOpen ? 'rgba(148,163,184,0.5)' : 'rgba(148,163,184,0.3)', transition: 'color 150ms ease-out' }}>
+              Sources
+            </span>
+            {sourcesOpen
+              ? <ChevronUp className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.25)' }} />
+              : <ChevronDown className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.25)' }} />}
           </button>
           {sourcesOpen && (
-            <p className="text-[11px] font-mono leading-relaxed whitespace-pre-wrap" style={{ color: 'rgba(148,163,184,0.55)' }}>
+            <p className="text-[11px] font-mono leading-relaxed whitespace-pre-wrap"
+              style={{ color: 'rgba(148,163,184,0.5)', lineHeight: '1.65' }}>
               {p.sources}
             </p>
           )}
@@ -318,16 +314,20 @@ function SageAnswerBlock({ msg }: { msg: RichSageMessage }) {
 
       {/* INTELLIGENCE — collapsible, starts closed */}
       {p.intelligence && (
-        <div className="border-t pt-2" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-          <button
-            onClick={() => setIntelOpen(v => !v)}
-            className="flex items-center gap-1.5 w-full text-left mb-1.5 cursor-pointer"
-          >
-            <span className="text-[8px] font-mono uppercase tracking-[0.2em] font-bold" style={{ color: 'rgba(148,163,184,0.35)' }}>Intelligence</span>
-            {intelOpen ? <ChevronUp className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.25)' }} /> : <ChevronDown className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.25)' }} />}
+        <div className="border-t pt-3" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+          <button onClick={() => setIntelOpen(v => !v)}
+            className="flex items-center gap-2 w-full text-left mb-2 cursor-pointer">
+            <span className="text-[8px] font-mono uppercase tracking-[0.22em]"
+              style={{ color: intelOpen ? 'rgba(148,163,184,0.42)' : 'rgba(148,163,184,0.25)', transition: 'color 150ms ease-out' }}>
+              Intelligence
+            </span>
+            {intelOpen
+              ? <ChevronUp className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.2)' }} />
+              : <ChevronDown className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.2)' }} />}
           </button>
           {intelOpen && (
-            <p className="text-[11px] font-mono leading-relaxed whitespace-pre-wrap italic" style={{ color: 'rgba(148,163,184,0.42)' }}>
+            <p className="text-[11px] font-mono leading-relaxed whitespace-pre-wrap italic"
+              style={{ color: 'rgba(148,163,184,0.38)', lineHeight: '1.6' }}>
               {p.intelligence}
             </p>
           )}
@@ -420,11 +420,12 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
   return (
     <motion.div
       initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.18 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
       className="shrink-0 flex flex-col border-b"
       style={{
-        maxHeight: '520px', borderColor: 'rgba(139,92,246,0.15)',
-        background: 'linear-gradient(180deg, rgba(139,92,246,0.05) 0%, rgba(4,5,8,0.85) 100%)',
+        maxHeight: '540px', borderColor: 'rgba(139,92,246,0.12)',
+        background: 'rgba(7,5,16,0.98)',
+        borderTop: '1px solid rgba(139,92,246,0.1)',
         overflow: 'hidden',
       }}
     >
@@ -499,8 +500,9 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
                 <Sparkles className="w-2.5 h-2.5 animate-pulse" style={{ color: SAGE_COLOR }} />
                 <span className="text-[8px] font-mono uppercase tracking-[0.15em] font-bold" style={{ color: SAGE_COLOR }}>SAGE</span>
               </div>
-              <p className="text-[12px] font-mono leading-relaxed whitespace-pre-wrap" style={{ color: 'rgba(148,163,184,0.75)' }}>
-                {streaming}<span className="animate-pulse">▋</span>
+              <p className="text-[13.5px] leading-relaxed whitespace-pre-wrap"
+                style={{ color: 'rgba(200,200,212,0.80)', lineHeight: '1.72', fontFamily: "'Inter', sans-serif" }}>
+                {streaming}<span className="animate-pulse text-sage opacity-70">▋</span>
               </p>
             </div>
           </div>
@@ -578,65 +580,94 @@ function ResultCard({ result, index, onInspect, tier, compare }: {
 
   const isPrimary = tier === 'primary';
   const isNoise   = tier === 'noise' || tier === 'low';
-
-  const accentColor =
-    isPrimary ? SIG_STRONG :
-    result.posture === 'SAFE'    ? SIG_STRONG :
-    result.posture === 'CAUTION' ? '#f59e0b' :
-    result.posture === 'DANGER'  ? '#ef4444' :
-    'rgba(148,163,184,0.3)';
+  const [cardHovered, setCardHovered] = useState(false);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03, duration: 0.18 }}
-      className={twMerge(
-        'group relative border rounded-xl overflow-visible transition-all duration-150',
-        isBlocked ? 'border-red-500/15 bg-black/30' :
-        isPrimary  ? 'border-primary/20 bg-black/20 hover:bg-black/28 hover:border-primary/30' :
-        isNoise    ? 'border-white/[0.04] bg-black/15 hover:bg-black/22 opacity-80 hover:opacity-100' :
-                     'border-white/[0.05] bg-black/20 hover:bg-black/28 hover:border-white/[0.09]'
-      )}
-      style={isPrimary ? { boxShadow: '0 0 0 1px rgba(22,163,74,0.08), 0 2px 12px rgba(22,163,74,0.04)' } : undefined}
+      initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.025, duration: 0.16, ease: 'easeOut' }}
+      className="group relative overflow-visible"
+      onMouseEnter={() => setCardHovered(true)}
+      onMouseLeave={() => setCardHovered(false)}
+      style={{
+        borderRadius: '10px',
+        border: isBlocked
+          ? '1px solid rgba(239,68,68,0.12)'
+          : isPrimary
+          ? `1px solid ${cardHovered ? 'rgba(224,64,151,0.18)' : 'rgba(224,64,151,0.10)'}`
+          : '1px solid rgba(255,255,255,0.055)',
+        background: isBlocked
+          ? 'rgba(0,0,0,0.28)'
+          : isPrimary
+          ? 'rgba(0,0,0,0.22)'
+          : isNoise
+          ? 'rgba(0,0,0,0.14)'
+          : 'rgba(0,0,0,0.20)',
+        boxShadow: isPrimary && cardHovered
+          ? '0 0 24px rgba(224,64,151,0.06), 0 0 0 1px rgba(224,64,151,0.08)'
+          : 'none',
+        opacity: isNoise ? (cardHovered ? 1 : 0.78) : 1,
+        transition: 'border-color 150ms ease-out, box-shadow 150ms ease-out, opacity 150ms ease-out, background 150ms ease-out',
+      }}
     >
-      <div className="absolute left-0 top-0 bottom-0 w-[2px] rounded-l-xl pointer-events-none"
-        style={{ background: accentColor, opacity: isPrimary ? 0.6 : 0.35 }} />
+      {/* Left accent bar — primary (pink) and danger (red) only */}
+      {isPrimary && (
+        <div className="absolute left-0 top-[4px] bottom-[4px] w-[1.5px] rounded-full pointer-events-none"
+          style={{ background: 'rgba(224,64,151,0.55)' }} />
+      )}
+      {isBlocked && (
+        <div className="absolute left-0 top-[4px] bottom-[4px] w-[1.5px] rounded-full pointer-events-none"
+          style={{ background: 'rgba(239,68,68,0.5)' }} />
+      )}
 
-      <div className="pl-4 pr-4 pt-4 pb-0 overflow-hidden rounded-xl">
-        <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <span className={twMerge('text-[10px] font-mono truncate', c.text)} style={{ opacity: 0.75 }}>{result.domain}</span>
+      <div className="pl-4 pr-4 pt-4 pb-0">
+        {/* Meta row */}
+        <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+          <span className={twMerge('text-[10px] font-mono truncate', c.text)} style={{ opacity: 0.6 }}>{result.domain}</span>
           <PostureBadge posture={result.posture} />
           <SourceTypePill type={result.sourceType} />
           <ConfidenceBadge level={result.confidence} />
           {tier && tier !== 'normal' && <SignalTierBadge tier={tier} />}
-          {compare && !isPrimary && <CompareBadge />}
-          {result.provider === 'brave' && <span className="text-[8px] font-mono text-muted-foreground/20 uppercase tracking-widest">live</span>}
+          {result.provider === 'brave' && (
+            <span className="text-[7.5px] font-mono uppercase tracking-[0.15em]" style={{ color: 'rgba(148,163,184,0.18)' }}>live</span>
+          )}
         </div>
 
+        {/* Title */}
         <button
           onClick={e => { e.stopPropagation(); if (!isBlocked) onInspect(); }}
-          className={twMerge('text-left w-full text-[13px] font-semibold leading-snug mb-2 block transition-colors',
-            isBlocked ? 'text-red-400/70 line-through decoration-red-500/30 cursor-not-allowed' :
-            isPrimary  ? 'text-foreground/90 hover:text-foreground cursor-pointer' :
-                         'text-foreground/82 hover:text-foreground/100 cursor-pointer')}
+          className={twMerge(
+            'text-left w-full font-semibold leading-snug mb-2 block',
+            isBlocked
+              ? 'text-red-400/60 line-through decoration-red-500/25 cursor-not-allowed text-[13px]'
+              : isPrimary
+              ? 'text-[13.5px] cursor-pointer'
+              : 'text-[13px] cursor-pointer'
+          )}
+          style={!isBlocked ? {
+            color: isPrimary ? 'rgba(230,230,238,0.92)' : 'rgba(210,210,220,0.75)',
+            transition: 'color 150ms ease-out',
+          } : undefined}
+          onMouseEnter={e => { if (!isBlocked) e.currentTarget.style.color = 'rgba(240,240,248,1)'; }}
+          onMouseLeave={e => { if (!isBlocked) e.currentTarget.style.color = isPrimary ? 'rgba(230,230,238,0.92)' : 'rgba(210,210,220,0.75)'; }}
           disabled={isBlocked}>
           {result.title}
         </button>
 
-        <p className={twMerge('text-[12px] leading-relaxed mb-0', isBlocked ? 'text-muted-foreground/25 line-through' : 'text-foreground/42')}>
+        {/* Snippet */}
+        <p className="text-[11.5px] leading-relaxed mb-0"
+          style={{ color: isBlocked ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.38)', textDecoration: isBlocked ? 'line-through' : 'none' }}>
           {result.snippet}
         </p>
 
-        <div className={twMerge(
-          'flex items-center justify-between gap-2 py-2.5 px-3 mt-3 mx-[-1rem] border-t',
-          isBlocked ? 'border-red-500/10 bg-red-500/[0.04]' : 'border-white/[0.04] bg-black/20'
-        )}>
-          <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            <ShieldCheck className={twMerge('w-2.5 h-2.5 shrink-0 opacity-50', c.text)} />
-            <span className="text-[10px] font-mono text-muted-foreground/45 truncate">{result.whyReason}</span>
-          </div>
+        {/* Footer row */}
+        <div className="flex items-center justify-between gap-3 py-2.5 mt-3 mx-0 border-t"
+          style={{ borderColor: isBlocked ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)' }}>
+          <span className="text-[10px] font-mono truncate flex-1 min-w-0"
+            style={{ color: 'rgba(148,163,184,0.35)' }}>{result.whyReason}</span>
+
           {isBlocked ? (
-            <span className="text-[9px] font-mono text-red-500/70 uppercase font-bold tracking-widest shrink-0">HIGH RISK</span>
+            <span className="text-[8.5px] font-mono text-red-500/65 uppercase font-bold tracking-[0.15em] shrink-0">HIGH RISK</span>
           ) : (
             <div className="flex items-center gap-3 shrink-0">
               <FooterAction
@@ -655,7 +686,10 @@ function ResultCard({ result, index, onInspect, tier, compare }: {
               </div>
               <FooterAction label="Inspect" icon={<Shield className="w-3 h-3" />} onClick={e => { e.stopPropagation(); onInspect(); }} />
               <a href={result.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                className="flex items-center gap-1 text-[9px] font-mono text-primary/50 hover:text-primary uppercase tracking-widest transition-colors cursor-pointer">
+                className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-widest cursor-pointer"
+                style={{ color: 'rgba(224,64,151,0.45)', transition: 'color 150ms ease-out' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'rgba(224,64,151,0.85)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(224,64,151,0.45)')}>
                 Open <ArrowUpRight className="w-2.5 h-2.5" />
               </a>
             </div>
@@ -856,8 +890,9 @@ export function SearchResultsView() {
         );
       })()}
 
-      {/* Results */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-2.5">
+      {/* Results — dimmed when Sage is in focus */}
+      <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-2"
+        style={{ transition: 'opacity 200ms ease-out', opacity: sageOpen ? 0.52 : 1, pointerEvents: sageOpen ? 'none' : 'auto' }}>
         {loading && (
           <div className="flex items-center justify-center py-16 gap-2.5">
             <Loader2 className="w-4 h-4 animate-spin" style={{ color: PINK_18 }} />

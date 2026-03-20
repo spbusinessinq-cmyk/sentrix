@@ -1,0 +1,247 @@
+You are refining Sentrix into a high-end intelligence system interface.
+
+This is NOT a redesign. This is polish, restraint, and control.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+CORE OBJECTIVE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Make the interface feel:
+
+- surgical
+- intentional
+- premium
+- calm but powerful
+
+Every pixel must feel placed on purpose.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. SPACING SYSTEM (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Fix inconsistent spacing across the app.
+
+Rules:
+
+- Use a strict scale: 4 / 8 / 12 / 16 / 24 / 32
+- No random padding or margins
+
+Apply:
+
+- Cards: 16px padding
+- Sections: 24–32px separation
+- Tight clusters: 8–12px
+
+Goal:
+→ Everything lines up clean and feels grid-based
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. TYPOGRAPHY HIERARCHY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Reduce noise. Increase clarity.
+
+Headings:
+- Slightly larger
+- tighter letter spacing
+- brighter (but not white)
+
+Body:
+- dim slightly (reduce brightness 10–15%)
+
+Labels (SAFE, HIGH, etc):
+- smaller
+- uppercase
+- tighter tracking
+
+Sage Answer:
+- largest readable text block on screen
+- comfortable line height
+- no clutter around it
+
+Goal:
+→ Eyes go EXACTLY where they should
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. GLOW CONTROL (VERY IMPORTANT)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Right now: too much glow = looks cheap
+
+Fix:
+
+- Reduce ALL glows by ~40%
+- Increase blur radius slightly
+- Lower opacity
+
+Example:
+
+Before:
+bright, sharp neon glow
+
+After:
+soft, diffused halo
+
+Apply to:
+- search bar focus
+- buttons
+- active states
+
+Goal:
+→ glow feels expensive, not gamer RGB
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. CARD SYSTEM CLEANUP
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Every result card should feel identical in structure.
+
+Standard:
+
+- subtle border (low contrast)
+- no heavy shadows
+- consistent padding
+- clean left alignment
+
+Primary ("Start here"):
+
+- thin pink left bar
+- slightly brighter title
+- subtle pink glow ONLY on hover
+
+Remove:
+- inconsistent borders
+- random highlight styles
+
+Goal:
+→ clean stack, easy scanning
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. BUTTON REFINEMENT
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Buttons must feel precise, not chunky.
+
+Adjust:
+
+- slightly reduce height
+- tighter padding
+- softer corners (not too round)
+
+Hover:
+- slight brightness increase
+- minimal glow
+- no color explosion
+
+Click:
+- quick scale down (0.98)
+- instant return
+
+Goal:
+→ tactile, responsive, controlled
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. TRANSITIONS (MICRO-INTERACTIONS)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Everything should move smoothly.
+
+Standard:
+
+- duration: 150–200ms
+- easing: ease-out
+
+Apply to:
+- hover states
+- panel open/close
+- Sage expansion
+- filter switching
+
+Remove:
+- abrupt changes
+- jittery animations
+
+Goal:
+→ system feels alive, not jumpy
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. SAGE PANEL — FOCUS MODE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+When Sage is open:
+
+- slightly dim background (very subtle overlay)
+- increase contrast on Sage panel
+- reduce distractions around it
+
+Answer section:
+
+- max width ~700px
+- centered or visually contained
+- comfortable reading experience
+
+Goal:
+→ Sage feels like entering a thinking space
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. SCROLL EXPERIENCE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Make scrolling feel premium.
+
+- smooth scroll behavior
+- reduce scroll speed slightly
+- hide ugly scrollbars (or restyle)
+
+Optional:
+- fade top/bottom edges slightly
+
+Goal:
+→ controlled movement, not chaotic
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. REMOVE VISUAL NOISE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Audit the UI and REMOVE:
+
+- unnecessary dividers
+- redundant labels
+- duplicate icons
+- anything decorative with no function
+
+If it doesn’t help decision-making → delete it
+
+Goal:
+→ clarity = power
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. FINAL CONSISTENCY PASS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Verify:
+
+- all borders use same opacity
+- all cards match
+- all buttons follow same system
+- all spacing follows the scale
+- no random colors anywhere
+
+━━━━━━━━━━━━━━━━━━━━━━━
+END STATE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Sentrix should feel like:
+
+- a classified tool
+- a controlled environment
+- something built for people who make decisions
+
+NOT:
+- a startup UI
+- a neon experiment
+- a cluttered dashboard
+
+Restraint > Flash
+Clarity > Complexity
+Control > Chaos

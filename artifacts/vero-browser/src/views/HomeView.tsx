@@ -130,14 +130,14 @@ export function HomeView() {
         {/* ── Search bar (dual-action) ─────────────────────────────────────── */}
         <form onSubmit={handleSearchSubmit} className="w-full mb-3">
           <div
-            className="relative flex items-center rounded-2xl overflow-hidden transition-all duration-200"
+            className="relative flex items-center rounded-xl overflow-hidden"
             style={{
-              background: focused ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.42)',
-              border: `1px solid ${focused ? 'rgba(224,64,151,0.35)' : 'rgba(255,255,255,0.07)'}`,
+              background: focused ? 'rgba(0,0,0,0.58)' : 'rgba(0,0,0,0.38)',
+              border: `1px solid ${focused ? 'rgba(224,64,151,0.22)' : 'rgba(255,255,255,0.065)'}`,
               boxShadow: focused
-                ? '0 0 0 1px rgba(224,64,151,0.12), 0 0 40px rgba(224,64,151,0.08), inset 0 1px 0 rgba(255,255,255,0.04)'
-                : 'inset 0 1px 0 rgba(255,255,255,0.025)',
-              transition: 'box-shadow 0.2s, border-color 0.2s',
+                ? '0 0 0 1px rgba(224,64,151,0.08), 0 0 28px rgba(224,64,151,0.04)'
+                : 'none',
+              transition: 'border-color 150ms ease-out, box-shadow 150ms ease-out, background 150ms ease-out',
             }}
           >
             <div className="pl-5 pr-3.5 shrink-0">
@@ -232,10 +232,12 @@ export function HomeView() {
           {/* Primary Sage input — big and clear */}
           <form onSubmit={handleSageSubmit} className="px-4 pt-3 pb-3">
             <div
-              className="flex items-center rounded-xl overflow-hidden transition-all"
+              className="flex items-center rounded-xl overflow-hidden"
               style={{
-                background: sageFocused ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.35)',
-                border: `1px solid ${sageFocused ? 'rgba(139,92,246,0.4)' : 'rgba(139,92,246,0.15)'}`,
+                background: sageFocused ? 'rgba(0,0,0,0.48)' : 'rgba(0,0,0,0.32)',
+                border: `1px solid ${sageFocused ? 'rgba(139,92,246,0.28)' : 'rgba(139,92,246,0.12)'}`,
+                boxShadow: sageFocused ? '0 0 0 1px rgba(139,92,246,0.06), 0 0 20px rgba(139,92,246,0.04)' : 'none',
+                transition: 'border-color 150ms ease-out, box-shadow 150ms ease-out, background 150ms ease-out',
               }}
             >
               <input
