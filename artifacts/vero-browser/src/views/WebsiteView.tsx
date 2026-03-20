@@ -317,7 +317,7 @@ function LiveEmbed({ url, domain, onBlocked }: {
 }) {
   const [embedState, setEmbedState] = useState<EmbedState>('loading');
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     setEmbedState('loading');

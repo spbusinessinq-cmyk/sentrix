@@ -733,7 +733,7 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
         title: getDomainTitle(url),
         url,
         visitedAt: new Date(),
-        riskLevel: 'unknown',
+        riskLevel: 'unknown' as RiskLevel,
       }, ...prev].slice(0, 200));
       addLog(`Opened externally: ${getDomainTitle(url)}`, 'info');
     } else {

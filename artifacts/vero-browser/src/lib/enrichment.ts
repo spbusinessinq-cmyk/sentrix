@@ -166,7 +166,7 @@ export function enrichUrl(url: string, title?: string, snippet?: string): Enrich
 
   // ── Download signals ──────────────────────────────────────────────────────
   if (DOWNLOAD_KEYWORDS.some(k => pathLower.includes(k) || fullLower.includes(k))) {
-    if (sourceType === 'Unknown' || sourceType === 'Commercial') {
+    if (sourceType === 'Unknown') {
       sourceType = 'Download';
       if (posture !== 'SAFE') posture = 'CAUTION';
       reasoning = 'Download-oriented result — verify source before proceeding';
@@ -175,7 +175,7 @@ export function enrichUrl(url: string, title?: string, snippet?: string): Enrich
   }
 
   // ── Caution keyword signals ───────────────────────────────────────────────
-  if (posture !== 'DANGER' && CAUTION_KEYWORDS.some(k => pathLower.includes(k) || fullLower.includes(k))) {
+  if (CAUTION_KEYWORDS.some(k => pathLower.includes(k) || fullLower.includes(k))) {
     if (posture === 'SAFE') posture = 'CAUTION';
     notes.push('Login, payment, or credential-related language detected');
     if (reasoning === 'No strong domain signals identified') {
@@ -197,8 +197,8 @@ export function enrichUrl(url: string, title?: string, snippet?: string): Enrich
     notes.push('No strong domain classification signals — HTTPS confirmed');
   }
 
+  // DANGER is handled by early return above — posture here is SAFE | CAUTION | UNKNOWN
   const recommendation: Recommendation =
-    posture === 'DANGER'  ? 'Avoid unless necessary' :
     posture === 'CAUTION' ? 'Use caution' :
     posture === 'SAFE'    ? 'Open normally' :
     'Inspect before opening';

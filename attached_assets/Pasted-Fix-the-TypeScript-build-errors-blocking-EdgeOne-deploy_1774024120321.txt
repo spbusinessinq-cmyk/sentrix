@@ -1,0 +1,55 @@
+Fix the TypeScript build errors blocking EdgeOne deployment. Do not redesign anything and do not change product behavior beyond what is needed to make the app type-safe and build successfully.
+
+MISSION:
+Resolve the current TypeScript errors cleanly so `pnpm run build` passes in production.
+
+CURRENT BUILD ERRORS TO FIX:
+
+1. artifacts/vero-browser/src/hooks/use-browser-state.tsx around line 731
+Problem:
+- A HistoryEntry is being created with `riskLevel: string`
+- But the HistoryEntry type requires `riskLevel: RiskLevel`
+
+Fix:
+- Ensure the value assigned to riskLevel is explicitly typed as RiskLevel
+- If needed, narrow/cast safely using the existing RiskLevel union
+- Do not use loose `string` where a RiskLevel is expected
+- Preserve current runtime behavior
+
+2. artifacts/vero-browser/src/lib/enrichment.ts around lines 169, 178, 201
+Problem:
+- Comparisons are being made against values that are not part of the current inferred union
+- Source type comparisons include "Commercial" but the current source-type union does not include it
+- Risk/posture comparisons include "DANGER" in branches where TypeScript believes only SAFE/CAUTION/UNKNOWN are possible
+
+Fix:
+- Align the declared union types with the actual values used in the logic
+OR
+- Refactor the conditional branches so they are type-safe and logically correct
+- If "Commercial" is a valid real source type in Sentrix, include it in the appropriate union type
+- If "DANGER" is a valid real posture/risk level, ensure the posture/risk union includes it consistently wherever used
+- Preserve the intended ranking/enrichment behavior
+
+3. artifacts/vero-browser/src/views/WebsiteView.tsx around line 320
+Problem:
+- A function is being called with 0 arguments but requires 1
+
+Fix:
+- Identify the exact function/hook being called
+- Pass the required argument correctly
+OR
+- Update the function signature only if that is truly the correct fix
+- Preserve current runtime behavior
+
+GENERAL RULES:
+- Do not add new features
+- Do not remove working features
+- Do not weaken the app with `any` unless absolutely unavoidable
+- Prefer proper type alignment and safe narrowing
+- Keep the app behavior the same, just make it build cleanly
+
+FINAL GOAL:
+- `pnpm run build` must pass
+- EdgeOne deployment must proceed
+- No visual redesign
+- No functionality regression
