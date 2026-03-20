@@ -47,6 +47,16 @@ export default defineConfig({
     port,
     host: "0.0.0.0",
     allowedHosts: true,
+    // Proxy /api/* to the Express API server in development.
+    // This ensures API calls always reach the correct backend regardless
+    // of how the Replit workspace proxy routes requests.
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
     fs: {
       strict: true,
       deny: ["**/.*"],

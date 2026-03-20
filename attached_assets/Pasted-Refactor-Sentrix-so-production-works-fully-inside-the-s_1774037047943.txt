@@ -1,0 +1,171 @@
+Refactor Sentrix so production works fully inside the same deployment origin instead of depending on a separate external backend.
+
+IMPORTANT:
+Do NOT create a separate product.
+Do NOT require a second hosted app/domain.
+Do NOT leave the frontend depending on missing relative API routes that get intercepted by static hosting.
+Do NOT break the current UI.
+
+MISSION:
+Make Sentrix production-safe while remaining self-contained.
+
+GOAL:
+The deployed Sentrix app at sentrix.live must support:
+- real search
+- real Ask Sage
+- same-origin API behavior
+- no mixed content
+- no blank results
+- no separate external backend requirement
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. PRODUCTION ARCHITECTURE CORRECTION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Current problem:
+The frontend is deployed statically and tries to call relative routes like:
+- /api/search
+- /api/sage/query
+
+In production these may be intercepted by the static host and return HTML, causing search/Sage failures.
+
+Fix this by making the production build truly self-contained on the same deployment.
+
+Implement one of these correct same-origin approaches inside the existing Sentrix project:
+
+A. Preferred:
+- add actual serverless/function routes supported by the deployment platform for:
+  - /api/search
+  - /api/sage/query
+- ensure they are deployed alongside the frontend in the same project
+
+OR
+
+B. If the platform expects a server handler / functions directory:
+- restructure Sentrix to use that supported serverless pattern
+- wire the frontend to those same-origin function endpoints
+
+Requirements:
+- no separate app
+- no separate product
+- no second domain
+- same-origin API only
+- production routes must return JSON, never HTML
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. SEARCH ROUTE MUST WORK IN PRODUCTION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Implement a real production-safe same-origin search endpoint.
+
+Requirements:
+- endpoint returns JSON consistently
+- preserve current search pipeline:
+  - provider usage
+  - ranking
+  - intelligence labeling
+  - fallback behavior
+- if upstream search provider fails, return a controlled structured fallback
+- never let the frontend receive index.html for /api/search
+
+Also:
+- set proper headers
+- content-type must always be application/json
+- avoid any route ambiguity with static asset serving
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. ASK SAGE ROUTE MUST WORK IN PRODUCTION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Implement a same-origin production-safe route for:
+- /api/sage/query
+
+Requirements:
+- returns JSON or streaming response consistently
+- works inside the same Sentrix deployment
+- keeps all model/API credentials server-side only
+- preserves current Sage behavior:
+  - answer-first
+  - sources
+  - intelligence section
+  - follow-up capable
+- no fake answers if upstream AI fails
+- controlled error response only
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. FRONTEND API CLIENT ALIGNMENT
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Update the API client so production behavior matches the new same-origin deployment model.
+
+Requirements:
+- if running in production on Sentrix.live, same-origin API requests must be valid and intentional
+- no external backend requirement
+- no broken relative path assumptions
+- no accidental html-as-json parsing
+- keep logging in place so failing URLs are obvious in console
+
+If needed:
+- detect production mode cleanly
+- resolve /api/search and /api/sage/query against the same origin intentionally
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. MIXED CONTENT / SECURITY CLEANUP
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Ensure the app does not trigger insecure-content warnings.
+
+Requirements:
+- no http:// requests from an https:// page
+- no insecure assets
+- all API calls same-origin https
+- all route responses correctly typed
+
+Do not hand-wave this as only a DNS issue.
+Audit code and routing so the live site is actually clean.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. DEPLOYMENT-COMPATIBLE ROUTING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Make sure the deployment platform can distinguish between:
+- frontend SPA routes
+- API routes
+
+Requirements:
+- SPA routes should serve index.html only where appropriate
+- /api/* routes must never fall through to SPA html
+- add any required deployment config / routes / serverless config so this works correctly
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. DEBUGGING + VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add explicit production verification logs:
+
+Frontend console:
+- resolved search URL
+- resolved Sage URL
+- response type / status on failure
+
+API side:
+- log hit on /api/search
+- log hit on /api/sage/query
+- log upstream provider success/failure
+
+Make it obvious whether production is using the real same-origin API routes.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. OUTPUT GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Return a version of Sentrix where:
+- search and Ask Sage work inside the same deployment
+- no separate backend app is required
+- /api/search returns JSON in production
+- /api/sage/query works in production
+- no html-as-json issue exists
+- no mixed-content warnings are caused by app code
+- Sentrix is truly self-contained and production-safe
+
+This is an architecture correction pass, not a UI redesign.
