@@ -1,0 +1,110 @@
+Refactor Vero into a workable browser application prototype focused on functionality first and BLACKDOG integration later.
+
+IMPORTANT:
+Do not try to fully integrate the real BLACKDOG backend yet.
+BLACKDOG should remain a placeholder/mocked system for now.
+The main goal is to make Vero behave like a usable browser product.
+
+PRIORITY:
+Build the product structure, navigation, views, and interactions so the app is workable, stable, and believable.
+
+TECH STACK:
+- React
+- TypeScript
+- Tailwind CSS
+- clean component structure
+- desktop-first layout
+
+CORE PRODUCT REQUIREMENTS:
+
+1. APP SHELL
+Build Vero as a desktop browser-style app with:
+- top tab bar
+- address/search bar
+- left navigation rail
+- main content area
+- right BLACKDOG panel
+
+2. TAB SYSTEM
+Implement working tabs:
+- open tab
+- close tab
+- switch tabs
+- each tab stores its own title, URL/query, and page state
+
+3. PAGE MODES / VIEWS
+Create actual working internal views for:
+- New Tab / Home
+- Search Results
+- Website View
+- Privacy Report
+- Vault
+- Settings
+
+4. ADDRESS BAR BEHAVIOR
+Make the address bar functional:
+- if input looks like a URL, go to Website View
+- if input looks like a search query, go to Search Results
+- update tab title and content based on input
+
+5. SEARCH RESULTS VIEW
+Build a dedicated search results page with:
+- visible query
+- result list
+- result cards
+- SAFE / CAUTION / DANGER / UNKNOWN labels
+- short BLACKDOG reasoning text
+- simple filters like All / Safe / News / Docs
+
+Use mock result data for now, but make the page feel real and fully designed.
+
+6. WEBSITE VIEW
+Build a dedicated website page view.
+This does not need to be a real full browser engine yet.
+It can be a structured mock page renderer that displays:
+- current URL
+- page title
+- page content area
+- inspection banner if risky
+- BLACKDOG status updates on the right panel
+
+7. MOCK BLACKDOG STATE
+Do not connect the real BLACKDOG backend yet.
+Instead, create believable mock analysis logic based on URL/query patterns:
+- safe trusted domains -> SAFE
+- http non-secure pages -> CAUTION
+- suspicious keywords like free/download/crack/login-verify -> DANGER
+- everything else -> UNKNOWN
+
+Use this to update:
+- risk badge
+- right BLACKDOG panel
+- telemetry items
+- page inspection summary
+
+8. WORKING SIDEBAR NAVIGATION
+Make left rail buttons load real screens:
+- Home
+- Search
+- History
+- Downloads
+- Privacy
+- Vault
+- Settings
+
+9. HISTORY / SESSION MODEL
+Implement basic local app state for:
+- history list
+- recent pages
+- session status
+- burn session action that clears tab/session/history state
+
+10. UI QUALITY
+Preserve the current tactical, slick, glassy Vero design language.
+Do not redesign the aesthetic.
+Focus on behavior, usability, and screen architecture.
+Keep it clean, professional, sharp, and believable.
+
+11. OUTPUT GOAL
+The final result should feel like a real browser application prototype with working navigation and screen flow, even if some content is mocked.
+This is a functional product prototype, not just a static interface.
