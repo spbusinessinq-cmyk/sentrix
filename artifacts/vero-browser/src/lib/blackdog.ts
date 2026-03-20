@@ -26,7 +26,8 @@ export type PageType =
   | 'vault'
   | 'settings'
   | 'bookmarks'
-  | 'collections';
+  | 'collections'
+  | 'investigations';
 
 // ─── Domain classification lists ──────────────────────────────────────────────
 
@@ -159,6 +160,7 @@ const INTERNAL_PAGES: Record<string, PageType> = {
   newtab: 'newtab', history: 'history', vault: 'vault',
   settings: 'settings', privacy: 'privacy', downloads: 'downloads',
   search: 'search', bookmarks: 'bookmarks', collections: 'collections',
+  investigations: 'investigations',
 };
 
 export function classifyInput(input: string): {

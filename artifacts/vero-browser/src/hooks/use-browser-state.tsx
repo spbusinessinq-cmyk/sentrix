@@ -95,6 +95,52 @@ const DEFAULT_COLLECTIONS: Collection[] = [
   { id: 'later',      name: 'Investigate Later', description: 'Queued for follow-up',       color: '#a78bfa', createdAt: new Date(), itemCount: 0 },
 ];
 
+// ─── Investigation ─────────────────────────────────────────────────────────────
+
+export interface Investigation {
+  id: string;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+  querySeed: string;
+  savedItemIds: string[];
+  notes: string;
+}
+
+const INVESTIGATIONS_KEY = 'sentrix-investigations-v1';
+
+function loadInvestigations(): Investigation[] {
+  try {
+    const raw = localStorage.getItem(INVESTIGATIONS_KEY);
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    if (!Array.isArray(data)) return [];
+    return data
+      .map((inv: any) => ({ ...inv, createdAt: new Date(inv.createdAt), updatedAt: new Date(inv.updatedAt) }))
+      .filter((inv: any) => inv.id && inv.name);
+  } catch { return []; }
+}
+
+function persistInvestigations(invs: Investigation[]): void {
+  try {
+    localStorage.setItem(INVESTIGATIONS_KEY, JSON.stringify(
+      invs.map(inv => ({ ...inv, createdAt: inv.createdAt.toISOString(), updatedAt: inv.updatedAt.toISOString() }))
+    ));
+  } catch {}
+}
+
+function makeInvestigation(name: string, querySeed = ''): Investigation {
+  return {
+    id: `inv-${Math.random().toString(36).slice(2, 10)}`,
+    name,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    querySeed,
+    savedItemIds: [],
+    notes: '',
+  };
+}
+
 // ─── File extension detection ──────────────────────────────────────────────────
 
 const FILE_EXTENSIONS = /\.(pdf|zip|dmg|exe|msi|pkg|tar|gz|rar|7z|apk|deb|rpm|csv|xlsx|docx|pptx|mp4|mp3)(\?.*)?$/i;
@@ -242,6 +288,19 @@ interface BrowserState {
   createCollection: (name: string, description?: string, color?: string) => Collection;
   deleteCollection: (id: string) => void;
 
+  investigations: Investigation[];
+  activeInvestigationId: string | null;
+  investigationMode: boolean;
+  toggleInvestigationMode: (querySeed?: string) => void;
+  startInvestigation: (name: string, querySeed?: string) => Investigation;
+  setActiveInvestigation: (id: string) => void;
+  renameInvestigation: (id: string, name: string) => void;
+  updateInvestigationNotes: (id: string, notes: string) => void;
+  clearInvestigationItems: (id: string) => void;
+  deleteInvestigation: (id: string) => void;
+  attachToInvestigation: (savedItemId: string) => void;
+  exportInvestigation: (id: string, fmt: 'text' | 'json') => void;
+
   logs: LogEntry[];
   addLog: (text: string, type?: 'info' | 'warn' | 'alert') => void;
   clearLogs: () => void;
@@ -258,6 +317,16 @@ interface BrowserState {
 }
 
 const BrowserContext = createContext<BrowserState | undefined>(undefined);
+
+// ─── File download helper ─────────────────────────────────────────────────────
+
+function downloadText(filename: string, content: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
@@ -278,6 +347,12 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
   const [blackdogStatus, setBlackdogStatus] = useState<BlackdogStatus>('connecting');
   const navTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [investigations, setInvestigations] = useState<Investigation[]>(() => loadInvestigations());
+  const [investigationMode, setInvestigationMode] = useState(false);
+  const [activeInvestigationId, setActiveInvestigationId] = useState<string | null>(null);
+  const investigationModeRef = useRef(false);
+  const activeInvestigationIdRef = useRef<string | null>(null);
+
   const [addressBarUrls, setAddressBarUrls] = useState<Record<string, string>>(() => {
     const map: Record<string, string> = {};
     (persisted?.tabs ?? [makeTab({ id: 'tab-init' })]).forEach(t => { map[t.id] = t.url; });
@@ -288,6 +363,9 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { applyCompactInterface(settings.compactInterface); }, [settings.compactInterface]);
   useEffect(() => { const timer = setTimeout(() => setBlackdogStatus('connected'), 900); return () => clearTimeout(timer); }, []);
+  useEffect(() => { investigationModeRef.current = investigationMode; }, [investigationMode]);
+  useEffect(() => { activeInvestigationIdRef.current = activeInvestigationId; }, [activeInvestigationId]);
+  useEffect(() => { persistInvestigations(investigations); }, [investigations]);
   useEffect(() => {
     if (!settings.clearDataOnExit) return;
     const handler = () => { try { localStorage.removeItem(STORAGE_KEY); } catch {} };
@@ -346,9 +424,10 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
       if (pageType === 'downloads')   return 'Downloads';
       if (pageType === 'privacy')     return 'Privacy';
       if (pageType === 'vault')       return 'Vault';
-      if (pageType === 'settings')    return 'Settings';
-      if (pageType === 'bookmarks')   return 'Bookmarks';
-      if (pageType === 'collections') return 'Collections';
+      if (pageType === 'settings')      return 'Settings';
+      if (pageType === 'bookmarks')     return 'Bookmarks';
+      if (pageType === 'collections')   return 'Collections';
+      if (pageType === 'investigations') return 'Investigations';
       return 'New Search';
     })();
 
@@ -435,8 +514,17 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
   const saveItem = useCallback((item: Omit<SavedItem, 'id' | 'savedAt'>) => {
     setSavedItems(prev => {
       if (prev.some(s => s.url === item.url)) return prev;
-      const newItem: SavedItem = { ...item, id: Math.random().toString(36).slice(2), savedAt: new Date() };
+      const newId = Math.random().toString(36).slice(2);
+      const newItem: SavedItem = { ...item, id: newId, savedAt: new Date() };
       addLog(`Saved: ${item.domain}`, 'info');
+      if (investigationModeRef.current && activeInvestigationIdRef.current) {
+        const invId = activeInvestigationIdRef.current;
+        setInvestigations(invs => invs.map(inv =>
+          inv.id === invId
+            ? { ...inv, savedItemIds: [...inv.savedItemIds, newId], updatedAt: new Date() }
+            : inv
+        ));
+      }
       return [newItem, ...prev].slice(0, 200);
     });
   }, [addLog]);
@@ -468,6 +556,121 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
     setSavedItems(prev => prev.map(s => s.collectionId === id ? { ...s, collectionId: undefined } : s));
   }, []);
 
+  // ── Investigation Mode ─────────────────────────────────────────────────────
+
+  const startInvestigation = useCallback((name: string, querySeed = ''): Investigation => {
+    const inv = makeInvestigation(name, querySeed);
+    setInvestigations(prev => [inv, ...prev]);
+    setActiveInvestigationId(inv.id);
+    activeInvestigationIdRef.current = inv.id;
+    addLog(`Investigation started: ${name}`, 'info');
+    return inv;
+  }, [addLog]);
+
+  const toggleInvestigationMode = useCallback((querySeed = '') => {
+    setInvestigationMode(prev => {
+      const next = !prev;
+      investigationModeRef.current = next;
+      if (next && !activeInvestigationIdRef.current) {
+        const name = querySeed
+          ? `${querySeed.slice(0, 40)}`
+          : `Investigation ${new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
+        const inv = makeInvestigation(name, querySeed);
+        setInvestigations(p => [inv, ...p]);
+        setActiveInvestigationId(inv.id);
+        activeInvestigationIdRef.current = inv.id;
+        addLog(`Investigation started: ${name}`, 'info');
+      }
+      if (!next) addLog('Investigation Mode disabled', 'info');
+      return next;
+    });
+  }, [addLog]);
+
+  const setActiveInvestigation = useCallback((id: string) => {
+    setActiveInvestigationId(id);
+    activeInvestigationIdRef.current = id;
+  }, []);
+
+  const renameInvestigation = useCallback((id: string, name: string) => {
+    setInvestigations(prev => prev.map(inv =>
+      inv.id === id ? { ...inv, name, updatedAt: new Date() } : inv
+    ));
+  }, []);
+
+  const updateInvestigationNotes = useCallback((id: string, notes: string) => {
+    setInvestigations(prev => prev.map(inv =>
+      inv.id === id ? { ...inv, notes, updatedAt: new Date() } : inv
+    ));
+  }, []);
+
+  const clearInvestigationItems = useCallback((id: string) => {
+    setInvestigations(prev => prev.map(inv =>
+      inv.id === id ? { ...inv, savedItemIds: [], updatedAt: new Date() } : inv
+    ));
+    addLog('Investigation items cleared', 'info');
+  }, [addLog]);
+
+  const deleteInvestigation = useCallback((id: string) => {
+    setInvestigations(prev => prev.filter(inv => inv.id !== id));
+    setActiveInvestigationId(prev => {
+      if (prev === id) { activeInvestigationIdRef.current = null; return null; }
+      return prev;
+    });
+    addLog('Investigation deleted', 'info');
+  }, [addLog]);
+
+  const attachToInvestigation = useCallback((savedItemId: string) => {
+    if (!activeInvestigationIdRef.current) return;
+    const invId = activeInvestigationIdRef.current;
+    setInvestigations(prev => prev.map(inv =>
+      inv.id === invId && !inv.savedItemIds.includes(savedItemId)
+        ? { ...inv, savedItemIds: [...inv.savedItemIds, savedItemId], updatedAt: new Date() }
+        : inv
+    ));
+    addLog('Item attached to investigation', 'info');
+  }, [addLog]);
+
+  const exportInvestigation = useCallback((id: string, fmt: 'text' | 'json') => {
+    setInvestigations(invs => {
+      const inv = invs.find(i => i.id === id);
+      if (!inv) return invs;
+      setSavedItems(items => {
+        const invItems = items.filter(s => inv.savedItemIds.includes(s.id));
+        const ts = new Date().toISOString();
+        if (fmt === 'json') {
+          const payload = {
+            investigation: { id: inv.id, name: inv.name, querySeed: inv.querySeed, createdAt: inv.createdAt, updatedAt: inv.updatedAt, notes: inv.notes },
+            sources: invItems.map(s => ({ title: s.title, url: s.url, domain: s.domain, posture: s.posture, sourceType: s.sourceType, reasoning: s.reasoning, savedAt: s.savedAt })),
+            exportedAt: ts,
+          };
+          downloadText(`${inv.name}.json`, JSON.stringify(payload, null, 2), 'application/json');
+        } else {
+          const lines = [
+            `SENTRIX INVESTIGATION EXPORT`,
+            `===============================`,
+            `Name:       ${inv.name}`,
+            `Started:    ${inv.createdAt.toLocaleString()}`,
+            `Exported:   ${new Date(ts).toLocaleString()}`,
+            `Query seed: ${inv.querySeed || '(none)'}`,
+            ``,
+            `NOTES`,
+            `-----`,
+            inv.notes || '(none)',
+            ``,
+            `SOURCES (${invItems.length})`,
+            `-------`,
+            ...invItems.map((s, i) =>
+              [`[${i + 1}] ${s.title}`, `    URL:     ${s.url}`, `    Domain:  ${s.domain}`, `    Posture: ${s.posture.toUpperCase()}`, `    Type:    ${s.sourceType}`, `    Reason:  ${s.reasoning}`, ``].join('\n')
+            ),
+          ];
+          downloadText(`${inv.name}.txt`, lines.join('\n'), 'text/plain');
+        }
+        return items;
+      });
+      return invs;
+    });
+  }, []);
+
   const burnSession = useCallback(() => {
     if (navTimerRef.current) clearTimeout(navTimerRef.current);
     const fresh = makeTab();
@@ -475,8 +678,16 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
     setAddressBarUrls({ [fresh.id]: 'sentrix://newtab' });
     setHistory([]); setBookmarks([]); setDownloads([]); setSavedItems([]);
     setCollections(DEFAULT_COLLECTIONS);
+    setInvestigations([]);
+    setInvestigationMode(false);
+    setActiveInvestigationId(null);
+    investigationModeRef.current = false;
+    activeInvestigationIdRef.current = null;
     clearLogs();
-    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(INVESTIGATIONS_KEY);
+    } catch {}
     addLog('Session burned — environment sanitized', 'info');
   }, [clearLogs, addLog]);
 
@@ -520,6 +731,10 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
       downloads, clearDownloads,
       savedItems, saveItem, unsaveItem, isSaved, addToCollection,
       collections: collectionsWithCounts, createCollection, deleteCollection,
+      investigations, activeInvestigationId, investigationMode,
+      toggleInvestigationMode, startInvestigation, setActiveInvestigation,
+      renameInvestigation, updateInvestigationNotes, clearInvestigationItems,
+      deleteInvestigation, attachToInvestigation, exportInvestigation,
       logs, addLog, clearLogs,
       blackdogPanelOpen, setBlackdogPanelOpen, blackdogStatus,
       settings, updateSettings,

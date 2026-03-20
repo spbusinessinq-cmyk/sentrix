@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Search, Clock, BookOpen, Layers, Download,
-  Shield, Settings, Home
+  Shield, Settings, Home, Crosshair
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { PageType } from '@/lib/blackdog';
@@ -17,11 +17,12 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'home',        icon: Home,     label: 'Search',       target: 'sentrix://newtab',    matchPageType: 'newtab' },
-  { id: 'search',      icon: Search,   label: 'Results',      target: 'sentrix://search',    matchPageType: 'search' },
-  { id: 'recent',      icon: Clock,    label: 'Recent',       target: 'sentrix://history',   matchPageType: 'history' },
-  { id: 'bookmarks',   icon: BookOpen, label: 'Bookmarks',    target: 'sentrix://bookmarks', matchPageType: 'bookmarks' },
-  { id: 'collections', icon: Layers,   label: 'Collections',  target: 'sentrix://collections', matchPageType: 'collections' },
+  { id: 'home',           icon: Home,      label: 'Search',        target: 'sentrix://newtab',       matchPageType: 'newtab' },
+  { id: 'search',         icon: Search,    label: 'Results',       target: 'sentrix://search',       matchPageType: 'search' },
+  { id: 'recent',         icon: Clock,     label: 'Recent',        target: 'sentrix://history',      matchPageType: 'history' },
+  { id: 'bookmarks',      icon: BookOpen,  label: 'Bookmarks',     target: 'sentrix://bookmarks',    matchPageType: 'bookmarks' },
+  { id: 'collections',    icon: Layers,    label: 'Collections',   target: 'sentrix://collections',  matchPageType: 'collections' },
+  { id: 'investigations', icon: Crosshair, label: 'Investigations', target: 'sentrix://investigations', matchPageType: 'investigations' },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
@@ -76,7 +77,7 @@ function SidebarBtn({ item, isActive, onNavigate }: {
 }
 
 export function TacticalSidebar() {
-  const { pageType, navigate } = useBrowserState();
+  const { pageType, navigate, investigationMode } = useBrowserState();
   const [settingsHovered, setSettingsHovered] = useState(false);
   const isSettingsActive = pageType === 'settings';
 
@@ -88,14 +89,24 @@ export function TacticalSidebar() {
         borderRight: '1px solid rgba(255,255,255,0.05)',
       }}
     >
-      {NAV_ITEMS.map(item => (
-        <SidebarBtn
-          key={item.id}
-          item={item}
-          isActive={pageType === item.matchPageType}
-          onNavigate={navigate}
-        />
-      ))}
+      {NAV_ITEMS.map(item => {
+        const isInvestigations = item.id === 'investigations';
+        return (
+          <div key={item.id} className="relative">
+            <SidebarBtn
+              item={item}
+              isActive={pageType === item.matchPageType}
+              onNavigate={navigate}
+            />
+            {isInvestigations && investigationMode && (
+              <span
+                className="absolute top-0 right-0 w-1.5 h-1.5 rounded-full animate-pulse"
+                style={{ background: 'hsl(142 72% 44%)', boxShadow: '0 0 4px rgba(22,163,74,0.8)' }}
+              />
+            )}
+          </div>
+        );
+      })}
 
       <div className="w-5 h-px my-2" style={{ background: 'rgba(255,255,255,0.07)' }} />
 

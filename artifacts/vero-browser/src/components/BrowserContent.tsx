@@ -10,19 +10,21 @@ import { VaultView } from '@/views/VaultView';
 import { SettingsView } from '@/views/SettingsView';
 import { BookmarksView } from '@/views/BookmarksView';
 import { CollectionsView } from '@/views/CollectionsView';
+import { InvestigationView } from '@/views/InvestigationView';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PAGE_MAP: Record<string, React.FC> = {
-  newtab:      HomeView,
-  search:      SearchResultsView,
-  website:     WebsiteView,
-  history:     HistoryView,
-  downloads:   DownloadsView,
-  privacy:     PrivacyReportView,
-  vault:       VaultView,
-  settings:    SettingsView,
-  bookmarks:   BookmarksView,
-  collections: CollectionsView,
+  newtab:         HomeView,
+  search:         SearchResultsView,
+  website:        WebsiteView,
+  history:        HistoryView,
+  downloads:      DownloadsView,
+  privacy:        PrivacyReportView,
+  vault:          VaultView,
+  settings:       SettingsView,
+  bookmarks:      BookmarksView,
+  collections:    CollectionsView,
+  investigations: InvestigationView,
 };
 
 export function BrowserContent() {

@@ -34,7 +34,7 @@ artifacts/vero-browser/src/
     LinkCheckModal.tsx          — Pre-flight URL risk analysis modal
   views/
     HomeView.tsx                — New tab with search, Quick Tools (functional), recent history
-    SearchResultsView.tsx       — Real search API integration, risk-filtered cards
+    SearchResultsView.tsx       — Real search API integration, risk-filtered cards, investigation mode banner
     WebsiteView.tsx             — Preview + Live iframe attempt with graceful embed-blocked fallback
     HistoryView.tsx             — Full history list with search/filter
     BookmarksView.tsx           — Bookmark CRUD (navigate + delete)
@@ -42,22 +42,25 @@ artifacts/vero-browser/src/
     PrivacyReportView.tsx       — Honest session policies, real stats from history, burn session
     SettingsView.tsx            — Real settings (Session/Appearance/About) with persistent toggles
     VaultView.tsx               — Secure vault placeholder
+    InvestigationView.tsx       — Full investigation workspace (posture/source breakdown, notes, export)
 artifacts/api-server/src/routes/
   search.ts                    — GET /api/search — Brave Search API proxy + mock fallback
 ```
 
 ## Protocols
 
-- `sentrix://newtab` `search` `history` `downloads` `privacy` `vault` `settings` `bookmarks`
+- `sentrix://newtab` `search` `history` `downloads` `privacy` `vault` `settings` `bookmarks` `collections` `investigations`
 - Legacy `sentra://` and `vero://` auto-upgrade via `classifyInput()`
 - BLACKDOG engine URL is NEVER exposed (private endpoint, heuristic classification only)
 
 ## Storage
 
-- Session: `sentrix-session-v4` localStorage key
+- Session: `sentrix-session-v5` localStorage key
+- Investigations: `sentrix-investigations-v1` localStorage key (separate, persists independently)
 - Settings: `sentrix-settings-v1` localStorage key
 - Downloads: auto-tracked from file-type URL navigation (`.pdf`, `.zip`, `.dmg`, `.exe`, etc.)
 - Bookmarks: persisted in session, CRUD via `addBookmark/removeBookmark/isBookmarked`
+- Burn Session: clears both session and investigations localStorage keys
 
 ## Settings (all real, persisted)
 
@@ -81,9 +84,9 @@ artifacts/api-server/src/routes/
 
 ## Feature Checklist ✓
 
-- [x] 8+ distinct page views (newtab, search, website, history, downloads, privacy, vault, settings, bookmarks)
+- [x] 10 distinct page views (newtab, search, website, history, downloads, privacy, vault, settings, bookmarks, collections, investigations)
 - [x] Per-tab back/forward navigation with full stack
-- [x] Session persistence (localStorage, version 4)
+- [x] Session persistence (localStorage, version 5)
 - [x] Bookmarks (add/remove from address bar, view in BookmarksView)
 - [x] Downloads auto-tracking from file-type URLs
 - [x] Settings persistence with real applied effects
@@ -91,7 +94,11 @@ artifacts/api-server/src/routes/
 - [x] Link Check modal (pre-flight URL analysis)
 - [x] Real search API integration with mock fallback
 - [x] Website view: Preview mode + Live iframe attempt with blocked-domain fallback
-- [x] Burn session (full data wipe + tab reset)
+- [x] Burn session (full data wipe + tab reset, clears investigations)
 - [x] BLACKDOG panel with status transitions
 - [x] Risk classification (safe/caution/danger/unknown) on every URL
 - [x] High-risk domain block screen with override option
+- [x] Collections system (saved items, 4 default collections, CRUD)
+- [x] Intelligence ranking engine (score, confidence, whyReason, domain diversity)
+- [x] Investigation Mode (toggle in address bar, auto-attach saves, investigation panel, export text/JSON)
+- [x] Investigation persistence (sentrix-investigations-v1 localStorage, survives page reload)

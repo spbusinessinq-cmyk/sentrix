@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft, ArrowRight, Search,
-  Bookmark, BookmarkCheck, ShieldCheck, Eye
+  Bookmark, BookmarkCheck, ShieldCheck, Crosshair
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
@@ -14,6 +14,7 @@ export function AddressBar() {
     navigateBack, navigateForward, canGoBack, canGoForward, isNavigating,
     addBookmark, removeBookmark, isBookmarked, bookmarks,
     setBlackdogPanelOpen, blackdogPanelOpen,
+    investigationMode, toggleInvestigationMode, searchQuery,
   } = useBrowserState();
 
   const [inputValue, setInputValue] = useState(currentUrl);
@@ -154,6 +155,14 @@ export function AddressBar() {
           >
             <ShieldCheck className="w-3.5 h-3.5" />
           </NavBtn>
+          <NavBtn
+            title={investigationMode ? 'Investigation Mode: ON — click to disable' : 'Start Investigation Mode'}
+            active={investigationMode}
+            onClick={() => toggleInvestigationMode(searchQuery)}
+            glow={investigationMode}
+          >
+            <Crosshair className="w-3.5 h-3.5" />
+          </NavBtn>
         </div>
       </div>
     </div>
@@ -161,9 +170,9 @@ export function AddressBar() {
 }
 
 function NavBtn({
-  children, title, disabled, active, onClick,
+  children, title, disabled, active, glow, onClick,
 }: {
-  children: React.ReactNode; title?: string; disabled?: boolean; active?: boolean; onClick?: () => void;
+  children: React.ReactNode; title?: string; disabled?: boolean; active?: boolean; glow?: boolean; onClick?: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
   return (
@@ -173,10 +182,12 @@ function NavBtn({
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="flex items-center justify-center w-7 h-7 rounded-md transition-colors duration-150"
+      className="flex items-center justify-center w-7 h-7 rounded-md transition-all duration-150"
       style={{
         color: disabled ? 'rgba(148,163,184,0.15)' : active ? 'hsl(142 72% 40%)' : hovered ? 'rgba(148,163,184,0.8)' : 'rgba(148,163,184,0.4)',
-        background: hovered && !disabled ? 'rgba(255,255,255,0.05)' : 'transparent',
+        background: glow ? 'rgba(22,163,74,0.08)' : hovered && !disabled ? 'rgba(255,255,255,0.05)' : 'transparent',
+        border: glow ? '1px solid rgba(22,163,74,0.2)' : '1px solid transparent',
+        boxShadow: glow ? '0 0 8px rgba(22,163,74,0.15)' : 'none',
         cursor: disabled ? 'default' : 'pointer',
       }}
     >

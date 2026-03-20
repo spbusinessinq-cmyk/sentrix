@@ -370,7 +370,7 @@ function FooterAction({
 const PAGE_SIZE = 10;
 
 export function SearchResultsView() {
-  const { searchQuery } = useBrowserState();
+  const { searchQuery, investigationMode, investigations, activeInvestigationId, navigate } = useBrowserState();
   const [allResults, setAllResults] = useState<EnrichedItem[]>([]);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loading, setLoading] = useState(false);
@@ -478,6 +478,34 @@ export function SearchResultsView() {
           ))}
         </div>
       </div>
+
+      {/* Investigation Mode banner */}
+      {investigationMode && (() => {
+        const activeInv = investigations.find(i => i.id === activeInvestigationId);
+        return (
+          <button
+            onClick={() => navigate('sentrix://investigations')}
+            className="shrink-0 flex items-center gap-2 px-5 py-2 text-left hover:opacity-90 transition-opacity"
+            style={{
+              background: 'rgba(22,163,74,0.06)',
+              borderBottom: '1px solid rgba(22,163,74,0.15)',
+            }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
+            <span className="text-[10px] font-mono tracking-[0.1em]" style={{ color: 'hsl(142 72% 44%)' }}>
+              INVESTIGATION MODE
+            </span>
+            {activeInv && (
+              <span className="text-[10px] font-mono" style={{ color: 'rgba(148,163,184,0.5)' }}>
+                · {activeInv.name} ({activeInv.savedItemIds.length} sources)
+              </span>
+            )}
+            <span className="text-[9px] font-mono ml-auto" style={{ color: 'rgba(148,163,184,0.3)' }}>
+              Items saved will attach →
+            </span>
+          </button>
+        );
+      })()}
 
       {/* ── Results ─────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-2.5">

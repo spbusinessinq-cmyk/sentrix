@@ -1,0 +1,235 @@
+Add Investigation Mode to Sentrix as a lightweight intelligence workflow layered on top of the existing search, inspect, save, bookmark, and collections systems.
+
+IMPORTANT:
+Do not redesign the UI from scratch.
+Do not break current search, inspect, save, bookmark, collection, or URL-routing behavior.
+Do not add fake telemetry or fake AI claims.
+This pass is about turning Sentrix into a usable research workflow, not a dashboard.
+
+MISSION:
+Make Sentrix feel like an intelligence workspace where a user can:
+- search
+- inspect
+- save
+- collect
+- build a focused investigation session
+- review/export what they found
+
+PRIMARY GOALS:
+1. add a real Investigation Mode
+2. make saved items attach to the current investigation
+3. make the investigation visible and useful
+4. keep everything lightweight, fast, and credible
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. INVESTIGATION MODE TOGGLE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add a clear Investigation Mode toggle in the Sentrix UI.
+
+Behavior:
+- OFF = normal search workflow
+- ON = search/inspect/save activity attaches to the active investigation
+
+When enabled:
+- create a current investigation automatically if none exists
+- default name can derive from the first search query
+- allow renaming later
+
+Keep the toggle subtle and premium, not noisy.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. CURRENT INVESTIGATION STATE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Create a lightweight investigation state model persisted locally.
+
+Each investigation should store:
+- id
+- name
+- createdAt
+- updatedAt
+- query seed / starting query
+- saved items
+- collected items
+- bookmarked items tied to the investigation
+- notes (simple text)
+- source counts
+- posture counts
+
+Persist it cleanly in localStorage.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. AUTO-ATTACH BEHAVIOR
+━━━━━━━━━━━━━━━━━━━━━━━
+
+When Investigation Mode is ON:
+
+- Inspect on a result should optionally attach that item to the current investigation
+- Save should attach it
+- Add to Collection should attach it
+- Bookmark can optionally attach or remain separate, but the relationship should be clear
+
+Keep this friction-light:
+- avoid too many confirmation dialogs
+- prefer sensible default auto-attach behavior with visible feedback
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. INVESTIGATION PANEL / VIEW
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add a real Investigation panel or dedicated view.
+
+It should show:
+- investigation name
+- source count
+- saved items count
+- collections linked
+- posture breakdown:
+  - SAFE
+  - CAUTION
+  - UNKNOWN
+  - DANGER
+- source type breakdown:
+  - Reference
+  - Documentation
+  - News
+  - Forum
+  - Commercial
+  - Unknown
+
+Also include:
+- simple notes area
+- rename investigation
+- clear/remove items
+- jump to saved source
+- export button
+
+Make this clean and useful, not cluttered.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. INVESTIGATION SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Generate a compact, transparent investigation summary using the data already available.
+
+Example:
+“This investigation contains 8 sources across Reference, News, and Documentation. Most items are low-risk, with 2 caution sources requiring review.”
+
+Requirements:
+- derive only from real stored data
+- no fake AI claims
+- no invented intelligence
+- keep it concise and factual
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. SAVE / COLLECTION / BOOKMARK INTEGRATION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Tighten the existing flows so they visibly update the current investigation.
+
+When a user:
+- saves a result
+- bookmarks a result
+- adds to a collection
+- inspects and attaches a result
+
+the investigation panel/view should update immediately:
+- counts update
+- items appear
+- posture mix updates
+- source type mix updates
+
+Add visible feedback so the user understands the item was added to the current investigation.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. EXPORT INVESTIGATION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add a lightweight export feature.
+
+Allow export as:
+- plain text
+- JSON
+
+Include:
+- investigation name
+- timestamps
+- all saved sources
+- URLs
+- titles
+- source type
+- posture/risk
+- reasoning
+- notes
+
+Keep it clean and reliable.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. SIDEBAR / NAV INTEGRATION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add or update navigation so Investigation Mode feels native.
+
+Suggested:
+- Search
+- Results
+- Recent
+- Bookmarks
+- Collections
+- Investigations
+- Downloads
+- Privacy
+- Settings
+
+If “Investigations” is added, it should open the current investigation and allow switching among prior investigations if implemented.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. BURN SESSION INTEGRATION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Burn Session must be clearly defined with investigations.
+
+Preferred behavior:
+- Burn Session clears the active session
+- clears unsaved temp state
+- clears current investigation if it is session-scoped
+
+If investigations persist intentionally, make that explicit.
+If they are session-bound, wipe them completely.
+
+Be consistent and honest.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. KEEP SENTRIX FAST AND FOCUSED
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not turn this into a bloated dashboard.
+
+Keep:
+- search first
+- inspect fast
+- save fast
+- investigation clear
+- export simple
+
+Avoid:
+- giant charts
+- fake intelligence graphs
+- pretend OSINT theatrics
+
+━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Return a version of Sentrix where:
+
+- Investigation Mode exists and works
+- users can build a real search-driven investigation session
+- saved/collected items attach cleanly
+- investigation summaries are factual and useful
+- export works
+- the product feels more like an intelligence workspace without losing speed or clarity
+
+Sentrix should now feel like:
+an intelligence search engine with a lightweight investigation workflow.
