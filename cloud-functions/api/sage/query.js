@@ -1,6 +1,6 @@
 /**
  * EdgeOne Node Function — /api/sage/query
- * Live verification pipeline: classify → fetch → corroborate → stream analysis.
+ * Live verification pipeline: classify → fetch → dual-track corroborate → stream analysis.
  * Sage never answers major factual claims from model priors alone.
  */
 
@@ -17,6 +17,18 @@ function detectInputClass(msg) {
   return 'general';
 }
 
+function detectEventType(input) {
+  const t = input.toLowerCase();
+  if (/(died|dead|killed|murder|shot dead|passed away|deceased)/.test(t)) return 'death';
+  if (/(arrested|charged|indicted|convicted|detained|sentenced)/.test(t)) return 'arrest';
+  if (/(attacked|invaded|bombed|struck|airstrike|missile|shooting|explosion|terror attack)/.test(t)) return 'war-attack';
+  if (/(lawsuit|sued|suing|litigation|legal action|court case)/.test(t)) return 'lawsuit';
+  if (/(elected|election|won the vote|lost the vote|ballot|referendum)/.test(t)) return 'election';
+  if (/(hospitalized|hospitalised|ill|sick|cancer|surgery|outbreak|pandemic|disease)/.test(t)) return 'health';
+  if (/(acquired|merger|bankrupt|ipo|earnings|fired|layoff|ceo|company)/.test(t)) return 'business';
+  return 'general';
+}
+
 // ── Named entity extraction ───────────────────────────────────────────────────
 
 function extractEntities(text) {
@@ -25,24 +37,59 @@ function extractEntities(text) {
   return [...new Set(raw.filter(e => !stopWords.has(e.split(' ')[0] ?? '')))].slice(0, 4);
 }
 
-function generateCorroborationQueries(input, articleTitle) {
-  const queries = [];
+// ── Dual-track query generation ───────────────────────────────────────────────
+
+function generateDualTrackQueries(input, eventType, articleTitle) {
   const base = articleTitle ?? input;
   const entities = extractEntities(base);
+  const entityStr = entities.slice(0, 2).join(' ');
   const year = new Date().getFullYear();
 
+  const confirming = [];
+  const contradicting = [];
+
   if (articleTitle) {
-    queries.push(articleTitle.slice(0, 120));
-    if (entities.length > 0) queries.push(`${entities.slice(0, 2).join(' ')} ${year} news confirmed`);
+    confirming.push(articleTitle.slice(0, 120));
+    if (entityStr) confirming.push(`${entityStr} ${year} confirmed news`);
+    contradicting.push(`${entityStr} denied false disputed`);
+    contradicting.push(`${articleTitle.slice(0, 70)} disputed false`);
   } else {
-    queries.push(input.slice(0, 120));
-    if (entities.length > 0) {
-      queries.push(`${entities.slice(0, 2).join(' ')} ${year} official`);
-      queries.push(`${entities.slice(0, 2).join(' ')} confirmed news`);
+    confirming.push(input.slice(0, 120));
+    if (entityStr) confirming.push(`${entityStr} ${year} confirmed official`);
+
+    switch (eventType) {
+      case 'death':
+        contradicting.push(entityStr ? `${entityStr} alive not dead ${year}` : `${input.slice(0, 60)} false rumor`);
+        contradicting.push(entityStr ? `${entityStr} death hoax denied` : '');
+        break;
+      case 'arrest':
+        contradicting.push(entityStr ? `${entityStr} not arrested false charges` : `${input.slice(0, 60)} false`);
+        contradicting.push(entityStr ? `${entityStr} arrest denied dropped` : '');
+        break;
+      case 'war-attack':
+        contradicting.push(entityStr ? `${entityStr} attack denied false report` : `${input.slice(0, 60)} denied`);
+        contradicting.push(entityStr ? `${entityStr} no attack ceasefire` : '');
+        break;
+      case 'lawsuit':
+        contradicting.push(entityStr ? `${entityStr} lawsuit dismissed dropped false` : `${input.slice(0, 60)} disputed`);
+        break;
+      case 'election':
+        contradicting.push(entityStr ? `${entityStr} election disputed contested` : `${input.slice(0, 60)} disputed`);
+        contradicting.push(entityStr ? `${entityStr} election result denied fraud claims` : '');
+        break;
+      case 'health':
+        contradicting.push(entityStr ? `${entityStr} health update not sick false` : `${input.slice(0, 60)} false`);
+        break;
+      default:
+        contradicting.push(entityStr ? `${entityStr} denied disputed false` : `${input.slice(0, 60)} disputed`);
+        contradicting.push(entityStr ? `${entityStr} rebuttal response correction` : '');
     }
   }
 
-  return [...new Set(queries)].filter(Boolean).slice(0, 3);
+  return {
+    confirming: [...new Set(confirming)].filter(Boolean).slice(0, 2),
+    contradicting: [...new Set(contradicting)].filter(Boolean).slice(0, 2),
+  };
 }
 
 // ── Article extraction ────────────────────────────────────────────────────────
@@ -191,41 +238,74 @@ async function runCorroborationSearch(queries, braveKey) {
     }
   }));
 
-  return all.slice(0, 15);
+  return all.slice(0, 10);
+}
+
+async function runDualTrackSearch(queries, braveKey) {
+  const [confirmResult, denyResult] = await Promise.allSettled([
+    runCorroborationSearch(queries.confirming, braveKey),
+    runCorroborationSearch(queries.contradicting, braveKey),
+  ]);
+  return {
+    confirming: confirmResult.status === 'fulfilled' ? confirmResult.value : [],
+    contradicting: denyResult.status === 'fulfilled' ? denyResult.value : [],
+  };
 }
 
 // ── System prompt ─────────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `You are SAGE — Sentrix's Signal & Truth Filter and live verification engine.
 
-Your job: help the user understand before they believe or act.
+Mission: retrieve → compare → evaluate → conclude. Never conclude first and justify after.
 You are a verification intelligence system, not a chatbot. Be direct, precise, and operator-grade.
-You have access to retrieved article content and corroboration search results. Use them.
+You have access to retrieved article content, confirming sources, and denial/contradiction sources. Use all of them.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 CORE FORMAT (ALL RESPONSES)
 ━━━━━━━━━━━━━━━━━━━━━━━
 
 ## ANSWER
-Direct conclusion first. Complete explanation based on retrieved evidence. What is true, what is supported.
-- For claims or headlines: what is being asserted, whether it holds up, and what the real picture is
+Direct conclusion first. Complete explanation based on retrieved evidence.
+- For claims or headlines: state what is being asserted, whether it holds up, and what the real picture is
 - For questions: answer fully and clearly
 - For URLs or articles: summarize the core content and assess its substance
 - For political/controversial content: present the factual landscape without advocacy
-Use retrieved corroboration sources to anchor your answer. If evidence is weak, say so explicitly.
+Anchor every conclusion to the retrieved confirming and contradicting sources. If evidence is weak, say so explicitly.
 
 ## VERIFICATION STATUS
 One of: CONFIRMED / LIKELY / DISPUTED / UNSUPPORTED / UNKNOWN
-Then explain the standard used (source count, source quality, official confirmation status).
+Then explain the standard applied (source count, source quality, official confirmation, presence of denial).
 
-CONFIRMATION STANDARDS:
-- CONFIRMED: 2+ independent corroborating sources, or 1 official source + 1 major news source
-- LIKELY: 1 corroborating source, not yet officially confirmed
-- DISPUTED: conflicting claims across corroboration sources
-- UNSUPPORTED: no corroboration found in retrieved sources
-- UNKNOWN: insufficient evidence to assess at this time
+STANDARDS:
+- CONFIRMED: 2+ independent high-quality sources, OR 1 official/primary source + 1 major news source
+- LIKELY: 1 corroborating source, no major counter-evidence found
+- DISPUTED: confirming and contradicting sources both exist, or official denial present
+- UNSUPPORTED: no corroboration found; evidence is absent or insufficient
+- UNKNOWN: contradictory signals, too early to assess, or zero evidence on either side
 
-For DEATHS, ARRESTS, WAR EVENTS, ELECTIONS, HEALTH EMERGENCIES: require CONFIRMED standard before using that word.
+For DEATHS, ARRESTS, WAR EVENTS, ELECTIONS, HEALTH EMERGENCIES: require CONFIRMED standard before that word applies.
+High-risk claims with mixed evidence must be marked DISPUTED or UNKNOWN — never prematurely CONFIRMED.
+
+## CONFIRMING EVIDENCE
+Bullet list of sources and evidence that SUPPORT the claim.
+For each, note: source name, source tier (Tier 1 / Tier 2 / Tier 3), and what it specifically confirms.
+Tier 1: official statements, court docs, company statements, primary records, direct family/verified accounts
+Tier 2: Reuters, AP, BBC, NYT, WSJ, Bloomberg, Guardian, major established outlets
+Tier 3: secondary reporting, blogs, aggregators, discussion, reposts
+If no confirming sources exist: "No confirming sources found in retrieved results."
+
+## CONTRADICTING OR MISSING EVIDENCE
+Bullet list of:
+- Sources that explicitly deny, dispute, or fail to confirm the claim
+- Official denials or rebuttals
+- Conflicting reports
+- Absence of confirmation where confirmation would be expected
+- Key gaps (e.g., no official statement when one would normally exist)
+If no contradicting evidence is found: "No contradicting sources found — absence of denial does not equal confirmation."
+
+## SOURCE WEIGHT
+Explain which source tier carried the most weight in the final assessment and why.
+Note any quality gaps (e.g., only Tier 3 sources found, no official statement, paywalled sources).
 
 ## SIGNAL
 HIGH / MEDIUM / LOW — then explain what drives this level (source quality, evidence density, corroboration count).
@@ -236,19 +316,19 @@ CONSENSUS / MIXED / CONFLICT / UNKNOWN — then explain what sources agree or di
 ## RISK
 SAFE / CAUTION / DANGER — then explain manipulation patterns, trust signals, or sourcing weaknesses.
 
-## WHAT HOLDS UP
-Bullet list of claims supported by retrieved evidence. Cite sources where possible.
+## WHAT MATTERS
+Bullet list of specific facts supported by retrieved evidence. Cite sources where possible.
 
-## WHAT DOES NOT HOLD UP
-Bullet list of weak, unverified, or potentially misleading claims.
+## WHAT TO QUESTION
+Bullet list of weak, unverified, contradicted, or potentially misleading claims in the input.
 
 ## WHAT TO VERIFY NEXT
-Bullet list of 3–5 concrete next investigation steps.
+Bullet list of 3–5 concrete next investigation steps to resolve remaining uncertainty.
 
 ## SOURCES
-List the corroborating sources actually used from the provided data.
+List only the retrieved sources actually used in the analysis.
 Format: • domain.com — what this source specifically contributes
-Max 5 entries. Omit if no retrieved sources add value.
+Max 6 entries. Omit sources that added no value to the analysis.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 ARTICLE / URL MODE EXTENSION
@@ -278,40 +358,41 @@ WELL SUPPORTED / PARTIALLY SUPPORTED / WEAKLY SUPPORTED / UNCLEAR / HIGH RISK
 Follow with one sentence explanation.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
+SOURCE QUALITY RULES
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Tier 1 and Tier 2 sources carry the most weight.
+Tier 3 alone cannot produce CONFIRMED status — only LIKELY at best.
+
+For non-technical fact-check queries, aggressively deprioritize:
+- MDN, GitHub, npm, Stack Overflow, Hacker News, tech documentation pages
+- Results that match query terms but are not about the claim
+
+Prioritize: official statements, government sources, major established news organizations.
+
+━━━━━━━━━━━━━━━━━━━━━━━
 HALLUCINATION GUARDRAILS
 ━━━━━━━━━━━━━━━━━━━━━━━
 
 YOU MUST:
-- Base all factual claims on the retrieved corroboration sources provided
+- Base all factual claims on the retrieved sources provided
 - Label uncertainty explicitly (LIKELY, DISPUTED, UNSUPPORTED, UNKNOWN)
-- Distinguish between: confirmed / probable / disputed / speculation
+- Distinguish: confirmed / probable / disputed / speculation
+- Show both confirming AND contradicting evidence — never only one side
 
 YOU MUST NEVER:
-- State a claim as CONFIRMED without 2+ corroborating sources or 1 official + 1 major news source in the data
-- Invent corroboration that is not in the provided sources
+- State a claim as CONFIRMED without meeting the 2-source standard in the retrieved data
+- Invent corroboration not present in the provided sources
 - Use model knowledge alone for current events, deaths, arrests, war events, or elections
 - Imply verification occurred if corroboration is missing
-- Say "I cannot access live URLs" — attempt analysis from available data and note limitations once
+- Say "I cannot access live URLs" — analyze from available data and note limitations once
 - Say "I don't have access to" — work with what is available
 
 If evidence is weak: say so clearly. Uncertainty is honest; fabrication is not.
 
-━━━━━━━━━━━━━━━━━━━━━━━
-SEARCH RESULT QUALITY
-━━━━━━━━━━━━━━━━━━━━━━━
+The user should walk away knowing exactly what was found, what was not found, and what to check next.`;
 
-In the provided search results, prioritize:
-- Official sources (government, institutional, primary)
-- Major news outlets (Reuters, AP, BBC, NYT, WSJ, Bloomberg, Guardian)
-- Wikipedia as reference (not primary)
-
-Deprioritize for non-technical fact-check queries:
-- MDN, GitHub, npm, Stack Overflow, Hacker News
-- Generic tech results that do not relate to the claim
-
-The user should walk away informed, in control, and knowing exactly what to question next.`;
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Context builders ──────────────────────────────────────────────────────────
 
 function buildResultsContext(results) {
   if (!results || results.length === 0) return 'No search results provided.';
@@ -321,12 +402,25 @@ function buildResultsContext(results) {
   }).join('\n\n');
 }
 
-function buildCorroborationContext(sources, queries) {
-  if (sources.length === 0) return 'No corroboration sources retrieved.';
-  const header = `CORROBORATION QUERIES: ${queries.map(q => `"${q}"`).join(' | ')}\nSOURCES RETRIEVED: ${sources.length}\n\n`;
-  return header + sources.map((s, i) =>
-    `[Corroboration ${i + 1}] ${s.domain}\nTitle: ${s.title}\nURL: ${s.url}\nSnippet: ${s.snippet}`
-  ).join('\n\n');
+function buildDualTrackContext(confirming, contradicting, queries) {
+  const cfmQStr = queries.confirming.map(q => `"${q}"`).join(' | ');
+  const denyQStr = queries.contradicting.map(q => `"${q}"`).join(' | ');
+
+  const confirmBlock = confirming.length > 0
+    ? `CONFIRMING SEARCH RESULTS (queries: ${cfmQStr}):\n` +
+      confirming.map((s, i) =>
+        `[Confirm ${i + 1}] ${s.domain}\nTitle: ${s.title}\nURL: ${s.url}\nSnippet: ${s.snippet}`
+      ).join('\n\n')
+    : `CONFIRMING SEARCH RESULTS: No confirming sources retrieved.\nQueries attempted: ${cfmQStr}`;
+
+  const denyBlock = contradicting.length > 0
+    ? `DENIAL/CONTRADICTION SEARCH RESULTS (queries: ${denyQStr}):\n` +
+      contradicting.map((s, i) =>
+        `[Deny ${i + 1}] ${s.domain}\nTitle: ${s.title}\nURL: ${s.url}\nSnippet: ${s.snippet}`
+      ).join('\n\n')
+    : `DENIAL/CONTRADICTION SEARCH RESULTS: No contradicting sources retrieved.\nQueries attempted: ${denyQStr}`;
+
+  return `${confirmBlock}\n\n${denyBlock}`;
 }
 
 function sseChunk(obj) { return `data: ${JSON.stringify(obj)}\n\n`; }
@@ -344,11 +438,14 @@ function limitedModeFallback(userMessage) {
   return [
     `## ANSWER`, `Analysis engine is running in limited mode. Input: "${q}"`, ``,
     `## VERIFICATION STATUS`, `UNKNOWN — analysis engine unavailable.`, ``,
+    `## CONFIRMING EVIDENCE`, `- Analysis engine unavailable — no confirming sources retrieved.`, ``,
+    `## CONTRADICTING OR MISSING EVIDENCE`, `- Analysis engine unavailable — no contradicting sources retrieved.`, ``,
+    `## SOURCE WEIGHT`, `N/A — engine unavailable.`, ``,
     `## SIGNAL`, `LOW — analysis engine unavailable.`, ``,
     `## AGREEMENT`, `UNKNOWN — cannot assess without the analysis engine.`, ``,
     `## RISK`, `CAUTION — verify claims independently; automated analysis not available.`, ``,
-    `## WHAT HOLDS UP`, `- Manual review required`, ``,
-    `## WHAT DOES NOT HOLD UP`, `- Automated verification was not performed`, ``,
+    `## WHAT MATTERS`, `- Manual review required`, ``,
+    `## WHAT TO QUESTION`, `- Automated verification was not performed`, ``,
     `## WHAT TO VERIFY NEXT`,
     `- Has GEMINI_API_KEY been set in the EdgeOne Pages dashboard?`,
     `- Is the key a valid Google AI Studio key with gemini-2.5-flash access?`,
@@ -362,32 +459,56 @@ export async function onRequest(context) {
   const { request, env } = context;
 
   if (request.method === 'OPTIONS') {
-    return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400' } });
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Max-Age': '86400',
+      },
+    });
   }
 
   if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   let body;
   try { body = await request.json(); }
-  catch { return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400, headers: { 'Content-Type': 'application/json' } }); }
+  catch {
+    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
   const { query, results, context: intelligenceContext, messages, userMessage } = body;
 
   if (!userMessage || typeof userMessage !== 'string' || !userMessage.trim()) {
-    return new Response(JSON.stringify({ error: 'userMessage is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: 'userMessage is required' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   const inputClass = detectInputClass(userMessage);
-  const needsCorroboration = inputClass === 'url' || inputClass === 'current-events';
+  const eventType  = detectEventType(userMessage);
+  const needsCorroboration = inputClass === 'url' || inputClass === 'current-events' || inputClass === 'article';
   const isArticleMode = inputClass === 'url' || inputClass === 'article';
   const apiKey = resolveGeminiKey(env ?? {});
   const braveKey = env?.BRAVE_SEARCH_API_KEY;
 
-  console.log(`[Sentrix] /api/sage/query — class=${inputClass} geminiKey=${!!apiKey} braveKey=${!!braveKey} corroborate=${needsCorroboration} query="${(userMessage || '').slice(0, 60)}"`);
+  console.log(`[Sentrix] /api/sage/query — class=${inputClass} event=${eventType} geminiKey=${!!apiKey} braveKey=${!!braveKey} query="${(userMessage || '').slice(0, 60)}"`);
 
-  const sseHeaders = { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive', 'X-Accel-Buffering': 'no' };
+  const sseHeaders = {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  };
 
   if (!apiKey) {
     console.warn('[Sentrix] GEMINI_API_KEY not set — limited-mode fallback');
@@ -400,51 +521,66 @@ export async function onRequest(context) {
     return new Response(readable, { headers: sseHeaders });
   }
 
-  // ── Parallel: article fetch + corroboration ─────────────────────────────────
+  // ── Parallel: article fetch + dual-track corroboration ─────────────────────
   let articleData = undefined;
-  let corroborationSources = [];
-  let corroborationQueries = [];
+  let confirmingSources = [];
+  let contradictingSources = [];
+  let dualTrackQueries = { confirming: [], contradicting: [] };
 
-  if (needsCorroboration || isArticleMode) {
-    const initialQueries = generateCorroborationQueries(userMessage, undefined);
-    corroborationQueries = initialQueries;
+  if (needsCorroboration) {
+    const initialQueries = generateDualTrackQueries(userMessage, eventType, undefined);
+    dualTrackQueries = initialQueries;
 
-    const [fetchResult, corrobResult] = await Promise.allSettled([
+    console.log(`[Sentrix] Dual-track queries — confirming: [${initialQueries.confirming.join(' | ')}] contradicting: [${initialQueries.contradicting.join(' | ')}]`);
+
+    const [fetchResult, dualResult] = await Promise.allSettled([
       inputClass === 'url' ? fetchArticle(userMessage.trim()) : Promise.resolve(undefined),
-      runCorroborationSearch(initialQueries, braveKey),
+      runDualTrackSearch(initialQueries, braveKey),
     ]);
 
     if (fetchResult.status === 'fulfilled' && fetchResult.value) {
       articleData = fetchResult.value;
-      console.log(`[Sentrix] Article fetch — success=${articleData.success} domain=${articleData.domain} error=${articleData.error ?? 'none'}`);
+      console.log(`[Sentrix] Article fetch — success=${articleData.success} domain=${articleData.domain}`);
 
       if (articleData.success && articleData.title) {
-        const betterQueries = generateCorroborationQueries(userMessage, articleData.title);
-        corroborationQueries = betterQueries;
-        const extraSources = await runCorroborationSearch(betterQueries.slice(0, 2), braveKey);
-        const seenDomains = new Set(corroborationSources.map(s => s.domain));
-        for (const s of extraSources) {
-          if (!seenDomains.has(s.domain)) { seenDomains.add(s.domain); corroborationSources.push(s); }
+        const betterQueries = generateDualTrackQueries(userMessage, eventType, articleData.title);
+        dualTrackQueries = betterQueries;
+        console.log(`[Sentrix] Refined queries from title — confirming: [${betterQueries.confirming.join(' | ')}]`);
+        const extra = await runDualTrackSearch(betterQueries, braveKey);
+        const seenConfirm = new Set();
+        const seenDeny = new Set();
+        for (const s of extra.confirming) {
+          if (!seenConfirm.has(s.domain)) { seenConfirm.add(s.domain); confirmingSources.push(s); }
+        }
+        for (const s of extra.contradicting) {
+          if (!seenDeny.has(s.domain)) { seenDeny.add(s.domain); contradictingSources.push(s); }
         }
       }
     }
 
-    if (corrobResult.status === 'fulfilled') {
-      const seenDomains = new Set(corroborationSources.map(s => s.domain));
-      for (const s of corrobResult.value) {
-        if (!seenDomains.has(s.domain)) { seenDomains.add(s.domain); corroborationSources.push(s); }
+    if (dualResult.status === 'fulfilled') {
+      const seenConfirm = new Set(confirmingSources.map(s => s.domain));
+      const seenDeny = new Set(contradictingSources.map(s => s.domain));
+      for (const s of dualResult.value.confirming) {
+        if (!seenConfirm.has(s.domain)) { seenConfirm.add(s.domain); confirmingSources.push(s); }
+      }
+      for (const s of dualResult.value.contradicting) {
+        if (!seenDeny.has(s.domain)) { seenDeny.add(s.domain); contradictingSources.push(s); }
       }
     }
 
-    console.log(`[Sentrix] Corroboration complete — ${corroborationSources.length} sources, queries: ${corroborationQueries.join(' | ')}`);
+    console.log(`[Sentrix] Dual-track complete — confirming=${confirmingSources.length} contradicting=${contradictingSources.length} domains_cfm=[${confirmingSources.map(s => s.domain).join(',')}] domains_deny=[${contradictingSources.map(s => s.domain).join(',')}]`);
   }
 
   // ── Grounding block ─────────────────────────────────────────────────────────
   const resultsContext = buildResultsContext(results ?? []);
   const intelligenceSummary = intelligenceContext ? `\n\nINTELLIGENCE BRIEF:\n${intelligenceContext}` : '';
   const searchQuery = query ? `\n\nORIGINAL QUERY: "${query}"` : '';
+  const claimNote = `\n\nCLAIM ANALYSIS:\n- Input: "${userMessage.trim().slice(0, 200)}"\n- Event type: ${eventType}\n- Input class: ${inputClass}`;
   const modeNote = isArticleMode ? '\n\nMODE: Article/URL analysis — include Article Mode Extension sections.' : '';
-  const verificationNote = needsCorroboration ? '\n\nMODE: Live verification required — use VERIFICATION STATUS and corroboration sources.' : '';
+  const verificationNote = needsCorroboration
+    ? `\n\nMODE: Live verification — dual-track corroboration active. Event type: ${eventType}. Use VERIFICATION STATUS and both CONFIRMING EVIDENCE and CONTRADICTING OR MISSING EVIDENCE sections.`
+    : '';
 
   let articleBlock = '';
   if (articleData) {
@@ -458,11 +594,16 @@ export async function onRequest(context) {
     }
   }
 
-  const corroborationBlock = corroborationSources.length > 0
-    ? `\n\nCORROBORATION SOURCES:\n${buildCorroborationContext(corroborationSources, corroborationQueries)}`
-    : needsCorroboration ? '\n\nCORROBORATION: No additional sources retrieved — base assessment on available evidence and label uncertainty accordingly.' : '';
+  const corroborationBlock = needsCorroboration
+    ? `\n\nDUAL-TRACK CORROBORATION SOURCES (server-retrieved):\n${buildDualTrackContext(confirmingSources, contradictingSources, dualTrackQueries)}`
+    : '';
 
-  const groundingBlock = `${searchQuery}${modeNote}${verificationNote}\n\nSUPPORTING REFERENCES:\n${resultsContext}${intelligenceSummary}${articleBlock}${corroborationBlock}`;
+  const groundingBlock =
+    `${searchQuery}${claimNote}${modeNote}${verificationNote}` +
+    `\n\nSUPPORTING REFERENCES:\n${resultsContext}` +
+    `${intelligenceSummary}` +
+    `${articleBlock}` +
+    `${corroborationBlock}`;
 
   // ── Conversation ────────────────────────────────────────────────────────────
   const priorMessages = messages ?? [];
@@ -542,7 +683,7 @@ export async function onRequest(context) {
       writer.write(encoder.encode(sseChunk({ done: true })));
       writer.close();
 
-      console.log(`[Sentrix] Sage completed — class=${inputClass} corroborationSources=${corroborationSources.length} articleFetched=${!!articleData?.success}`);
+      console.log(`[Sentrix] Sage completed — class=${inputClass} event=${eventType} confirming=${confirmingSources.length} contradicting=${contradictingSources.length} articleFetched=${!!articleData?.success}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       console.error(`[Sentrix] Sage stream error: ${msg}`);

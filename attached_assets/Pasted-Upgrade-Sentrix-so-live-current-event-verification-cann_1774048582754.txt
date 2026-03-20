@@ -1,0 +1,194 @@
+Upgrade Sentrix so live current-event verification cannot conclude from weak or irrelevant evidence.
+
+CRITICAL:
+Sage is still getting live factual claims wrong.
+Example failure class: celebrity death / breaking-news claim.
+This means the current grounding and corroboration logic is insufficient.
+
+MISSION:
+Make Sage refuse to confidently conclude on live current-event claims unless corroboration standards are actually met.
+
+GOAL:
+For live factual claims such as deaths, arrests, attacks, lawsuits, elections, health emergencies, and breaking political events, Sage must retrieve, compare, and verify before concluding.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. HARD CURRENT-EVENT CLASSIFIER
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Create a strict detector for live-verification cases, including:
+- death claims
+- arrests
+- attacks / strikes / wars
+- lawsuits
+- elections
+- health emergencies
+- major public figure claims
+- “did X die”
+- “is it true that...”
+- “breaking”
+- “confirmed”
+- “today”
+- “just happened”
+
+If matched:
+- force LIVE VERIFICATION MODE
+- do not allow answer from model priors alone
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. HARD CORROBORATION RULES
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For LIVE VERIFICATION MODE:
+
+CONFIRMED requires:
+- at least 2 independent live sources
+OR
+- 1 official/primary source + 1 major news source
+
+If standard not met:
+- do NOT say confirmed
+- verdict must be one of:
+  - LIKELY
+  - DISPUTED
+  - UNSUPPORTED
+  - UNKNOWN
+
+Make this strict.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. SOURCE QUALITY FILTERING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Aggressively filter irrelevant results for non-technical fact-check queries.
+
+For obvious factual/current-event checks:
+- de-rank or exclude:
+  - MDN
+  - npm
+  - GitHub
+  - Stack Overflow
+  - generic search artifact pages
+  - irrelevant docs/results caused by query-string matching
+
+Prioritize:
+- official sources
+- Reuters / AP / major news
+- direct family/account statements when relevant
+- source pages actually about the event
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. CLAIM ANSWER GUARDRAIL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For current-event claims, Sage must not say:
+- “No credible information suggests...”
+unless corroboration search actually found no confirming evidence.
+
+If confirming evidence is found:
+- Sage must reflect that
+- and explain degree of certainty
+
+No model-only dismissal.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. VERIFICATION TRACE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For live verification mode, internally track:
+- which corroboration queries were generated
+- how many sources were retrieved
+- which sources were actually used
+- why status was chosen
+
+Expose this cleanly in output through:
+## VERIFICATION STATUS
+## SOURCES
+## WHAT HOLDS UP
+## WHAT DOES NOT HOLD UP
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. SPECIAL RULE FOR DEATH CLAIMS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+If user asks whether a person died:
+
+Require:
+- official family/social account statement
+OR
+- 2 strong independent major news confirmations
+
+If found:
+- answer directly and clearly
+- do not hedge incorrectly
+
+If not found:
+- do not fabricate certainty
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. OUTPUT FORMAT FOR LIVE FACT CHECK
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Use:
+
+## ANSWER
+Direct conclusion first
+
+## VERIFICATION STATUS
+CONFIRMED / LIKELY / DISPUTED / UNSUPPORTED / UNKNOWN
+
+## SIGNAL
+HIGH / MEDIUM / LOW
+
+## AGREEMENT
+CONSENSUS / MIXED / CONFLICT
+
+## RISK
+SAFE / CAUTION / DANGER
+
+## WHAT HOLDS UP
+Bullet list of supported facts
+
+## WHAT DOES NOT HOLD UP
+Bullet list of unsupported / weak / misleading points
+
+## WHAT TO VERIFY NEXT
+Only if unresolved
+
+## SOURCES
+Only sources actually used
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. LOGGING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add logs for live verification mode:
+- liveVerificationMode yes/no
+- corroboration queries
+- source count
+- source domains used
+- verification status chosen
+- whether official source found
+- whether major-news corroboration found
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. FAILURE SAFETY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+If corroboration fetch fails:
+- do not confidently deny
+- fall back to UNKNOWN / UNSUPPORTED with explanation
+- do not hallucinate certainty
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. PRODUCT GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Sentrix should behave like a real-time verification engine.
+
+For breaking claims:
+- retrieve
+- compare
+- verify
+- then conclude
+
+Never conclude first and justify later.

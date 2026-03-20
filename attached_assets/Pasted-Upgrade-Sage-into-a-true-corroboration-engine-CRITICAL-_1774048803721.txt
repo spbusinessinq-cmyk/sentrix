@@ -1,0 +1,203 @@
+Upgrade Sage into a true corroboration engine.
+
+CRITICAL:
+Sage must not answer major factual claims from a single article, a single URL, or model memory alone.
+
+MISSION:
+For any factual claim, headline, article, or breaking-news question, Sage must actively gather confirming and denying sources before producing the final answer.
+
+GOAL:
+Make Sage accurate by requiring corroboration and contradiction checks before concluding.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. CLAIM-FIRST ANALYSIS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Before answering, Sage must:
+- extract the main claim
+- identify named entities
+- identify event type:
+  - death
+  - arrest
+  - war/strike/attack
+  - lawsuit
+  - election
+  - health event
+  - business/corporate claim
+  - general fact claim
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. DUAL-TRACK SOURCE RETRIEVAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For every factual claim, run two retrieval tracks:
+
+A. CONFIRMING SOURCES
+Search for sources that support the claim
+
+B. DENYING / CONTRADICTING SOURCES
+Search for sources that dispute, deny, or fail to confirm the claim
+
+The system must actively look for both, not just supportive evidence.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. SOURCE QUALITY TIERS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Classify sources into tiers:
+
+Tier 1:
+- official statements
+- direct family / verified account statements
+- court docs / government docs
+- company statements
+- primary records
+
+Tier 2:
+- Reuters
+- AP
+- BBC
+- major established news orgs
+
+Tier 3:
+- secondary reporting
+- blogs
+- community discussion
+- reposts
+- aggregator pages
+
+Final answers must weight Tier 1 and Tier 2 much higher than Tier 3.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. HARD VERIFICATION STANDARDS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For live/current-event claims:
+
+CONFIRMED requires:
+- 2 independent high-quality sources
+OR
+- 1 official/primary source + 1 major news source
+
+If this is not met:
+do NOT mark as confirmed.
+
+Use:
+- CONFIRMED
+- LIKELY
+- DISPUTED
+- UNSUPPORTED
+- UNKNOWN
+
+Strictly.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. OUTPUT MUST SHOW BOTH SIDES
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For factual verification, Sage output must include:
+
+## ANSWER
+Direct conclusion first
+
+## VERIFICATION STATUS
+CONFIRMED / LIKELY / DISPUTED / UNSUPPORTED / UNKNOWN
+
+## CONFIRMING EVIDENCE
+Bullet list of sources and what they support
+
+## CONTRADICTING OR MISSING EVIDENCE
+Bullet list of:
+- denying sources
+- conflicting reports
+- lack of confirmation
+- unresolved gaps
+
+## SOURCE WEIGHT
+Explain which source types carried the most weight
+
+## WHAT HOLDS UP
+Supported facts only
+
+## WHAT DOES NOT HOLD UP
+Unsupported, exaggerated, or contradicted claims
+
+## WHAT TO VERIFY NEXT
+If still unresolved
+
+## SOURCES
+Only actual sources used
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. SPECIAL RULES FOR HIGH-RISK CLAIMS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For:
+- celebrity/public figure deaths
+- arrests
+- terror attacks
+- war strikes
+- lawsuits
+- major political actions
+- public health claims
+
+Sage must require stronger evidence and must not confidently deny or confirm from weak results.
+
+If evidence is mixed:
+mark as DISPUTED or UNKNOWN.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. SEARCH RESULT FILTERING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For non-technical fact-check queries:
+aggressively de-rank or exclude irrelevant technical and artifact results such as:
+- GitHub
+- MDN
+- npm
+- Stack Overflow
+- docs pages
+- irrelevant query-string matches
+
+Prioritize real corroborating headlines and official statements.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. HALLUCINATION GUARDRAIL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Sage must never:
+- invent corroboration
+- imply verification happened when it did not
+- answer from memory alone for current events
+- conclude first and justify later
+
+It must:
+retrieve → compare → evaluate → conclude
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. LOGGING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Log:
+- extracted claim
+- event type
+- corroboration queries
+- contradiction queries
+- confirming source count
+- contradicting source count
+- source domains used
+- final verification status
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. FINAL PRODUCT GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Sentrix should work like this:
+
+User asks a factual question →
+Sage looks for confirming headlines and denying/disputing sources →
+weights them by source quality →
+returns the most accurate supported conclusion.
+
+This is not a chatbot.
+This is a verification engine.

@@ -45,11 +45,16 @@ function enrichResult(r: SearchResultItem): EnrichedItem {
 // ── Sage response parsing ─────────────────────────────────────────────────────
 interface ParsedSage {
   answer: string;
+  verificationStatus: string;
+  confirmingEvidence: string;
+  contradictingEvidence: string;
+  sourceWeight: string;
   signal: string;
   agreement: string;
   risk: string;
   whatMatters: string;
   whatToQuestion: string;
+  whatToVerify: string;
   sources: string;
   // legacy fallback
   intelligence: string;
@@ -57,28 +62,55 @@ interface ParsedSage {
 
 function parseSageResponse(text: string): ParsedSage {
   const sec = (header: string, next?: string[]) => {
-    const nextPat = next?.length ? next.map(h => `##\\s*${h}`).join('|') : '$';
-    const m = text.match(new RegExp(`##\\s*${header}\\s*([\\s\\S]*?)(?=${nextPat}|$)`, 'i'));
+    const nextPat = next?.length ? next.map(h => `##\\s*${h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).join('|') : '$';
+    const escapedHeader = header.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const m = text.match(new RegExp(`##\\s*${escapedHeader}\\s*([\\s\\S]*?)(?=${nextPat}|$)`, 'i'));
     return m?.[1]?.trim() ?? '';
   };
 
-  const HEADERS = ['SIGNAL','AGREEMENT','RISK','WHAT MATTERS','WHAT TO QUESTION','SOURCES','INTELLIGENCE'];
-  const answer      = sec('ANSWER', HEADERS);
-  const signal      = sec('SIGNAL', HEADERS.slice(1));
-  const agreement   = sec('AGREEMENT', HEADERS.slice(2));
-  const risk        = sec('RISK', HEADERS.slice(3));
-  const whatMatters = sec('WHAT MATTERS', HEADERS.slice(4));
-  const whatToQ     = sec('WHAT TO QUESTION', HEADERS.slice(5));
-  const sources     = sec('SOURCES', ['INTELLIGENCE']);
-  const intelligence = sec('INTELLIGENCE');
+  // All section names in output order — used as stop-markers for each section
+  const ALL = [
+    'VERIFICATION STATUS',
+    'CONFIRMING EVIDENCE',
+    'CONTRADICTING OR MISSING EVIDENCE',
+    'SOURCE WEIGHT',
+    'SIGNAL',
+    'AGREEMENT',
+    'RISK',
+    'WHAT MATTERS',
+    'WHAT TO QUESTION',
+    'WHAT TO VERIFY NEXT',
+    'SOURCES',
+    'INTELLIGENCE',
+    'ARTICLE', 'SUMMARY', 'CORE CLAIMS', 'VERDICT',
+  ];
+
+  const answer               = sec('ANSWER', ALL);
+  const verificationStatus   = sec('VERIFICATION STATUS', ALL.slice(1));
+  const confirmingEvidence   = sec('CONFIRMING EVIDENCE', ALL.slice(2));
+  const contradictingEvidence = sec('CONTRADICTING OR MISSING EVIDENCE', ALL.slice(3));
+  const sourceWeight         = sec('SOURCE WEIGHT', ALL.slice(4));
+  const signal               = sec('SIGNAL', ALL.slice(5));
+  const agreement            = sec('AGREEMENT', ALL.slice(6));
+  const risk                 = sec('RISK', ALL.slice(7));
+  const whatMatters          = sec('WHAT MATTERS', ALL.slice(8));
+  const whatToQ              = sec('WHAT TO QUESTION', ALL.slice(9));
+  const whatToVerify         = sec('WHAT TO VERIFY NEXT', ALL.slice(10));
+  const sources              = sec('SOURCES', ['INTELLIGENCE', 'ARTICLE']);
+  const intelligence         = sec('INTELLIGENCE');
 
   return {
-    answer:        answer || text,
+    answer: answer || text,
+    verificationStatus,
+    confirmingEvidence,
+    contradictingEvidence,
+    sourceWeight,
     signal,
     agreement,
     risk,
     whatMatters,
     whatToQuestion: whatToQ,
+    whatToVerify,
     sources,
     intelligence,
   };
@@ -554,6 +586,20 @@ function SageAnswerBlock({ msg }: { msg: RichSageMessage }) {
         </div>
       )}
 
+      {/* CONFIRMING EVIDENCE — collapsible, cyan */}
+      {p.confirmingEvidence && (
+        <CollapsibleSection label="Confirming Evidence" labelColor="rgba(56,189,248,0.65)" defaultOpen>
+          {renderMarkdown(p.confirmingEvidence)}
+        </CollapsibleSection>
+      )}
+
+      {/* CONTRADICTING OR MISSING EVIDENCE — collapsible, amber */}
+      {p.contradictingEvidence && (
+        <CollapsibleSection label="Contradicting Evidence" labelColor="rgba(245,158,11,0.65)" defaultOpen>
+          {renderMarkdown(p.contradictingEvidence)}
+        </CollapsibleSection>
+      )}
+
       {/* WHAT MATTERS — always visible, never hidden */}
       {p.whatMatters && (
         <AlwaysVisibleSection
@@ -576,10 +622,25 @@ function SageAnswerBlock({ msg }: { msg: RichSageMessage }) {
         </AlwaysVisibleSection>
       )}
 
+      {/* WHAT TO VERIFY NEXT — collapsible */}
+      {p.whatToVerify && (
+        <CollapsibleSection label="What to Verify Next" labelColor="rgba(148,163,184,0.50)" defaultOpen={false}>
+          {renderMarkdown(p.whatToVerify)}
+        </CollapsibleSection>
+      )}
+
       {/* SOURCES — collapsible, closed by default (secondary) */}
-      {p.sources && (
+      {(p.sources || p.sourceWeight) && (
         <CollapsibleSection label="Sources" defaultOpen={false}>
-          {renderSources(p.sources)}
+          {p.sources && renderSources(p.sources)}
+          {p.sourceWeight && (
+            <div className="mt-3 pt-3 text-[10.5px] font-mono leading-relaxed"
+              style={{ color: 'rgba(148,163,184,0.45)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+              <span className="text-[8.5px] uppercase tracking-[0.15em] font-bold block mb-1.5"
+                style={{ color: 'rgba(148,163,184,0.30)' }}>Source Weight</span>
+              {renderMarkdown(p.sourceWeight)}
+            </div>
+          )}
         </CollapsibleSection>
       )}
 
