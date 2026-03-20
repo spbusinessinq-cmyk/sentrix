@@ -1,0 +1,175 @@
+You are a senior product designer and front-end engineer building a production-grade browser concept called Vero.
+
+IMPORTANT:
+This is NOT a generic SaaS dashboard.
+This is NOT a hacker toy UI.
+This is NOT a military simulator.
+This is a consumer-friendly tactical browser interface with a sharp, glassy, Splinter Cell-inspired design language.
+
+CORE PRODUCT:
+- Product name: Vero
+- Security engine: BLACKDOG
+- Positioning: a safer, cleaner browser with visible threat awareness
+- BLACKDOG is the embedded security layer
+- AXION is NOT connected
+- This is a public-facing browser product for everyday users
+
+DESIGN DIRECTION:
+Build a dark, premium, sharp, glassy interface that feels:
+- tactical
+- user friendly
+- controlled
+- modern
+- layered
+- fast
+- serious
+
+Aesthetic reference:
+“Splinter Cell tactical UI made clean enough for public consumer use”
+
+VISUAL RULES:
+- Very dark background palette
+- Thin borders
+- Soft glass panels
+- Subtle glow, never cheesy neon overload
+- Sharp spacing and compact structure
+- Dense but readable
+- Professional typography
+- Smooth hover states and transitions
+- No cartoonish UI
+- No oversized rounded bubbly components
+- No generic startup gradients
+
+COLOR LOGIC:
+- Base: near-black / charcoal
+- Panels: dark glass
+- Accent green = safe / protected / connected
+- Amber = caution / moderate risk
+- Red = danger / blocked / high risk
+- Blue = neutral system info
+Keep accents controlled and meaningful.
+
+BUILD GOAL:
+Create a polished browser interface prototype in React that looks like a real downloadable browser product.
+
+TECH STACK:
+- React
+- TypeScript
+- Tailwind CSS
+- Single-page app
+- Production-quality component structure
+- Responsive enough for desktop presentation
+- Clean code organization
+
+MAIN LAYOUT:
+Build a full browser shell with these regions:
+
+1. TOP TAB BAR
+- Vero wordmark/logo area
+- Multiple tabs
+- Active tab styling
+- New tab button
+- BLACKDOG status indicator on the right
+- Clean, premium browser feel
+
+2. ADDRESS / SEARCH BAR ROW
+- Back / forward / refresh controls
+- Main address bar
+- Current domain shown
+- Lock / shield style icon
+- Risk badge at right:
+  - SAFE
+  - CAUTION
+  - DANGER
+  - UNKNOWN
+- Small action icons for bookmark, inspect, secure mode
+
+3. LEFT TACTICAL SIDEBAR
+Collapsed vertical icon rail inspired by the user’s tactical interfaces.
+Include items like:
+- Home
+- Search
+- History
+- Downloads
+- Privacy
+- Vault
+- Settings
+Use compact icon buttons with hover glow and active state.
+
+4. MAIN CONTENT AREA
+This should initially show a Vero Search / homepage experience:
+- Hero search field
+- “Protected by BLACKDOG” indicator
+- Quick actions cards:
+  - New Secure Tab
+  - Burn Session
+  - Link Check
+  - Privacy Report
+- A clean featured search results preview below
+
+5. RIGHT BLACKDOG PANEL
+This is critical.
+A slide-out / fixed tactical analysis panel showing:
+- BLACKDOG ACTIVE
+- Trackers blocked
+- Scripts flagged
+- Redirects stopped
+- Page risk score
+- Session status
+- Small live event log
+This panel should feel like a consumer-safe version of an intelligence side panel.
+
+SEARCH RESULTS STYLE:
+Below the main search area, create result cards that show:
+- result title
+- domain
+- summary snippet
+- risk label
+- short BLACKDOG explanation
+Examples:
+- SAFE: low trackers, verified domain
+- CAUTION: mixed reputation, third-party scripts
+- DANGER: suspicious redirects, deceptive download pattern
+
+IMPORTANT UX GOALS:
+- The interface must feel real, not like a mockup poster
+- Make it look like an actual browser application
+- Reduce clutter
+- Keep the central browsing area cleaner than the tactical side panels
+- Tactical energy should live mostly in structure, status, and security visualization
+- It must still feel usable by normal people
+
+MOTION / POLISH:
+Add subtle animations:
+- hover glow on controls
+- active tab highlight
+- soft pulse on BLACKDOG connected state
+- panel transitions
+- refined opacity changes
+Do not over-animate.
+
+CONTENT / BRANDING:
+Use the following wording where useful:
+- Vero
+- Powered by BLACKDOG security
+- Browse clearly. Stay protected.
+- Protected by BLACKDOG
+- Secure session active
+
+DO NOT:
+- connect AXION
+- make this an RSR internal command dashboard
+- use military language everywhere
+- clutter the page with fake data overload
+- create generic template-looking cards
+- make it look like a crypto dashboard
+- make it look like a hacker movie parody
+
+DELIVERABLE:
+Return the full React component code for the browser interface.
+Keep it self-contained and clean.
+Use thoughtful layout, polished UI, and strong visual hierarchy.
+
+EXTRA PUSH:
+Make this feel like the first serious design pass for a browser that could actually exist.
+The result should feel premium, sharp, tactical, and consumer-usable.

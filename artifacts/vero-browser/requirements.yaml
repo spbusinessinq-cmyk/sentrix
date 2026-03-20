@@ -1,0 +1,11 @@
+packages:
+  "framer-motion": "For smooth tactical animations, panel slide-ins, and pulsing glows"
+  "date-fns": "For formatting event log timestamps in the security panel"
+  "lucide-react": "Already installed, but listed for clarity - needed for tactical UI icons"
+  "clsx": "Utility for constructing class names conditionally"
+  "tailwind-merge": "Utility for merging tailwind classes"
+
+notes:
+  - This is a static React application prototyping a browser interface.
+  - No backend is required; all data (event logs, search results, risk levels) is mocked in React Context.
+  - Tailwind v4 is configured via CSS native theme variables.

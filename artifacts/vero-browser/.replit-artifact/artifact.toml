@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Vero Browser"
+version = "1.0.0"
+id = "artifacts/vero-browser"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22442
+
+[services.development]
+run = "pnpm --filter @workspace/vero-browser run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/vero-browser", "run", "build" ]
+publicDir = "artifacts/vero-browser/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22442"
+BASE_PATH = "/"

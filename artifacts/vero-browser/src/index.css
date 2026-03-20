@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Tactical Dark Theme Colors */
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-border: hsl(var(--border));
+  
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  
+  --color-amber: #F59E0B;
+  --color-red: #EF4444;
+  --color-green: hsl(var(--primary));
+  
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --animate-pulse-slow: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-glow: glow 2s ease-in-out infinite alternate;
+}
+
+:root {
+  /* Very dark, near black backgrounds */
+  --background: 220 14% 6%;
+  --foreground: 210 15% 85%;
+  
+  /* Slightly elevated surfaces for glass panels */
+  --card: 220 13% 9%;
+  --card-foreground: 210 15% 85%;
+  
+  /* Very subtle thin borders */
+  --border: 220 10% 16%;
+  --input: 220 10% 16%;
+  
+  /* BLACKDOG Green */
+  --primary: 142 76% 36%;
+  --primary-foreground: 142 76% 96%;
+  --ring: 142 76% 36%;
+  
+  /* Muted elements */
+  --muted: 220 12% 13%;
+  --muted-foreground: 215 10% 48%;
+  
+  --accent: 142 76% 36%;
+  --accent-foreground: 142 76% 96%;
+  
+  --radius: 0.5rem;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground font-sans antialiased overflow-hidden;
+    background-image: radial-gradient(circle at 50% 0%, rgba(22, 163, 74, 0.03) 0%, transparent 70%);
+  }
+  
+  * {
+    @apply border-border;
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.95); }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 5px rgba(22, 163, 74, 0.2); }
+  100% { box-shadow: 0 0 20px rgba(22, 163, 74, 0.6); }
+}
+
+/* Custom Scrollbar for Tactical Vibe */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Glassmorphism utilities */
+.glass-panel {
+  @apply bg-card/60 backdrop-blur-xl border border-white/5 shadow-2xl;
+}
