@@ -148,7 +148,7 @@ export function AddressBar() {
             {bookmarked ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
           </NavBtn>
           <NavBtn
-            title="BLACKDOG Panel"
+            title="System Panel"
             active={blackdogPanelOpen}
             onClick={() => setBlackdogPanelOpen(!blackdogPanelOpen)}
           >

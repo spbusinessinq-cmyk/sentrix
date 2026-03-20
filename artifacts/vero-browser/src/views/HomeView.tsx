@@ -68,8 +68,8 @@ export function HomeView() {
         className="flex items-center gap-6 px-6 py-1.5 shrink-0 overflow-x-auto"
         style={{ background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
       >
-        {/* BLACKDOG status */}
-        <StatusPip active={bdConnected} label={bdConnected ? 'BLACKDOG ACTIVE' : 'BLACKDOG CONNECTING'} glow={bdConnected} />
+        {/* Protection status */}
+        <StatusPip active={bdConnected} label={bdConnected ? 'PROTECTION ACTIVE' : 'CONNECTING'} glow={bdConnected} />
         <div className="w-px h-3 bg-white/[0.08] shrink-0" />
         <StatusItem label="Saved" value={savedItems.length} />
         <StatusItem label="Collections" value={collections.length} />

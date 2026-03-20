@@ -193,7 +193,7 @@ export function BlackdogPanel() {
 
             <div className="flex-1 overflow-y-auto px-3.5 py-3 flex flex-col gap-2">
               {[
-                { label: 'BLACKDOG Engine online', detail: 'v4.1.2 — operational', ok: true },
+                { label: 'Analysis Engine online', detail: 'v4.1.2 — operational', ok: true },
                 { label: 'Risk classification active', detail: 'URL heuristics running per request', ok: true },
                 { label: 'Tab isolation active', detail: 'Per-tab navigation and session state', ok: true },
                 { label: 'High-risk blocking enabled', detail: 'Danger-rated domains intercepted', ok: true },

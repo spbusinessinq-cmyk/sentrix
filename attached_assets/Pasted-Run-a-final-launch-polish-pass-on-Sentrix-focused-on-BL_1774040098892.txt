@@ -1,0 +1,93 @@
+Run a final launch polish pass on Sentrix focused on BLACKDOG restraint and recoverable panel behavior.
+
+IMPORTANT:
+Do not redesign the interface.
+Do not add new features beyond what is required here.
+This is a quick launch-fix pass.
+
+MISSION:
+Reduce BLACKDOG overexposure and make the right-side system panel recoverable after close.
+
+GOALS:
+1. BLACKDOG should feel like a supporting system layer, not the dominant brand
+2. The user must always be able to reopen the right-side panel after dismissing it
+3. Keep the UI clean, calm, and launch-ready
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. REDUCE BLACKDOG OVEREXPOSURE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Audit visible BLACKDOG mentions across the Sentrix interface.
+
+Reduce repetition:
+- if BLACKDOG appears too many times on the homepage or main shell, trim it back
+- keep only the most meaningful placements:
+  - top-right status pill OR panel header
+  - right-side system panel
+  - subtle supporting mention in subtext if truly needed
+
+Do NOT remove BLACKDOG entirely.
+Do make it feel secondary to SENTRIX.
+
+Preferred hierarchy:
+- SENTRIX = primary product identity
+- Sage = intelligence / AI layer
+- BLACKDOG = underlying protection / classification layer
+
+Remove or simplify any unnecessary repeated “BLACKDOG” labeling that does not add meaning.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. MAKE RIGHT PANEL RECOVERABLE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Current issue:
+If the user closes the right-side BLACKDOG/system panel, there is no clear way to restore it.
+
+Fix this.
+
+Requirements:
+- add a clear reopen control that is always accessible
+- it must remain visible when the panel is closed
+- it should feel intentional, not like a debug button
+
+Good options:
+- a slim edge handle on the right side
+- a compact icon/button in the top-right shell controls
+- a “System Panel” toggle button
+
+Behavior:
+- close = hides panel
+- reopen = restores panel in the same place
+- preserve panel open/closed state during the current session if practical
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. KEEP PANEL TOGGLE CLEAN
+━━━━━━━━━━━━━━━━━━━━━━━
+
+The reopen control should:
+- match Sentrix styling
+- be subtle but discoverable
+- not compete with the main UI
+- have hover/focus states
+- not look like a dev artifact
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. OPTIONAL COPY CLEANUP
+━━━━━━━━━━━━━━━━━━━━━━━
+
+If useful, rename visible BLACKDOG-heavy labels to calmer system wording where appropriate, such as:
+- “System Status”
+- “Protection Layer”
+- “Analysis Engine”
+
+But only where it improves clarity and reduces repetition.
+Do not create inconsistency.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. OUTPUT GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Return a launch-ready Sentrix shell where:
+- BLACKDOG no longer overwhelms the interface
+- the right-side panel can always be reopened after close
+- the product feels controlled, polished, and ready for public use

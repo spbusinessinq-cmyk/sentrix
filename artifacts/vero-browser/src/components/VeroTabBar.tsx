@@ -79,7 +79,7 @@ export function VeroTabBar() {
         </button>
       </div>
 
-      {/* BLACKDOG status */}
+      {/* System status */}
       <div className="flex items-center px-3.5 border-l border-white/[0.05] shrink-0 gap-2">
         <div
           className="flex items-center gap-1.5 px-2.5 py-[5px] rounded-full transition-all duration-500"
@@ -94,7 +94,7 @@ export function VeroTabBar() {
               <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#38BDF8', boxShadow: '0 0 5px rgba(56,189,248,0.7)' }} />
               <Activity className="w-2.5 h-2.5" style={{ color: 'rgba(56,189,248,0.80)', opacity: 0.85 }} />
               <span className="text-[9px] font-bold tracking-[0.18em] uppercase hidden sm:block" style={{ color: '#38BDF8', opacity: 0.80 }}>
-                BLACKDOG ACTIVE
+                SYSTEM ACTIVE
               </span>
             </>
           ) : (
