@@ -112,16 +112,18 @@ function scoreAndAnnotate(r: {
 }, query: string): SearchResultItem {
   // ─── Query intent parsing (must come first) ───────────────────────────────
   const q = query.toLowerCase();
-  const isDocsQuery = /\b(how to|tutorial|guide|api|documentation|docs|reference|example|install|setup|configure)\b/.test(q);
-  const isNewsQuery = /\b(news|latest|today|breaking|current|2024|2025|2026|recently)\b/.test(q);
-  const isRefQuery  = /\b(what is|who is|define|definition|meaning|explain|overview|history of)\b/.test(q);
+  const isDocsQuery       = /\b(how to|tutorial|guide|api|documentation|docs|reference|example|install|setup|configure|code|programming|develop)\b/.test(q);
+  const isNewsQuery       = /\b(news|latest|today|breaking|current|2024|2025|2026|recently|update|happening)\b/.test(q);
+  const isRefQuery        = /\b(what is|who is|define|definition|meaning|explain|overview|history of|biography|background)\b/.test(q);
+  const isProceduralQuery = /\b(how to|how do|steps|recipe|make|bake|cook|build|create|fix|repair|install|setup|configure|set up)\b/.test(q);
+  const isDiscussionQuery = /\b(opinion|thoughts|reddit|forum|community|recommend|advice|experience|vs|versus|compared|best)\b/.test(q);
 
   const domainInfo = classifyDomain(r.domain);
   let score = 50 + domainInfo.scoreBoost;
   let whyReason = domainInfo.whyReason;
 
-  // GitHub: only relevant for developer queries — penalise for general/news queries
-  if (r.domain.toLowerCase().includes('github.com') && !isDocsQuery) score -= 12;
+  // GitHub: heavily penalized for non-technical queries
+  if (r.domain.toLowerCase().includes('github.com') && !isDocsQuery) score -= 25;
 
   // .gov / .edu TLD boost
   const d2 = r.domain.toLowerCase();
@@ -134,6 +136,24 @@ function scoreAndAnnotate(r: {
 
   const spamTitlePatterns = /\b(best|top\s+\d+|review|vs\.?|versus|comparison|buy|cheap|deal|discount|coupon|free\s+trial)\b/i;
   if (spamTitlePatterns.test(r.title) && !domainInfo.matched) score -= 10;
+
+  // Forum penalty for non-discussion queries (Reddit, Quora, etc.)
+  const isForumDomain = d2.includes('reddit.com') || d2.includes('quora.com') || d2.includes('answers.') || d2.includes('forum.');
+  if (isForumDomain && !isDiscussionQuery) { score -= 15; }
+
+  // Procedural / recipe boost — reward direct answer pages
+  if (isProceduralQuery) {
+    const procedureBoostDomains = [
+      'allrecipes.com', 'food.com', 'epicurious.com', 'seriouseats.com', 'simplyrecipes.com',
+      'bbcgoodfood.com', 'delish.com', 'tasty.co', 'bonappetit.com', 'instructables.com',
+      'wikihow.com', 'thespruce.com', 'thespruceeats.com', 'nytimes.com/recipes',
+    ];
+    if (procedureBoostDomains.some(pd => d2.includes(pd))) { score += 20; whyReason += ' — direct how-to source'; }
+    // Boost domains with "recipe" or "how-to" in the URL path
+    if (r.url.toLowerCase().includes('/recipe') || r.url.toLowerCase().includes('/how-to')) { score += 10; }
+    // Penalize GitHub/LinkedIn/social for procedural queries
+    if (d2.includes('github.com') || d2.includes('linkedin.com')) { score -= 20; }
+  }
 
   // HTTPS bonus
   if (r.url.startsWith('https://')) score += 10;
@@ -156,18 +176,21 @@ function scoreAndAnnotate(r: {
   if (r.url.length > 200) score -= 10;
 
   // ─── Query intent boosting ─────────────────────────────────────────────────
-  const d = r.domain.toLowerCase();
+  const d = d2; // alias for readability
   if (isDocsQuery && (d.includes('docs.') || d.includes('developer.') || d.includes('npmjs') || d.includes('github') || d.includes('stackoverflow') || d.includes('react.dev') || d.includes('nodejs'))) {
-    score += 15;
-    whyReason += ' — boosted for your query';
+    score += 15; whyReason += ' — boosted for your query';
   }
   if (isNewsQuery && (d.includes('reuters') || d.includes('bbc') || d.includes('apnews') || d.includes('ycombinator') || d.includes('nytimes') || d.includes('theguardian') || d.includes('washingtonpost') || d.includes('npr.org'))) {
-    score += 15;
-    whyReason += ' — boosted for your query';
+    score += 15; whyReason += ' — boosted for your query';
   }
   if (isRefQuery && d.includes('wikipedia')) {
-    score += 15;
-    whyReason += ' — boosted for your query';
+    score += 15; whyReason += ' — boosted for your query';
+  }
+  if (isProceduralQuery && (d.includes('wikihow') || d.includes('instructables') || d.includes('ehow'))) {
+    score += 12; whyReason += ' — step-by-step source';
+  }
+  if (isDiscussionQuery && (d.includes('reddit') || d.includes('ycombinator'))) {
+    score += 8; whyReason += ' — community discussion';
   }
 
   score = Math.max(0, Math.min(100, score));

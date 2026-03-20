@@ -12,7 +12,11 @@ A polished dark tactical browser UI prototype with BLACKDOG as the embedded priv
 ## Design System
 
 - Background: `220 14% 5.5%` (near-black)
-- Primary (green): `hsl(142 72% 34%)` with glow tokens
+- **Primary (neon baby pink)**: `hsl(322 84% 65%)` — brand, buttons, CTAs, search focus ring
+- **Security green** (SAFE indicators, BLACKDOG status, signal tiers): `hsl(142 72% 38%)` — NOT changed to pink
+- **Sage / AI purple**: `rgba(139,92,246,...)` — AI/answer engine accent
+- Glow tokens: pink `rgba(224,64,151,...)`, safe-green `rgba(22,163,74,...)`, sage-purple `rgba(139,92,246,...)`
+- Body gradient: pink top-center + purple bottom-right
 - Fonts: JetBrains Mono + Inter
 - CSS utilities: `.glass-panel`, `.glass-surface`, `.section-label`, `.risk-safe/caution/danger/unknown`
 - Compact interface: `html.compact` class applied via `applyCompactInterface()`

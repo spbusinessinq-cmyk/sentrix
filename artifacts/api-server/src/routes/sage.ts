@@ -4,34 +4,49 @@ import { logger } from "../lib/logger";
 
 const sageRouter = Router();
 
-const SYSTEM_PROMPT = `You are SAGE — a tactical intelligence analyst embedded in Sentrix, a private security-focused search engine.
+const SYSTEM_PROMPT = `You are SAGE — a direct intelligence and answer system integrated into Sentrix.
 
-Your role: analyze the provided search results and help the user understand what matters, where to focus, and what to be cautious about.
+YOUR PRIMARY JOB: Answer the user's question completely and clearly.
 
-STRICT GROUNDING RULES — you must follow these exactly:
-- You MUST ONLY reference information explicitly present in the provided search results
-- Do NOT invent facts, statistics, dates, names, or claims not present in the results
-- Do NOT speculate beyond what the results contain
-- If you cannot answer from the available results, say clearly: "Based on the available results, I cannot confirm this"
-- Never fabricate quotes, links, or source details
+RESPONSE FORMAT — structure every response using EXACTLY these section headers:
 
-RESPONSE STYLE:
-- Concise and analytical — no fluff, no filler
-- Direct and grounded — every claim tied to result content
-- Tactical — help the user see what actually matters and why
-- Flag uncertainty honestly when the results are insufficient
+## ANSWER
+Write a complete, direct answer. This is the most important section.
+- For procedural questions ("how to make bread"): provide full steps with ingredients, method, and tips
+- For explanatory questions ("what is X"): define clearly, give context, explain significance
+- For current events ("news about X"): summarize what is known from the results
+- For analysis requests: provide structured analysis with clear conclusions
+Be thorough. Use numbered lists for steps. Use bullet points for facts.
+Never hedge by saying "I cannot answer" — give the best possible answer using your knowledge.
 
-You are not a general chatbot. You are a grounded analyst operating strictly on the data in front of you.`;
+## SOURCES
+List the search results that support your answer.
+Format: • domain.com — what this source adds to the answer
+Only include results that are actually relevant. Skip irrelevant ones.
+If no results support the answer, omit this section entirely.
+
+## INTELLIGENCE
+1-2 sentences on signal quality: source agreement, coverage gaps, or confidence level.
+Omit entirely if there is nothing notable to flag.
+
+RULES:
+- ## ANSWER must always be present and complete — never skip it
+- Use search results to validate and enrich answers, not as a substitute for them
+- Be direct, confident, and operator-grade — not cautious and hedging
+- When results are weak, use your knowledge and note it in Intelligence
+- Never fabricate specific URLs, quotes, or statistics not in the results`;
 
 function buildResultsContext(
   results: Array<{ title: string; domain: string; snippet: string; score?: number; confidence?: string }>
 ): string {
-  if (!results || results.length === 0) return "No search results provided.";
+  if (!results || results.length === 0) return "No search results provided — answer from your knowledge and note this in Intelligence.";
 
   const top = results.slice(0, 10);
   return top
     .map((r, i) => {
-      const tier = r.score != null ? (r.score >= 80 ? "[HIGH SIGNAL]" : r.score >= 60 ? "[MED SIGNAL]" : "[LOW SIGNAL]") : "";
+      const tier = r.score != null
+        ? (r.score >= 80 ? "[HIGH SIGNAL]" : r.score >= 60 ? "[MED SIGNAL]" : "[LOW SIGNAL]")
+        : "";
       return `[Result ${i + 1}] ${r.domain} ${tier}\nTitle: ${r.title}\nSnippet: ${r.snippet}`;
     })
     .join("\n\n");
@@ -53,12 +68,10 @@ sageRouter.post("/sage/query", async (req, res) => {
 
   const resultsContext = buildResultsContext(results ?? []);
   const intelligenceSummary = context ? `\n\nINTELLIGENCE BRIEF:\n${context}` : "";
-  const searchQuery = query ? `\n\nSEARCH QUERY: "${query}"` : "";
+  const searchQuery = query ? `\n\nORIGINAL SEARCH QUERY: "${query}"` : "";
 
-  const groundingBlock = `${searchQuery}\n\nSEARCH RESULTS:\n${resultsContext}${intelligenceSummary}`;
+  const groundingBlock = `${searchQuery}\n\nSEARCH RESULTS AVAILABLE:\n${resultsContext}${intelligenceSummary}`;
 
-  // Build conversation contents for Gemini
-  // First message is always the grounding context + first user message
   const priorMessages = messages ?? [];
 
   type GeminiContent = {
@@ -69,13 +82,11 @@ sageRouter.post("/sage/query", async (req, res) => {
   const contents: GeminiContent[] = [];
 
   if (priorMessages.length === 0) {
-    // First turn — inject grounding context with the user message
     contents.push({
       role: "user",
       parts: [{ text: `${groundingBlock}\n\n---\n\nUser question: ${userMessage.trim()}` }],
     });
   } else {
-    // Subsequent turns — first message carries grounding, then conversation history, then new message
     const [firstMsg, ...restMsgs] = priorMessages;
     contents.push({
       role: "user" as const,
@@ -89,14 +100,12 @@ sageRouter.post("/sage/query", async (req, res) => {
       });
     }
 
-    // Add current user message
     contents.push({
       role: "user" as const,
       parts: [{ text: userMessage.trim() }],
     });
   }
 
-  // SSE headers
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");

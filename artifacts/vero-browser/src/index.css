@@ -31,29 +31,40 @@
   --card-foreground:    210 12% 84%;
   --border:             220 10% 14%;
   --input:              220 10% 14%;
-  --primary:            142 72% 34%;
-  --primary-foreground: 142 72% 95%;
-  --ring:               142 72% 34%;
+
+  /* ── PRIMARY: neon baby pink ─────────────────────── */
+  --primary:            322 84% 65%;
+  --primary-foreground: 322 100% 97%;
+  --ring:               322 84% 65%;
+  --accent:             322 84% 65%;
+  --accent-foreground:  322 100% 97%;
+
   --muted:              220 12% 12%;
   --muted-foreground:   215 8% 46%;
-  --accent:             142 72% 34%;
-  --accent-foreground:  142 72% 95%;
   --radius:             0.5rem;
 
-  /* Glow tokens */
-  --glow-primary:        rgba(22, 163, 74, 0.18);
-  --glow-primary-soft:   rgba(22, 163, 74, 0.08);
-  --glow-primary-ring:   rgba(22, 163, 74, 0.22);
+  /* Glow tokens — pink primary */
+  --glow-primary:        rgba(224, 64, 151, 0.20);
+  --glow-primary-soft:   rgba(224, 64, 151, 0.09);
+  --glow-primary-ring:   rgba(224, 64, 151, 0.28);
+
+  /* Security/system glow — stays green */
+  --glow-safe:           rgba(22, 163, 74, 0.18);
+  --glow-safe-soft:      rgba(22, 163, 74, 0.08);
   --glow-danger:         rgba(239, 68, 68, 0.18);
   --glow-caution:        rgba(245, 158, 11, 0.18);
+
+  /* Sage / AI accent — purple */
+  --glow-sage:           rgba(139, 92, 246, 0.18);
+  --glow-sage-soft:      rgba(139, 92, 246, 0.08);
 }
 
 @layer base {
   body {
     @apply bg-background text-foreground font-sans antialiased overflow-hidden;
     background-image:
-      radial-gradient(ellipse 80% 40% at 50% -10%, rgba(22, 163, 74, 0.055) 0%, transparent 70%),
-      radial-gradient(ellipse 60% 30% at 100% 100%, rgba(22, 163, 74, 0.018) 0%, transparent 60%);
+      radial-gradient(ellipse 80% 40% at 50% -10%, rgba(224, 64, 151, 0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 30% at 100% 100%, rgba(139, 92, 246, 0.025) 0%, transparent 60%);
   }
   * { @apply border-border; }
 }
@@ -79,7 +90,7 @@
   background: rgba(255,255,255,0.08);
   border-radius: 2px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(22, 163, 74, 0.3); }
+::-webkit-scrollbar-thumb:hover { background: rgba(224, 64, 151, 0.35); }
 
 /* ─── Glass utilities ─── */
 .glass-panel {
@@ -115,27 +126,18 @@
   color: rgba(148, 163, 184, 0.38);
 }
 
-/* ─── Risk badge system (globally consistent) ─── */
+/* ─── Risk badge system — green stays for real security meaning ─── */
 .risk-safe    { color: hsl(142 72% 38%); border-color: rgba(22,163,74,0.25); background: rgba(22,163,74,0.07); }
 .risk-caution { color: #f59e0b;          border-color: rgba(245,158,11,0.25); background: rgba(245,158,11,0.07); }
 .risk-danger  { color: #ef4444;          border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.07); }
 .risk-unknown { color: rgba(148,163,184,0.6); border-color: rgba(255,255,255,0.09); background: rgba(255,255,255,0.035); }
 
 /* ─── Compact interface density override ─── */
-html.compact .glass-panel,
-html.compact [class*="py-4"],
-html.compact [class*="py-5"],
-html.compact [class*="py-6"] {
-  /* Reduce base padding for compact mode */
-}
-
 html.compact {
   --spacing-compact: 0.7;
 }
 
-/* Compact nav panels */
 html.compact [data-compact-target] {
   padding-top: 8px;
   padding-bottom: 8px;
 }
-

@@ -1,0 +1,168 @@
+We are upgrading Sentrix into a true AI-powered intelligence + answer engine.
+
+This pass has TWO objectives:
+1) Convert Sage into a real answer engine (like ChatGPT)
+2) Apply a pink/purple brand system while preserving system meaning
+
+━━━━━━━━━━━━━━━━━━━
+PART 1 — REAL SAGE (CRITICAL)
+━━━━━━━━━━━━━━━━━━━
+
+Sage must STOP acting like a navigator and START acting like an operator.
+
+NEW BEHAVIOR:
+
+When a user asks a question:
+→ Sage MUST generate a direct, complete answer FIRST
+→ Then optionally support with sources
+→ Then show intelligence context
+
+EXAMPLE:
+
+User: "how do I make bread"
+
+Sage should respond with:
+- A full step-by-step bread recipe
+- Ingredients + instructions
+- Clear, useful answer
+
+ONLY AFTER THAT:
+→ show "Sources used"
+→ show intelligence notes
+
+DO NOT:
+- redirect to articles first
+- rely on user clicking links to get answers
+
+━━━━━━━━━━━━━━━━━━━
+IMPLEMENTATION
+━━━━━━━━━━━━━━━━━━━
+
+Update the Sage API route:
+
+1. Change prompt structure:
+
+Current:
+- grounded in results only
+
+New:
+- answer-first + grounded
+
+Prompt structure:
+
+"You are Sage, an intelligence system.
+
+Answer the user's question directly and clearly.
+
+Then, use the provided search results ONLY to:
+- support your answer
+- validate claims
+- add nuance if needed
+
+Never refuse to answer just because results are weak.
+Always provide the best possible direct answer first.
+
+Then include:
+- Supporting sources (if relevant)
+- Intelligence notes (conflicts, weak signals, etc.)"
+
+2. UI CHANGE — SAGE RESPONSE BLOCK
+
+Create 3 sections:
+
+[1] ANSWER (primary, large, prominent)
+[2] SUPPORTING SOURCES (collapsible)
+[3] INTELLIGENCE NOTES (collapsible)
+
+Answer must visually dominate.
+
+━━━━━━━━━━━━━━━━━━━
+PART 2 — SAGE MODE ROUTING
+━━━━━━━━━━━━━━━━━━━
+
+When user uses:
+- Ask Sage button
+- Ask Sage module
+- Sage input
+
+→ route into SAGE MODE
+
+SAGE MODE:
+- Auto-open chat
+- Hide normal result priority
+- Show answer immediately
+
+SEARCH MODE:
+- remains unchanged
+
+━━━━━━━━━━━━━━━━━━━
+PART 3 — PINK BRAND SYSTEM
+━━━━━━━━━━━━━━━━━━━
+
+Replace green as PRIMARY brand color.
+
+NEW COLOR ROLES:
+
+Primary accent: neon baby pink
+Secondary: purple (Sage / AI)
+System safe: green (ONLY for real safety meaning)
+Caution: amber
+Danger: red
+
+APPLY PINK TO:
+- primary buttons
+- active nav
+- search focus ring
+- homepage hero glow
+- main CTAs
+
+KEEP GREEN ONLY FOR:
+- SAFE labels
+- BLACKDOG active state
+- security indicators
+
+━━━━━━━━━━━━━━━━━━━
+PART 4 — HOMEPAGE SAGE UPGRADE
+━━━━━━━━━━━━━━━━━━━
+
+Upgrade Ask Sage module:
+
+- Make input PRIMARY (bigger, clearer)
+- Add label: "Ask anything — get a direct answer"
+- Hitting enter = Sage Mode (not search)
+
+━━━━━━━━━━━━━━━━━━━
+PART 5 — RESULT QUALITY FIX (IMPORTANT)
+━━━━━━━━━━━━━━━━━━━
+
+Adjust ranking:
+
+- Penalize GitHub for non-technical queries (-25)
+- Penalize forums unless query is discussion-based
+- Boost:
+  - recipes
+  - how-to guides
+  - direct answer pages
+
+Add query classification:
+- "how to" → procedural
+- "what is" → explanatory
+- "news" → current events
+
+Use this to rank results better.
+
+━━━━━━━━━━━━━━━━━━━
+OUTPUT GOAL
+━━━━━━━━━━━━━━━━━━━
+
+Sentrix should now:
+
+- Answer questions directly like ChatGPT
+- Still provide sources and intelligence
+- Feel like a next-gen intelligence system
+- Visually shift to pink/purple identity
+- Preserve green ONLY for real system meaning
+
+This is not a UI tweak.
+
+This is a behavior upgrade.

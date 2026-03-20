@@ -9,8 +9,12 @@ import { format } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LinkCheckModal } from '@/components/LinkCheckModal';
 
+// Pink primary
+const PINK     = 'hsl(322 84% 65%)';
+const PINK_DIM = 'rgba(224, 64, 151, 0.75)';
+
 const RISK_DOT: Record<string, string> = {
-  safe:    'hsl(142 72% 38%)',
+  safe:    'hsl(142 72% 38%)',  // green — real safety indicator
   caution: '#f59e0b',
   danger:  '#ef4444',
   unknown: 'rgba(148,163,184,0.25)',
@@ -32,7 +36,7 @@ export function HomeView() {
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const [linkCheckOpen, setLinkCheckOpen] = useState(false);
-  const [sageInputVal, setSageInputVal] = useState('');
+  const [sageInput, setSageInput] = useState('');
   const [sageFocused, setSageFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const sageInputRef = useRef<HTMLInputElement>(null);
@@ -51,9 +55,9 @@ export function HomeView() {
     if (query.trim()) navigateToSage(query.trim());
   };
 
-  const handleSageModuleSubmit = (e: React.FormEvent) => {
+  const handleSageSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (sageInputVal.trim()) navigateToSage(sageInputVal.trim());
+    if (sageInput.trim()) navigateToSage(sageInput.trim());
   };
 
   const bdConnected = blackdogStatus === 'connected';
@@ -66,16 +70,10 @@ export function HomeView() {
       {/* ── Intelligence status strip ─────────────────────────────────────── */}
       <div
         className="flex items-center gap-6 px-6 py-1.5 shrink-0 overflow-x-auto"
-        style={{
-          background: 'rgba(0,0,0,0.3)',
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
-        }}
+        style={{ background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
       >
-        <StatusPip
-          active={bdConnected}
-          label={bdConnected ? 'BLACKDOG ACTIVE' : 'BLACKDOG CONNECTING'}
-          glow={bdConnected}
-        />
+        {/* BLACKDOG status stays green — security indicator */}
+        <StatusPip active={bdConnected} label={bdConnected ? 'BLACKDOG ACTIVE' : 'BLACKDOG CONNECTING'} glow={bdConnected} />
         <div className="w-px h-3 bg-white/[0.08] shrink-0" />
         <StatusItem label="Saved" value={savedItems.length} />
         <StatusItem label="Collections" value={collections.length} />
@@ -101,28 +99,28 @@ export function HomeView() {
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
               style={{
-                background: 'rgba(22,163,74,0.08)',
-                border: '1px solid rgba(22,163,74,0.15)',
-                boxShadow: '0 0 20px rgba(22,163,74,0.08)',
+                background: 'rgba(224,64,151,0.08)',
+                border: '1px solid rgba(224,64,151,0.18)',
+                boxShadow: '0 0 24px rgba(224,64,151,0.1)',
               }}
             >
-              <Shield className="w-5 h-5" style={{ color: 'hsl(142 72% 40%)' }} />
+              {/* Shield icon — security symbol, stays neutral/pink brand */}
+              <Shield className="w-5 h-5" style={{ color: PINK_DIM }} />
             </div>
             <span
               className="text-[28px] font-bold tracking-[0.2em] uppercase"
               style={{
-                color: 'hsl(142 72% 44%)',
-                textShadow: '0 0 40px rgba(22,163,74,0.2)',
+                color: PINK,
+                textShadow: '0 0 40px rgba(224,64,151,0.25)',
                 fontFamily: "'JetBrains Mono', monospace",
               }}
             >
               SENTRIX
             </span>
           </div>
-
           <h1 className="text-[20px] font-semibold text-foreground/80 leading-tight mb-2">
             Search clearly.{' '}
-            <span style={{ color: 'hsl(142 72% 44%)' }}>Decide before you click.</span>
+            <span style={{ color: PINK }}>Decide before you click.</span>
           </h1>
           <p className="text-[11px] font-mono text-muted-foreground/35 tracking-wide">
             Intelligence-powered search with BLACKDOG analysis.
@@ -135,9 +133,9 @@ export function HomeView() {
             className="relative flex items-center rounded-2xl overflow-hidden transition-all duration-200"
             style={{
               background: focused ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.42)',
-              border: `1px solid ${focused ? 'rgba(22,163,74,0.3)' : 'rgba(255,255,255,0.07)'}`,
+              border: `1px solid ${focused ? 'rgba(224,64,151,0.35)' : 'rgba(255,255,255,0.07)'}`,
               boxShadow: focused
-                ? '0 0 0 1px rgba(22,163,74,0.1), 0 0 40px rgba(22,163,74,0.07), inset 0 1px 0 rgba(255,255,255,0.04)'
+                ? '0 0 0 1px rgba(224,64,151,0.12), 0 0 40px rgba(224,64,151,0.08), inset 0 1px 0 rgba(255,255,255,0.04)'
                 : 'inset 0 1px 0 rgba(255,255,255,0.025)',
               transition: 'box-shadow 0.2s, border-color 0.2s',
             }}
@@ -145,7 +143,7 @@ export function HomeView() {
             <div className="pl-5 pr-3.5 shrink-0">
               <Search
                 className="w-4 h-4 transition-colors duration-200"
-                style={{ color: focused ? 'hsl(142 72% 42%)' : 'rgba(148,163,184,0.3)' }}
+                style={{ color: focused ? PINK_DIM : 'rgba(148,163,184,0.3)' }}
               />
             </div>
             <input
@@ -169,19 +167,17 @@ export function HomeView() {
                   transition={{ duration: 0.12 }}
                   className="flex items-center gap-1.5 mr-2 shrink-0"
                 >
-                  {/* Search button */}
                   <button
                     type="submit"
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold tracking-[0.12em] uppercase transition-all cursor-pointer"
                     style={{
-                      background: 'rgba(22,163,74,0.1)',
-                      border: '1px solid rgba(22,163,74,0.22)',
-                      color: 'hsl(142 72% 44%)',
+                      background: 'rgba(224,64,151,0.1)',
+                      border: '1px solid rgba(224,64,151,0.28)',
+                      color: PINK,
                     }}
                   >
                     Search <ArrowRight className="w-3 h-3" />
                   </button>
-                  {/* Ask Sage button */}
                   <button
                     type="button"
                     onClick={handleAskSageFromSearch}
@@ -189,17 +185,12 @@ export function HomeView() {
                     style={{
                       background: 'rgba(139,92,246,0.1)',
                       border: '1px solid rgba(139,92,246,0.28)',
-                      color: 'rgba(139,92,246,0.85)',
+                      color: 'rgba(139,92,246,0.9)',
                     }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.background = 'rgba(139,92,246,0.18)';
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.background = 'rgba(139,92,246,0.1)';
-                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.2)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; }}
                   >
-                    <Sparkles className="w-3 h-3" />
-                    Ask Sage
+                    <Sparkles className="w-3 h-3" /> Ask Sage
                   </button>
                 </motion.div>
               )}
@@ -207,130 +198,112 @@ export function HomeView() {
           </div>
         </form>
 
-        {/* ── Ask Sage module ──────────────────────────────────────────────── */}
+        {/* ── Ask Sage module (upgraded — answer engine) ────────────────────── */}
         <div
           className="w-full mb-7 rounded-2xl overflow-hidden"
           style={{
-            background: 'rgba(139,92,246,0.04)',
-            border: '1px solid rgba(139,92,246,0.14)',
+            background: 'linear-gradient(135deg, rgba(139,92,246,0.06) 0%, rgba(224,64,151,0.04) 100%)',
+            border: '1px solid rgba(139,92,246,0.18)',
+            boxShadow: sageFocused ? '0 0 0 1px rgba(139,92,246,0.25), 0 0 30px rgba(139,92,246,0.08)' : 'none',
           }}
         >
-          {/* Module header */}
-          <div className="flex items-center gap-2.5 px-4 pt-3.5 pb-2">
+          {/* Header */}
+          <div className="flex items-center gap-3 px-4 pt-4 pb-0">
             <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-              style={{
-                background: 'rgba(139,92,246,0.12)',
-                border: '1px solid rgba(139,92,246,0.2)',
-              }}
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)' }}
             >
-              <Sparkles className="w-3.5 h-3.5" style={{ color: 'rgba(139,92,246,0.85)' }} />
+              <Sparkles className="w-4 h-4" style={{ color: 'rgba(139,92,246,0.9)' }} />
             </div>
             <div>
-              <div className="text-[12px] font-semibold" style={{ color: 'rgba(139,92,246,0.85)' }}>
+              <div className="text-[13px] font-semibold" style={{ color: 'rgba(139,92,246,0.9)' }}>
                 Ask Sage
               </div>
-              <div className="text-[10px] font-mono" style={{ color: 'rgba(148,163,184,0.4)' }}>
-                Get a grounded answer, summary, or investigation angle.
+              <div className="text-[10px] font-mono" style={{ color: 'rgba(148,163,184,0.45)' }}>
+                Ask anything — get a direct answer
               </div>
+            </div>
+            <div className="ml-auto text-[8px] font-mono uppercase tracking-widest px-2 py-1 rounded"
+              style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', color: 'rgba(139,92,246,0.65)' }}>
+              AI · Gemini
             </div>
           </div>
 
+          {/* Primary Sage input — big and clear */}
+          <form onSubmit={handleSageSubmit} className="px-4 pt-3 pb-3">
+            <div
+              className="flex items-center rounded-xl overflow-hidden transition-all"
+              style={{
+                background: sageFocused ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.35)',
+                border: `1px solid ${sageFocused ? 'rgba(139,92,246,0.4)' : 'rgba(139,92,246,0.15)'}`,
+              }}
+            >
+              <input
+                ref={sageInputRef}
+                type="text"
+                value={sageInput}
+                onChange={e => setSageInput(e.target.value)}
+                onFocus={() => setSageFocused(true)}
+                onBlur={() => setSageFocused(false)}
+                placeholder="How do I make sourdough bread? What is quantum computing?"
+                className="flex-1 bg-transparent border-none outline-none px-4 py-3 text-[13px] font-mono text-foreground/75 placeholder:text-muted-foreground/22 caret-primary"
+                spellCheck={false}
+                autoComplete="off"
+              />
+              {sageInput.trim() && (
+                <button
+                  type="submit"
+                  className="flex items-center gap-1.5 mx-2 px-3 py-2 rounded-lg text-[10px] font-bold tracking-[0.1em] uppercase cursor-pointer transition-all"
+                  style={{
+                    background: 'rgba(139,92,246,0.2)',
+                    border: '1px solid rgba(139,92,246,0.35)',
+                    color: 'rgba(139,92,246,0.95)',
+                  }}
+                >
+                  <Sparkles className="w-3 h-3" /> Answer
+                </button>
+              )}
+            </div>
+          </form>
+
           {/* Starter prompts */}
-          <div className="flex flex-wrap gap-1.5 px-4 pb-3">
+          <div className="flex flex-wrap gap-1.5 px-4 pb-4">
+            <span className="text-[8px] font-mono uppercase tracking-widest self-center mr-1" style={{ color: 'rgba(148,163,184,0.3)' }}>Try:</span>
             {SAGE_STARTERS.map(starter => (
               <button
                 key={starter}
                 onClick={() => navigateToSage(starter)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-mono transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono transition-all cursor-pointer"
                 style={{
                   background: 'rgba(139,92,246,0.06)',
-                  border: '1px solid rgba(139,92,246,0.16)',
-                  color: 'rgba(139,92,246,0.7)',
+                  border: '1px solid rgba(139,92,246,0.14)',
+                  color: 'rgba(139,92,246,0.6)',
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.background = 'rgba(139,92,246,0.14)';
-                  e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)';
-                  e.currentTarget.style.color = 'rgba(139,92,246,0.95)';
+                  e.currentTarget.style.borderColor = 'rgba(139,92,246,0.28)';
+                  e.currentTarget.style.color = 'rgba(139,92,246,0.9)';
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.background = 'rgba(139,92,246,0.06)';
-                  e.currentTarget.style.borderColor = 'rgba(139,92,246,0.16)';
-                  e.currentTarget.style.color = 'rgba(139,92,246,0.7)';
+                  e.currentTarget.style.borderColor = 'rgba(139,92,246,0.14)';
+                  e.currentTarget.style.color = 'rgba(139,92,246,0.6)';
                 }}
               >
                 {starter}
               </button>
             ))}
           </div>
-
-          {/* Custom sage input */}
-          <form onSubmit={handleSageModuleSubmit}>
-            <div
-              className="flex items-center mx-3 mb-3 rounded-xl overflow-hidden transition-all"
-              style={{
-                background: 'rgba(0,0,0,0.3)',
-                border: `1px solid ${sageFocused ? 'rgba(139,92,246,0.3)' : 'rgba(139,92,246,0.1)'}`,
-              }}
-            >
-              <input
-                ref={sageInputRef}
-                type="text"
-                value={sageInputVal}
-                onChange={e => setSageInputVal(e.target.value)}
-                onFocus={() => setSageFocused(true)}
-                onBlur={() => setSageFocused(false)}
-                placeholder="Or type your own question…"
-                className="flex-1 bg-transparent border-none outline-none px-3.5 py-2.5 text-[12px] font-mono text-foreground/70 placeholder:text-muted-foreground/22"
-                spellCheck={false}
-                autoComplete="off"
-              />
-              {sageInputVal.trim() && (
-                <button
-                  type="submit"
-                  className="flex items-center gap-1.5 mr-2 px-2.5 py-1.5 rounded-lg text-[9px] font-bold tracking-[0.1em] uppercase cursor-pointer transition-all"
-                  style={{
-                    background: 'rgba(139,92,246,0.15)',
-                    border: '1px solid rgba(139,92,246,0.3)',
-                    color: 'rgba(139,92,246,0.9)',
-                  }}
-                >
-                  <Sparkles className="w-2.5 h-2.5" />
-                  Ask
-                </button>
-              )}
-            </div>
-          </form>
         </div>
 
         {/* Quick Actions */}
         <div className="w-full mb-8">
           <div className="section-label mb-3">Quick Actions</div>
           <div className="grid grid-cols-2 gap-2">
-            <QuickAction
-              icon={<LinkIcon className="w-4 h-4" />}
-              label="Link Check"
-              desc="Pre-flight URL analysis"
-              onClick={() => setLinkCheckOpen(true)}
-            />
-            <QuickAction
-              icon={<BookOpen className="w-4 h-4" />}
-              label="Bookmarks"
-              desc={`${bookmarks.length} saved sources`}
-              onClick={() => navigate('sentrix://bookmarks')}
-            />
-            <QuickAction
-              icon={<Layers className="w-4 h-4" />}
-              label="Collections"
-              desc={`${collections.length} collections · ${savedItems.length} saved`}
-              onClick={() => navigate('sentrix://collections')}
-            />
-            <QuickAction
-              icon={<Shield className="w-4 h-4" />}
-              label="Privacy Report"
-              desc="Session posture summary"
-              onClick={() => navigate('sentrix://privacy')}
-            />
+            <QuickAction icon={<LinkIcon className="w-4 h-4" />} label="Link Check" desc="Pre-flight URL analysis" onClick={() => setLinkCheckOpen(true)} />
+            <QuickAction icon={<BookOpen className="w-4 h-4" />} label="Bookmarks" desc={`${bookmarks.length} saved sources`} onClick={() => navigate('sentrix://bookmarks')} />
+            <QuickAction icon={<Layers className="w-4 h-4" />} label="Collections" desc={`${collections.length} collections · ${savedItems.length} saved`} onClick={() => navigate('sentrix://collections')} />
+            <QuickAction icon={<Shield className="w-4 h-4" />} label="Privacy Report" desc="Session posture summary" onClick={() => navigate('sentrix://privacy')} />
           </div>
         </div>
 
@@ -349,16 +322,9 @@ export function HomeView() {
                   onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <span
-                    className="w-1.5 h-1.5 rounded-full shrink-0"
-                    style={{ background: RISK_DOT[entry.riskLevel] ?? RISK_DOT.unknown }}
-                  />
-                  <span className="flex-1 truncate text-[12px] font-mono" style={{ color: 'rgba(148,163,184,0.5)' }}>
-                    {entry.title}
-                  </span>
-                  <span className="text-[10px] font-mono shrink-0" style={{ color: 'rgba(148,163,184,0.22)' }}>
-                    {format(entry.visitedAt, 'HH:mm')}
-                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: RISK_DOT[entry.riskLevel] ?? RISK_DOT.unknown }} />
+                  <span className="flex-1 truncate text-[12px] font-mono" style={{ color: 'rgba(148,163,184,0.5)' }}>{entry.title}</span>
+                  <span className="text-[10px] font-mono shrink-0" style={{ color: 'rgba(148,163,184,0.22)' }}>{format(entry.visitedAt, 'HH:mm')}</span>
                 </button>
               ))}
               {history.length > 4 && (
@@ -373,7 +339,7 @@ export function HomeView() {
           </div>
         )}
 
-        {/* Saved items */}
+        {/* Saved sources */}
         {recentBookmarks.length > 0 && (
           <div className="w-full mb-6">
             <div className="section-label mb-2.5">Saved Sources</div>
@@ -387,9 +353,7 @@ export function HomeView() {
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: RISK_DOT[bm.riskLevel] ?? RISK_DOT.unknown }} />
-                  <span className="flex-1 text-[12px] font-mono truncate" style={{ color: 'rgba(148,163,184,0.5)' }}>
-                    {bm.title}
-                  </span>
+                  <span className="flex-1 text-[12px] font-mono truncate" style={{ color: 'rgba(148,163,184,0.5)' }}>{bm.title}</span>
                   <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-30 transition-opacity shrink-0" />
                 </button>
               ))}
@@ -397,14 +361,14 @@ export function HomeView() {
           </div>
         )}
 
-        {/* Intelligence Network footer */}
+        {/* Footer */}
         <div className="w-full mt-auto pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
           <div className="flex items-center justify-between">
             <button
               onClick={() => window.open('https://www.rsrintel.com', '_blank', 'noopener,noreferrer')}
               className="flex items-center gap-2 text-[10px] font-mono transition-colors cursor-pointer"
               style={{ color: 'rgba(148,163,184,0.28)' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'rgba(22,163,74,0.55)')}
+              onMouseEnter={e => (e.currentTarget.style.color = PINK_DIM)}
               onMouseLeave={e => (e.currentTarget.style.color = 'rgba(148,163,184,0.28)')}
             >
               <Shield className="w-3 h-3 shrink-0" />
@@ -439,11 +403,12 @@ function StatusPip({ active, label, glow }: { active: boolean; label: string; gl
       <span
         className="w-1.5 h-1.5 rounded-full shrink-0"
         style={{
-          background: active ? 'hsl(142 72% 38%)' : '#f59e0b',
+          background: active ? 'hsl(142 72% 38%)' : '#f59e0b', // green stays for BLACKDOG — security indicator
           boxShadow: glow && active ? '0 0 5px rgba(22,163,74,0.8)' : 'none',
         }}
       />
-      <span className="text-[9px] font-mono uppercase tracking-widest" style={{ color: active ? 'rgba(22,163,74,0.5)' : 'rgba(245,158,11,0.45)' }}>
+      <span className="text-[9px] font-mono uppercase tracking-widest"
+        style={{ color: active ? 'rgba(22,163,74,0.5)' : 'rgba(245,158,11,0.45)' }}>
         {label}
       </span>
     </div>
@@ -467,17 +432,15 @@ function QuickAction({ icon, label, desc, onClick }: { icon: React.ReactNode; la
       style={{ background: 'rgba(0,0,0,0.28)', border: '1px solid rgba(255,255,255,0.055)' }}
       onMouseEnter={e => {
         e.currentTarget.style.background = 'rgba(0,0,0,0.4)';
-        e.currentTarget.style.borderColor = 'rgba(22,163,74,0.12)';
+        e.currentTarget.style.borderColor = 'rgba(224,64,151,0.15)';
       }}
       onMouseLeave={e => {
         e.currentTarget.style.background = 'rgba(0,0,0,0.28)';
         e.currentTarget.style.borderColor = 'rgba(255,255,255,0.055)';
       }}
     >
-      <div
-        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-        style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.06)', color: 'rgba(148,163,184,0.45)' }}
-      >
+      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+        style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.06)', color: 'rgba(148,163,184,0.45)' }}>
         {icon}
       </div>
       <div>
