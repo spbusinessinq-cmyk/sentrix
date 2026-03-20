@@ -760,9 +760,9 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
     });
   }, [query, results, context, history, loading]);
 
-  // Auto-send initial message (from homepage Ask Sage navigation)
+  // Auto-send initial message (from homepage navigation) — only when real content exists
   useEffect(() => {
-    if (initialMessage && open && !didAutoSend.current && !loading && history.length === 0) {
+    if (initialMessage && !isScaffoldOnly(initialMessage) && open && !didAutoSend.current && !loading && history.length === 0) {
       didAutoSend.current = true;
       onClearInitialMessage?.();
       setTimeout(() => send(initialMessage), 200);
@@ -1114,8 +1114,13 @@ export function SearchResultsView() {
   useEffect(() => {
     setSageMode(false);
     setSageOpen(true);
-    setAutoSendMsg(safeQuery);
     setRefsOpen(false);
+    // Never auto-send scaffold-only text — it means the user hasn't written a real claim yet
+    if (!safeQuery || isScaffoldOnly(safeQuery)) {
+      setAutoSendMsg(null);
+      return;
+    }
+    setAutoSendMsg(safeQuery);
     doSearch();
   }, [safeQuery]);
 

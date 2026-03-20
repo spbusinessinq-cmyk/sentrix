@@ -22,6 +22,13 @@ const EXAMPLES: Array<{ display: string; insert: string }> = [
   { display: 'What should I question here?', insert: 'What should I question here: ' },
 ];
 
+// Scaffold-only detection — mirrors the guard in SearchResultsView/SageChat
+const SCAFFOLD_BASES = ['analyze this claim', 'break this down for me', 'what should i question here'];
+function isScaffoldOnly(val: string): boolean {
+  const t = val.trim().toLowerCase().replace(/:+\s*$/, '').trim();
+  return !t || SCAFFOLD_BASES.includes(t);
+}
+
 export function HomeView() {
   const {
     navigate, navigateToSage,
@@ -39,11 +46,6 @@ export function HomeView() {
     return () => clearTimeout(t);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (input.trim()) navigateToSage(input.trim());
-  };
-
   const insertChip = (text: string) => {
     setInput(text);
     setTimeout(() => {
@@ -51,6 +53,24 @@ export function HomeView() {
       if (ta) { ta.focus(); ta.setSelectionRange(text.length, text.length); }
     }, 0);
   };
+
+  // Only navigate when real content exists after the scaffold prefix
+  const trySubmit = () => {
+    const val = input.trim();
+    if (!val || isScaffoldOnly(val)) {
+      insertChip('Analyze this claim: ');
+    } else {
+      navigateToSage(val);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    trySubmit();
+  };
+
+  // True only when the input contains real (non-scaffold) content
+  const hasRealContent = !!input.trim() && !isScaffoldOnly(input);
 
   const bdConnected = blackdogStatus === 'connected';
   const recentItems = history.filter(h => h.riskLevel !== undefined).slice(0, 4);
@@ -158,7 +178,7 @@ export function HomeView() {
                   onFocus={() => setFocused(true)}
                   onBlur={() => setFocused(false)}
                   onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (input.trim()) navigateToSage(input.trim()); }
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); trySubmit(); }
                   }}
                   placeholder="Paste a claim, headline, URL, or question"
                   rows={3}
@@ -178,13 +198,13 @@ export function HomeView() {
                   Enter to analyze · Shift+Enter for new line
                 </span>
                 <button
-                  type="submit"
-                  disabled={!input.trim()}
-                  className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-[0.14em] uppercase transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  type="button"
+                  onClick={trySubmit}
+                  className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-[0.14em] uppercase transition-all cursor-pointer"
                   style={{
-                    background: input.trim() ? 'rgba(56,189,248,0.14)' : 'transparent',
-                    border: `1px solid ${input.trim() ? 'rgba(56,189,248,0.35)' : 'rgba(255,255,255,0.06)'}`,
-                    color: input.trim() ? '#38BDF8' : 'rgba(148,163,184,0.3)',
+                    background: hasRealContent ? 'rgba(56,189,248,0.14)' : 'transparent',
+                    border: `1px solid ${hasRealContent ? 'rgba(56,189,248,0.35)' : 'rgba(255,255,255,0.06)'}`,
+                    color: hasRealContent ? '#38BDF8' : 'rgba(148,163,184,0.3)',
                   }}
                 >
                   Analyze
