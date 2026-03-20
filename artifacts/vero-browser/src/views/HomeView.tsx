@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Search, Shield, Link as LinkIcon, BookOpen,
+  Shield, Link as LinkIcon, BookOpen,
   Layers, Clock, ExternalLink, ArrowRight, Flame,
-  Sparkles,
+  ScanSearch,
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { format } from 'date-fns';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { LinkCheckModal } from '@/components/LinkCheckModal';
 
 const RISK_DOT: Record<string, string> = {
@@ -16,7 +16,7 @@ const RISK_DOT: Record<string, string> = {
   unknown: 'rgba(148,163,184,0.25)',
 };
 
-const SAGE_STARTERS = [
+const EXAMPLES = [
   'Analyze this claim',
   'Break this down for me',
   'What should I question here?',
@@ -24,57 +24,44 @@ const SAGE_STARTERS = [
 
 export function HomeView() {
   const {
-    navigate, navigateOrOpen, navigateToSage,
+    navigate, navigateToSage,
     history, bookmarks, savedItems, collections,
     blackdogStatus, burnSession, settings,
   } = useBrowserState();
 
-  const [query, setQuery] = useState('');
+  const [input, setInput] = useState('');
   const [focused, setFocused] = useState(false);
   const [linkCheckOpen, setLinkCheckOpen] = useState(false);
-  const [sageInput, setSageInput] = useState('');
-  const [sageFocused, setSageFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const sageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 120);
     return () => clearTimeout(t);
   }, []);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) navigateOrOpen(query.trim());
-  };
-
-  const handleAskSageFromSearch = () => {
-    if (query.trim()) navigateToSage(query.trim());
-  };
-
-  const handleSageSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (sageInput.trim()) navigateToSage(sageInput.trim());
+    if (input.trim()) navigateToSage(input.trim());
   };
 
   const bdConnected = blackdogStatus === 'connected';
-  const recentSearches = history.filter(h => h.riskLevel !== undefined).slice(0, 4);
+  const recentItems = history.filter(h => h.riskLevel !== undefined).slice(0, 4);
   const recentBookmarks = bookmarks.slice(0, 4);
 
   return (
     <div className="h-full overflow-y-auto bg-background flex flex-col">
 
-      {/* ── Intelligence status strip ─────────────────────────────────────── */}
+      {/* ── Status strip ───────────────────────────────────────────────────── */}
       <div
         className="flex items-center gap-6 px-6 py-1.5 shrink-0 overflow-x-auto"
         style={{ background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
       >
-        {/* Protection status */}
         <StatusPip active={bdConnected} label={bdConnected ? 'PROTECTION ACTIVE' : 'CONNECTING'} glow={bdConnected} />
         <div className="w-px h-3 bg-white/[0.08] shrink-0" />
         <StatusItem label="Saved" value={savedItems.length} />
         <StatusItem label="Collections" value={collections.length} />
         <StatusItem label="Bookmarks" value={bookmarks.length} />
-        <StatusItem label="Searches" value={history.length} />
+        <StatusItem label="Analyses" value={history.length} />
         {settings.developerMode && (
           <>
             <div className="w-px h-3 bg-white/[0.08] shrink-0" />
@@ -86,12 +73,12 @@ export function HomeView() {
         </div>
       </div>
 
-      {/* ── Main content ──────────────────────────────────────────────────── */}
+      {/* ── Main content ───────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col items-center px-6 pt-10 pb-10 max-w-2xl mx-auto w-full">
 
         {/* Brand */}
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="flex items-center gap-3 mb-4">
+        <div className="flex flex-col items-center text-center mb-10">
+          <div className="flex items-center gap-3 mb-5">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
               style={{
@@ -104,211 +91,133 @@ export function HomeView() {
             </div>
             <span
               className="text-[28px] font-bold tracking-[0.2em] uppercase"
-              style={{
-                color: '#38BDF8',
-                fontFamily: "'JetBrains Mono', monospace",
-              }}
+              style={{ color: '#38BDF8', fontFamily: "'JetBrains Mono', monospace" }}
             >
               SENTRIX
             </span>
           </div>
-          <h1 className="text-[20px] font-semibold text-foreground/80 leading-tight mb-2">
-            Search clearly.{' '}
-            <span style={{ color: 'rgba(56,189,248,0.88)' }}>Decide before you click.</span>
+
+          <h1
+            className="text-[22px] font-bold leading-tight mb-3"
+            style={{ color: 'rgba(240,240,248,0.92)' }}
+          >
+            Analyze before you believe.
           </h1>
-          <p className="text-[11px] font-mono text-muted-foreground/35 tracking-wide">
-            Signal Engine · Truth Filter · powered by Sage
+          <p
+            className="text-[12px] font-mono leading-relaxed max-w-sm"
+            style={{ color: 'rgba(148,163,184,0.45)' }}
+          >
+            Sentrix breaks down claims, headlines, and sources<br />into signal, risk, and truth.
           </p>
         </div>
 
-        {/* ── Search bar (dual-action) ─────────────────────────────────────── */}
-        <form onSubmit={handleSearchSubmit} className="w-full mb-3">
-          <div
-            className="relative flex items-center rounded-xl overflow-hidden"
-            style={{
-              background: focused ? 'rgba(0,0,0,0.58)' : 'rgba(0,0,0,0.38)',
-              border: `1px solid ${focused ? 'rgba(56,189,248,0.28)' : 'rgba(255,255,255,0.065)'}`,
-              boxShadow: focused
-                ? '0 0 0 1px rgba(56,189,248,0.08), 0 0 28px rgba(56,189,248,0.05)'
-                : 'none',
-              transition: 'border-color 150ms ease-out, box-shadow 150ms ease-out, background 150ms ease-out',
-            }}
-          >
-            <div className="pl-5 pr-3.5 shrink-0">
-              <Search
-                className="w-4 h-4 transition-colors duration-200"
-                style={{ color: focused ? 'rgba(56,189,248,0.70)' : 'rgba(148,163,184,0.3)' }}
-              />
-            </div>
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
-              placeholder="Ask or paste anything — headline, claim, URL, or question"
-              className="flex-1 bg-transparent border-none outline-none py-3.5 text-[14px] text-foreground/80 placeholder:text-muted-foreground/25 font-mono caret-primary"
-              spellCheck={false}
-              autoComplete="off"
-            />
-            <AnimatePresence>
-              {query.trim() && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.12 }}
-                  className="flex items-center gap-1.5 mr-2 shrink-0"
-                >
-                  <button
-                    type="submit"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold tracking-[0.12em] uppercase transition-all cursor-pointer"
-                    style={{
-                      background: 'rgba(56,189,248,0.10)',
-                      border: '1px solid rgba(56,189,248,0.28)',
-                      color: 'rgba(56,189,248,0.90)',
-                    }}
-                  >
-                    Search <ArrowRight className="w-3 h-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleAskSageFromSearch}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold tracking-[0.12em] uppercase transition-all cursor-pointer"
-                    style={{
-                      background: 'rgba(139,92,246,0.1)',
-                      border: '1px solid rgba(139,92,246,0.28)',
-                      color: 'rgba(139,92,246,0.9)',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.2)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; }}
-                  >
-                    <Sparkles className="w-3 h-3" /> Ask Sage
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </form>
-
-        {/* ── Ask or Analyze module (primary Sage entry point) ────────────── */}
-        <div
-          className="w-full mb-7 rounded-2xl overflow-hidden"
-          style={{
-            background: 'linear-gradient(135deg, rgba(139,92,246,0.07) 0%, rgba(139,92,246,0.03) 100%)',
-            border: '1px solid rgba(139,92,246,0.18)',
-            boxShadow: sageFocused ? '0 0 0 1px rgba(139,92,246,0.25), 0 0 30px rgba(139,92,246,0.08)' : 'none',
-          }}
-        >
-          {/* Header */}
-          <div className="flex items-center gap-3 px-4 pt-4 pb-0">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)' }}
+        {/* ── ANALYSIS INPUT ─────────────────────────────────────────────────── */}
+        <div className="w-full mb-6">
+          {/* Label */}
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-px h-3 rounded-full" style={{ background: 'rgba(56,189,248,0.5)' }} />
+            <span
+              className="text-[8px] font-mono uppercase tracking-[0.28em]"
+              style={{ color: 'rgba(56,189,248,0.55)' }}
             >
-              <Sparkles className="w-4 h-4" style={{ color: 'rgba(139,92,246,0.9)' }} />
-            </div>
-            <div>
-              <div className="text-[13px] font-semibold" style={{ color: 'rgba(139,92,246,0.9)' }}>
-                Ask or Analyze
-              </div>
-              <div className="text-[10px] font-mono" style={{ color: 'rgba(148,163,184,0.45)' }}>
-                Paste a claim, headline, URL, or question
-              </div>
-            </div>
-            <div className="ml-auto text-[8px] font-mono uppercase tracking-widest px-2 py-1 rounded"
-              style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', color: 'rgba(139,92,246,0.65)' }}>
-              AI · Gemini
-            </div>
+              Analyze Input
+            </span>
           </div>
 
-          {/* Primary Sage input — big and clear */}
-          <form onSubmit={handleSageSubmit} className="px-4 pt-3 pb-3">
+          <form onSubmit={handleSubmit}>
             <div
-              className="flex items-center rounded-xl overflow-hidden"
+              className="relative rounded-xl overflow-hidden"
               style={{
-                background: sageFocused ? 'rgba(0,0,0,0.48)' : 'rgba(0,0,0,0.32)',
-                border: `1px solid ${sageFocused ? 'rgba(139,92,246,0.28)' : 'rgba(139,92,246,0.12)'}`,
-                boxShadow: sageFocused ? '0 0 0 1px rgba(139,92,246,0.06), 0 0 20px rgba(139,92,246,0.04)' : 'none',
-                transition: 'border-color 150ms ease-out, box-shadow 150ms ease-out, background 150ms ease-out',
+                background: focused ? 'rgba(0,0,0,0.62)' : 'rgba(0,0,0,0.42)',
+                border: `1px solid ${focused ? 'rgba(56,189,248,0.35)' : 'rgba(255,255,255,0.07)'}`,
+                boxShadow: focused
+                  ? '0 0 0 1px rgba(56,189,248,0.10), 0 0 40px rgba(56,189,248,0.07)'
+                  : 'none',
+                transition: 'border-color 180ms ease-out, box-shadow 180ms ease-out, background 180ms ease-out',
               }}
             >
-              <input
-                ref={sageInputRef}
-                type="text"
-                value={sageInput}
-                onChange={e => setSageInput(e.target.value)}
-                onFocus={() => setSageFocused(true)}
-                onBlur={() => setSageFocused(false)}
-                placeholder="Ask or paste anything…"
-                className="flex-1 bg-transparent border-none outline-none px-4 py-3 text-[13px] font-mono text-foreground/75 placeholder:text-muted-foreground/22 caret-primary"
-                spellCheck={false}
-                autoComplete="off"
-              />
-              {sageInput.trim() && (
-                <div className="flex items-center gap-1.5 mr-2 shrink-0">
-                  <button
-                    type="submit"
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold tracking-[0.1em] uppercase cursor-pointer transition-all"
-                    style={{
-                      background: 'rgba(139,92,246,0.2)',
-                      border: '1px solid rgba(139,92,246,0.35)',
-                      color: 'rgba(139,92,246,0.95)',
-                    }}
-                  >
-                    <Sparkles className="w-3 h-3" /> Ask Sage
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigateToSage('Analyze this: ' + sageInput.trim())}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold tracking-[0.1em] uppercase cursor-pointer transition-all"
-                    style={{
-                      background: 'rgba(56,189,248,0.10)',
-                      border: '1px solid rgba(56,189,248,0.28)',
-                      color: 'rgba(56,189,248,0.90)',
-                    }}
-                  >
-                    Analyze
-                  </button>
+              <div className="flex items-start">
+                <div className="pl-4 pt-4 pr-2 shrink-0">
+                  <ScanSearch
+                    className="w-4 h-4 transition-colors duration-200"
+                    style={{ color: focused ? 'rgba(56,189,248,0.65)' : 'rgba(148,163,184,0.25)' }}
+                  />
                 </div>
-              )}
+                <textarea
+                  ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onFocus={() => setFocused(true)}
+                  onBlur={() => setFocused(false)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (input.trim()) navigateToSage(input.trim()); }
+                  }}
+                  placeholder="Paste a claim, headline, URL, or question"
+                  rows={3}
+                  className="flex-1 bg-transparent border-none outline-none px-3 py-4 text-[13.5px] font-mono text-foreground/80 placeholder:text-muted-foreground/22 caret-primary resize-none leading-relaxed"
+                  spellCheck={false}
+                  autoComplete="off"
+                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                />
+              </div>
+
+              {/* Action row */}
+              <div
+                className="flex items-center justify-between px-4 py-2.5"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
+              >
+                <span className="text-[9px] font-mono" style={{ color: 'rgba(148,163,184,0.22)' }}>
+                  Enter to analyze · Shift+Enter for new line
+                </span>
+                <button
+                  type="submit"
+                  disabled={!input.trim()}
+                  className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-[0.14em] uppercase transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: input.trim() ? 'rgba(56,189,248,0.14)' : 'transparent',
+                    border: `1px solid ${input.trim() ? 'rgba(56,189,248,0.35)' : 'rgba(255,255,255,0.06)'}`,
+                    color: input.trim() ? '#38BDF8' : 'rgba(148,163,184,0.3)',
+                  }}
+                >
+                  Analyze
+                </button>
+              </div>
             </div>
           </form>
 
-          {/* Starter prompts */}
-          <div className="flex flex-wrap gap-1.5 px-4 pb-4">
-            <span className="text-[8px] font-mono uppercase tracking-widest self-center mr-1" style={{ color: 'rgba(148,163,184,0.3)' }}>Try:</span>
-            {SAGE_STARTERS.map(starter => (
+          {/* Example prompts */}
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            <span className="text-[8px] font-mono uppercase tracking-widest self-center" style={{ color: 'rgba(148,163,184,0.25)' }}>Examples:</span>
+            {EXAMPLES.map(ex => (
               <button
-                key={starter}
-                onClick={() => navigateToSage(starter)}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono transition-all cursor-pointer"
+                key={ex}
+                onClick={() => navigateToSage(ex)}
+                className="px-2.5 py-1 rounded-md text-[10px] font-mono transition-all cursor-pointer"
                 style={{
-                  background: 'rgba(139,92,246,0.06)',
-                  border: '1px solid rgba(139,92,246,0.14)',
-                  color: 'rgba(139,92,246,0.6)',
+                  background: 'rgba(56,189,248,0.04)',
+                  border: '1px solid rgba(56,189,248,0.10)',
+                  color: 'rgba(56,189,248,0.45)',
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.background = 'rgba(139,92,246,0.14)';
-                  e.currentTarget.style.borderColor = 'rgba(139,92,246,0.28)';
-                  e.currentTarget.style.color = 'rgba(139,92,246,0.9)';
+                  e.currentTarget.style.background = 'rgba(56,189,248,0.09)';
+                  e.currentTarget.style.borderColor = 'rgba(56,189,248,0.22)';
+                  e.currentTarget.style.color = 'rgba(56,189,248,0.80)';
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.background = 'rgba(139,92,246,0.06)';
-                  e.currentTarget.style.borderColor = 'rgba(139,92,246,0.14)';
-                  e.currentTarget.style.color = 'rgba(139,92,246,0.6)';
+                  e.currentTarget.style.background = 'rgba(56,189,248,0.04)';
+                  e.currentTarget.style.borderColor = 'rgba(56,189,248,0.10)';
+                  e.currentTarget.style.color = 'rgba(56,189,248,0.45)';
                 }}
               >
-                {starter}
+                {ex}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* ── Quick Actions ───────────────────────────────────────────────────── */}
         <div className="w-full mb-8">
-          <div className="section-label mb-3">Quick Actions</div>
+          <div className="section-label mb-3">Tools</div>
           <div className="grid grid-cols-2 gap-2">
             <QuickAction icon={<LinkIcon className="w-4 h-4" />} label="Link Check" desc="Pre-flight URL analysis" onClick={() => setLinkCheckOpen(true)} />
             <QuickAction icon={<BookOpen className="w-4 h-4" />} label="Bookmarks" desc={`${bookmarks.length} saved sources`} onClick={() => navigate('sentrix://bookmarks')} />
@@ -317,14 +226,14 @@ export function HomeView() {
           </div>
         </div>
 
-        {/* Recent searches */}
-        {recentSearches.length > 0 && (
+        {/* ── Recent analyses ──────────────────────────────────────────────────── */}
+        {recentItems.length > 0 && (
           <div className="w-full mb-6">
             <div className="section-label mb-2.5 flex items-center gap-1.5">
               <Clock className="w-3 h-3" /> Recent
             </div>
             <div className="flex flex-col gap-px">
-              {recentSearches.map(entry => (
+              {recentItems.map(entry => (
                 <button
                   key={entry.id}
                   onClick={() => navigate(entry.url)}
@@ -349,7 +258,7 @@ export function HomeView() {
           </div>
         )}
 
-        {/* Saved sources */}
+        {/* ── Saved sources ───────────────────────────────────────────────────── */}
         {recentBookmarks.length > 0 && (
           <div className="w-full mb-6">
             <div className="section-label mb-2.5">Saved Sources</div>
@@ -371,7 +280,7 @@ export function HomeView() {
           </div>
         )}
 
-        {/* Footer */}
+        {/* ── Footer ─────────────────────────────────────────────────────────── */}
         <div className="w-full mt-auto pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
           <div className="flex items-center justify-between">
             <button

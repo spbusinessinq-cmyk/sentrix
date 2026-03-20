@@ -121,6 +121,26 @@ function RatingBadge({ label, rating }: { label: string; rating: string }) {
   );
 }
 
+function SignalCell({ label, rating, styles }: {
+  label: string; rating: string;
+  styles: { color: string; border: string; bg: string; dot: string };
+}) {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center px-4 py-3 gap-1"
+      style={{ background: styles.bg }}>
+      <span className="text-[7.5px] font-mono uppercase tracking-[0.22em]" style={{ color: 'rgba(148,163,184,0.40)' }}>
+        {label}
+      </span>
+      <div className="flex items-center gap-1.5">
+        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: styles.dot, boxShadow: `0 0 4px ${styles.dot}` }} />
+        <span className="text-[13px] font-bold tracking-[0.18em] uppercase" style={{ color: styles.color }}>
+          {rating}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function CollapsibleSection({
   label, labelColor, children, defaultOpen = true,
 }: { label: string; labelColor?: string; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -137,6 +157,23 @@ function CollapsibleSection({
           : <ChevronDown className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.28)' }} />}
       </button>
       {open && children}
+    </div>
+  );
+}
+
+function AlwaysVisibleSection({
+  label, labelColor, accentColor, children,
+}: { label: string; labelColor?: string; accentColor?: string; children: React.ReactNode }) {
+  return (
+    <div className="border-t pt-3" style={{ borderColor: 'rgba(255,255,255,0.055)' }}>
+      <div className="flex items-center gap-2 mb-2.5">
+        {accentColor && <div className="w-0.5 h-3 rounded-full shrink-0" style={{ background: accentColor }} />}
+        <span className="text-[8px] font-mono uppercase tracking-[0.28em] font-bold"
+          style={{ color: labelColor ?? 'rgba(148,163,184,0.55)' }}>
+          {label}
+        </span>
+      </div>
+      {children}
     </div>
   );
 }
@@ -399,7 +436,7 @@ function IntelligenceBrief({ report, expanded, onToggle, sageOpen, onToggleSage 
               color: sageOpen ? SAGE_COLOR : 'rgba(148,163,184,0.5)',
             }}>
             <Sparkles className="w-3 h-3" />
-            <span className="text-[9px] font-mono uppercase tracking-[0.15em]">Ask Sage</span>
+            <span className="text-[9px] font-mono uppercase tracking-[0.15em]">Analyze</span>
           </button>
           <button onClick={onToggle}
             className="flex items-center gap-1 px-2 py-1 rounded-md transition-colors cursor-pointer"
@@ -473,59 +510,70 @@ function SageAnswerBlock({ msg }: { msg: RichSageMessage }) {
         {renderMarkdown(p.answer)}
       </div>
 
-      {/* SIGNAL BAR — compact horizontal badges when any rating present */}
+      {/* SIGNAL BAR — decisive, bold, unavoidable */}
       {hasSignalBar && (
         <div
-          className="flex items-start gap-4 flex-wrap rounded-lg px-3 py-2.5"
-          style={{ background: 'rgba(0,0,0,0.28)', border: '1px solid rgba(255,255,255,0.055)' }}
+          className="rounded-xl overflow-hidden"
+          style={{ background: 'rgba(0,0,0,0.38)', border: '1px solid rgba(255,255,255,0.07)' }}
         >
-          {signalRating && (
-            <div className="flex flex-col gap-1 min-w-0">
-              <RatingBadge label="Signal" rating={signalRating} />
-              {signalDetail && (
-                <span className="text-[9.5px] font-mono leading-snug" style={{ color: 'rgba(148,163,184,0.40)' }}>
+          {/* Rating row — large, bold, decisive */}
+          <div className="flex divide-x" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+            {signalRating && (
+              <SignalCell label="Signal" rating={signalRating} styles={SIGNAL_STYLES[signalRating] ?? SIGNAL_STYLES['LOW']} />
+            )}
+            {agreementRating && (
+              <SignalCell label="Agreement" rating={agreementRating} styles={SIGNAL_STYLES[agreementRating] ?? SIGNAL_STYLES['LOW']} />
+            )}
+            {riskRating && (
+              <SignalCell label="Risk" rating={riskRating} styles={SIGNAL_STYLES[riskRating] ?? SIGNAL_STYLES['LOW']} />
+            )}
+          </div>
+          {/* Detail row */}
+          {(signalDetail || agreementDetail || riskDetail) && (
+            <div
+              className="flex divide-x"
+              style={{ borderTop: '1px solid rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.04)' }}
+            >
+              {signalRating && (
+                <div className="flex-1 px-3 py-2 text-[9.5px] font-mono leading-snug" style={{ color: 'rgba(148,163,184,0.38)' }}>
                   {signalDetail}
-                </span>
+                </div>
               )}
-            </div>
-          )}
-          {signalRating && agreementRating && <div className="w-px self-stretch" style={{ background: 'rgba(255,255,255,0.05)', minHeight: '24px' }} />}
-          {agreementRating && (
-            <div className="flex flex-col gap-1 min-w-0">
-              <RatingBadge label="Agreement" rating={agreementRating} />
-              {agreementDetail && (
-                <span className="text-[9.5px] font-mono leading-snug" style={{ color: 'rgba(148,163,184,0.40)' }}>
+              {agreementRating && (
+                <div className="flex-1 px-3 py-2 text-[9.5px] font-mono leading-snug" style={{ color: 'rgba(148,163,184,0.38)' }}>
                   {agreementDetail}
-                </span>
+                </div>
               )}
-            </div>
-          )}
-          {agreementRating && riskRating && <div className="w-px self-stretch" style={{ background: 'rgba(255,255,255,0.05)', minHeight: '24px' }} />}
-          {riskRating && (
-            <div className="flex flex-col gap-1 min-w-0">
-              <RatingBadge label="Risk" rating={riskRating} />
-              {riskDetail && (
-                <span className="text-[9.5px] font-mono leading-snug" style={{ color: 'rgba(148,163,184,0.40)' }}>
+              {riskRating && (
+                <div className="flex-1 px-3 py-2 text-[9.5px] font-mono leading-snug" style={{ color: 'rgba(148,163,184,0.38)' }}>
                   {riskDetail}
-                </span>
+                </div>
               )}
             </div>
           )}
         </div>
       )}
 
-      {/* WHAT MATTERS — collapsible, open by default */}
+      {/* WHAT MATTERS — always visible, never hidden */}
       {p.whatMatters && (
-        <CollapsibleSection label="What Matters" labelColor="rgba(56,189,248,0.55)" defaultOpen>
+        <AlwaysVisibleSection
+          label="What Matters"
+          labelColor="rgba(56,189,248,0.65)"
+          accentColor="rgba(56,189,248,0.55)"
+        >
           {renderMarkdown(p.whatMatters)}
-        </CollapsibleSection>
+        </AlwaysVisibleSection>
       )}
 
-      {/* WHAT TO QUESTION — collapsible, open by default */}
+      {/* WHAT TO QUESTION — always visible, never hidden */}
       {p.whatToQuestion && (
-        <CollapsibleSection label="What to Question" labelColor="rgba(245,158,11,0.55)" defaultOpen>
+        <AlwaysVisibleSection
+          label="What to Question"
+          labelColor="rgba(245,158,11,0.65)"
+          accentColor="rgba(245,158,11,0.50)"
+        >
           {renderMarkdown(p.whatToQuestion)}
-        </CollapsibleSection>
+        </AlwaysVisibleSection>
       )}
 
       {/* SOURCES — collapsible, closed by default (secondary) */}
@@ -644,8 +692,8 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
       <div className="flex items-center gap-2 px-5 py-2.5 shrink-0"
         style={{ borderBottom: '1px solid rgba(139,92,246,0.1)' }}>
         <Sparkles className="w-3.5 h-3.5" style={{ color: SAGE_COLOR }} />
-        <span className="text-[9px] font-mono font-bold uppercase tracking-[0.2em]" style={{ color: SAGE_COLOR }}>SAGE</span>
-        <span className="text-[8px] font-mono text-muted-foreground/20 ml-1">· signal & truth filter · gemini-2.5-flash</span>
+        <span className="text-[9px] font-mono font-bold uppercase tracking-[0.2em]" style={{ color: SAGE_COLOR }}>ANALYSIS OUTPUT</span>
+        <span className="text-[8px] font-mono text-muted-foreground/20 ml-1">· signal analysis · gemini-2.5-flash</span>
         <div className="flex items-center gap-2 ml-auto">
           {hasMessages && (
             <button onClick={clearSession}
@@ -666,7 +714,7 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
           <div className="flex flex-col items-center justify-center h-full gap-3 py-4">
             <Sparkles className="w-6 h-6 opacity-20" style={{ color: SAGE_COLOR }} />
             <p className="text-[11px] font-mono text-center leading-relaxed" style={{ color: 'rgba(148,163,184,0.35)' }}>
-              Paste a claim, headline, or question.<br />Sage will filter the signal from the noise.
+              Input is ready for analysis.<br />Signal, agreement, and risk will be returned.
             </p>
             <div className="flex flex-wrap gap-2 justify-center mt-1">
               {['Analyze this claim', 'Break this down for me', 'What should I question here?'].map(s => (
@@ -735,7 +783,7 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
       <div className="shrink-0 px-5 py-3 flex items-center gap-3"
         style={{ borderTop: '1px solid rgba(139,92,246,0.1)' }}>
         <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyDown} placeholder="Ask Sage a follow-up question…" disabled={loading}
+          onKeyDown={handleKeyDown} placeholder="Deepen analysis…" disabled={loading}
           className="flex-1 bg-transparent text-[12px] font-mono outline-none placeholder:text-muted-foreground/22"
           style={{ color: 'rgba(148,163,184,0.8)' }} />
         <button onClick={() => send(input)} disabled={loading || !input.trim()}
@@ -1031,7 +1079,7 @@ export function SearchResultsView() {
             <div className="flex items-center gap-2 mb-1">
               <ShieldCheck className="w-3 h-3 shrink-0" style={{ color: 'rgba(148,163,184,0.28)' }} />
               <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-muted-foreground/35">
-                Intelligence Search
+                Signal Analysis
                 {provider === 'brave' && !error && <span className="text-muted-foreground/22 ml-2">· Brave Search</span>}
                 {provider === 'duckduckgo' && !error && <span className="text-muted-foreground/22 ml-2">· DuckDuckGo</span>}
                 {(provider === 'mock' && !error) && <span className="text-muted-foreground/18 ml-2">· Heuristic</span>}

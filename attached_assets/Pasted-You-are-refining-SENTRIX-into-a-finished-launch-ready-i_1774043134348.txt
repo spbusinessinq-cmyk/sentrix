@@ -1,0 +1,189 @@
+You are refining SENTRIX into a finished, launch-ready intelligence product.
+
+SENTRIX is NOT a search engine.
+
+It is a SIGNAL ANALYSIS SYSTEM.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+CORE PRODUCT IDENTITY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+SENTRIX = Truth Filter Engine
+
+Users do NOT search.
+
+Users ANALYZE.
+
+Input types:
+- claim
+- headline
+- URL
+- question
+
+Output:
+- clarity
+- confidence
+- risk awareness
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. HOMEPAGE REBUILD (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Remove the "search engine" feel completely.
+
+REPLACE:
+
+Headline:
+"Search clearly. Decide before you click."
+
+WITH:
+
+"Analyze before you believe."
+
+Subtext:
+"Sentrix breaks down claims, headlines, and sources into signal, risk, and truth."
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. INPUT BOX REFRAME
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Current = search bar
+
+NEW = ANALYSIS INPUT
+
+Placeholder:
+"Paste a claim, headline, URL, or question"
+
+Remove all search language.
+
+Add subtle label above:
+"ANALYZE INPUT"
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. SAGE PANEL REFRAME
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Rename visually:
+
+"Sage" → "Signal Analysis"
+
+Keep Sage internally, but user sees:
+
+"ANALYSIS OUTPUT"
+
+Make it feel like a REPORT, not chat.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. REMOVE CHAT FEEL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+- No conversational tone in UI
+- No "Ask anything"
+- No "chat-like" structure
+
+Everything should feel:
+- structured
+- authoritative
+- final
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. SIGNAL BAR UPGRADE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Make this the MOST important visual element:
+
+SIGNAL | AGREEMENT | RISK
+
+Each must feel like:
+- decisive
+- bold
+- unavoidable
+
+Add:
+
+SIGNAL:
+HIGH / MEDIUM / LOW
+
+AGREEMENT:
+CONSENSUS / MIXED / CONFLICT
+
+RISK:
+SAFE / CAUTION / DANGER
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. WHAT MATTERS / WHAT TO QUESTION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+These are CORE.
+
+Make them:
+- always visible (no hiding)
+- clearly separated
+
+WHAT MATTERS = facts
+
+WHAT TO QUESTION = skepticism
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. REMOVE UI CONFUSION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Remove:
+- duplicate search bar behavior
+- anything that looks like Google
+- anything that looks like ChatGPT
+
+This is NOT browsing.
+This is NOT chatting.
+
+This is analysis.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. COLOR SYSTEM LOCK
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Use ONLY:
+
+Cyan → system / structure
+Purple → AI / analysis
+Amber → caution
+Red → danger
+
+NO GREEN dominance anywhere.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. USER FLOW (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+User lands →
+
+Immediately understands:
+"I paste something and it gets analyzed"
+
+NOT:
+"I search the internet"
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. FINAL FEEL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+The product should feel like:
+
+- an intelligence terminal
+- a verification tool
+- a thinking system
+
+NOT:
+- a search engine
+- a chatbot
+- a content browser
+
+━━━━━━━━━━━━━━━━━━━━━━━
+GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+When someone lands on Sentrix:
+
+They should instantly think:
+
+"This tells me what's real."
