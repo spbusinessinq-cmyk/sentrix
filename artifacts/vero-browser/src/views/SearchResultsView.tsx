@@ -56,6 +56,99 @@ function parseSageResponse(text: string): ParsedSage {
   };
 }
 
+// ── Markdown renderer (lightweight, no deps) ──────────────────────────────────
+function renderInline(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**'))
+      return <strong key={i} style={{ color: 'rgba(230,230,240,0.95)', fontWeight: 600 }}>{part.slice(2, -2)}</strong>;
+    if (part.startsWith('*') && part.endsWith('*'))
+      return <em key={i} style={{ color: 'rgba(200,205,215,0.80)' }}>{part.slice(1, -1)}</em>;
+    if (part.startsWith('`') && part.endsWith('`'))
+      return <code key={i} className="px-1 rounded text-[0.85em]"
+        style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(56,189,248,0.80)', fontFamily: 'JetBrains Mono, monospace' }}>{part.slice(1, -1)}</code>;
+    return part;
+  });
+}
+
+function renderMarkdown(text: string): React.ReactNode {
+  const lines = text.split('\n');
+  const blocks: React.ReactNode[] = [];
+  const listBuf: { type: 'ol' | 'ul'; items: string[] } = { type: 'ul', items: [] };
+
+  const flushList = () => {
+    if (!listBuf.items.length) return;
+    const Tag = listBuf.type;
+    blocks.push(
+      <Tag key={`list-${blocks.length}`}
+        className={listBuf.type === 'ol' ? 'list-decimal pl-5 space-y-1' : 'list-disc pl-5 space-y-1'}
+        style={{ color: 'rgba(210,210,225,0.82)', marginTop: '0.35rem', marginBottom: '0.35rem' }}>
+        {listBuf.items.map((item, i) => (
+          <li key={i} className="text-[14px] leading-relaxed">{renderInline(item)}</li>
+        ))}
+      </Tag>
+    );
+    listBuf.items = [];
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const ordered = line.match(/^\d+\.\s+(.*)/);
+    const bullet  = line.match(/^[-•*]\s+(.*)/);
+
+    if (ordered) {
+      if (listBuf.type !== 'ol' && listBuf.items.length) flushList();
+      listBuf.type = 'ol';
+      listBuf.items.push(ordered[1]);
+    } else if (bullet) {
+      if (listBuf.type !== 'ul' && listBuf.items.length) flushList();
+      listBuf.type = 'ul';
+      listBuf.items.push(bullet[1]);
+    } else if (line.trim() === '') {
+      flushList();
+    } else {
+      flushList();
+      blocks.push(
+        <p key={`p-${i}`} className="text-[14.5px] leading-relaxed"
+          style={{ color: 'rgba(215,215,230,0.88)', lineHeight: '1.78', marginBottom: '0.4rem' }}>
+          {renderInline(line)}
+        </p>
+      );
+    }
+  }
+  flushList();
+  return <>{blocks}</>;
+}
+
+// ── Sources renderer (structured bullet list) ─────────────────────────────────
+function renderSources(text: string): React.ReactNode {
+  const lines = text.split('\n').filter(l => l.trim());
+  return (
+    <div className="flex flex-col gap-1.5">
+      {lines.map((line, i) => {
+        // Match: • domain.com — description
+        const m = line.match(/^[•\-*]\s*([\w.\-]+[\w])\s*[—–-]+\s*(.*)/);
+        if (m) {
+          return (
+            <div key={i} className="flex items-start gap-2.5">
+              <span className="mt-[3px] w-1 h-1 rounded-full shrink-0" style={{ background: 'rgba(56,189,248,0.45)' }} />
+              <div className="text-[11px] font-mono leading-relaxed">
+                <span style={{ color: 'rgba(148,163,184,0.80)', fontWeight: 600 }}>{m[1]}</span>
+                <span style={{ color: 'rgba(148,163,184,0.42)' }}> — {m[2]}</span>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div key={i} className="text-[11px] font-mono leading-relaxed" style={{ color: 'rgba(148,163,184,0.45)' }}>
+            {line}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 interface RichSageMessage extends SageMessage {
   parsed?: ParsedSage;
 }
@@ -269,65 +362,59 @@ function IntelligenceBrief({ report, expanded, onToggle, sageOpen, onToggleSage 
 // ── Structured Sage message ───────────────────────────────────────────────────
 function SageAnswerBlock({ msg }: { msg: RichSageMessage }) {
   const [sourcesOpen, setSourcesOpen] = useState(true);
-  const [intelOpen, setIntelOpen] = useState(false);
+  const [intelOpen, setIntelOpen]     = useState(true);
   const p = msg.parsed;
 
   if (!p || !p.answer) {
     return (
-      <p className="text-[13px] leading-relaxed whitespace-pre-wrap" style={{ color: 'rgba(200,200,212,0.72)', lineHeight: '1.72' }}>
+      <div className="text-[14px] leading-relaxed whitespace-pre-wrap" style={{ color: 'rgba(200,200,212,0.80)', lineHeight: '1.78' }}>
         {msg.content}
-      </p>
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* ANSWER — dominant, large, readable */}
-      <div className="text-[14px] whitespace-pre-wrap"
-        style={{ color: 'rgba(222,222,232,0.90)', lineHeight: '1.75', fontFamily: "'Inter', sans-serif", fontWeight: 400 }}>
-        {p.answer}
+    <div className="flex flex-col gap-4">
+      {/* ANSWER — rendered markdown, dominant */}
+      <div style={{ fontFamily: "'Inter', sans-serif" }}>
+        {renderMarkdown(p.answer)}
       </div>
 
       {/* SOURCES — collapsible, starts open */}
       {p.sources && (
-        <div className="border-t pt-3" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+        <div className="border-t pt-3" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
           <button onClick={() => setSourcesOpen(v => !v)}
-            className="flex items-center gap-2 w-full text-left mb-2 cursor-pointer group/hd">
+            className="flex items-center gap-2 w-full text-left mb-2.5 cursor-pointer">
             <span className="text-[8px] font-mono uppercase tracking-[0.22em]"
-              style={{ color: sourcesOpen ? 'rgba(148,163,184,0.5)' : 'rgba(148,163,184,0.3)', transition: 'color 150ms ease-out' }}>
+              style={{ color: sourcesOpen ? 'rgba(148,163,184,0.55)' : 'rgba(148,163,184,0.3)', transition: 'color 150ms ease-out' }}>
               Sources
             </span>
             {sourcesOpen
-              ? <ChevronUp className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.25)' }} />
-              : <ChevronDown className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.25)' }} />}
+              ? <ChevronUp className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.28)' }} />
+              : <ChevronDown className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.28)' }} />}
           </button>
-          {sourcesOpen && (
-            <p className="text-[11px] font-mono leading-relaxed whitespace-pre-wrap"
-              style={{ color: 'rgba(148,163,184,0.5)', lineHeight: '1.65' }}>
-              {p.sources}
-            </p>
-          )}
+          {sourcesOpen && renderSources(p.sources)}
         </div>
       )}
 
-      {/* INTELLIGENCE — collapsible, starts closed */}
+      {/* INTELLIGENCE — collapsible, starts OPEN (core product output) */}
       {p.intelligence && (
-        <div className="border-t pt-3" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+        <div className="border-t pt-3" style={{ borderColor: 'rgba(139,92,246,0.10)' }}>
           <button onClick={() => setIntelOpen(v => !v)}
-            className="flex items-center gap-2 w-full text-left mb-2 cursor-pointer">
+            className="flex items-center gap-2 w-full text-left mb-2.5 cursor-pointer">
             <span className="text-[8px] font-mono uppercase tracking-[0.22em]"
-              style={{ color: intelOpen ? 'rgba(148,163,184,0.42)' : 'rgba(148,163,184,0.25)', transition: 'color 150ms ease-out' }}>
+              style={{ color: intelOpen ? 'rgba(139,92,246,0.60)' : 'rgba(148,163,184,0.28)', transition: 'color 150ms ease-out' }}>
               Intelligence
             </span>
             {intelOpen
-              ? <ChevronUp className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.2)' }} />
-              : <ChevronDown className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.2)' }} />}
+              ? <ChevronUp className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(139,92,246,0.30)' }} />
+              : <ChevronDown className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.22)' }} />}
           </button>
           {intelOpen && (
-            <p className="text-[11px] font-mono leading-relaxed whitespace-pre-wrap italic"
-              style={{ color: 'rgba(148,163,184,0.38)', lineHeight: '1.6' }}>
-              {p.intelligence}
-            </p>
+            <div className="text-[11.5px] font-mono leading-relaxed"
+              style={{ color: 'rgba(148,163,184,0.55)', lineHeight: '1.7', borderLeft: '2px solid rgba(139,92,246,0.20)', paddingLeft: '0.75rem' }}>
+              {renderInline(p.intelligence)}
+            </div>
           )}
         </div>
       )}
@@ -722,7 +809,7 @@ export function SearchResultsView() {
   const [provider, setProvider]         = useState<'brave' | 'duckduckgo' | 'mock'>('mock');
   const [filter, setFilter]             = useState<FilterKey>('all');
   const [inspectTarget, setInspectTarget] = useState<{ url: string; title: string; snippet: string } | null>(null);
-  const [briefExpanded, setBriefExpanded] = useState(false);
+  const [briefExpanded, setBriefExpanded] = useState(true);
   const [sageOpen, setSageOpen]           = useState(false);
   const [autoSendMsg, setAutoSendMsg]     = useState<string | null>(null);
 
@@ -731,7 +818,7 @@ export function SearchResultsView() {
   const doSearch = () => {
     if (!safeQuery) return;
     setLoading(true); setError(false); setFilter('all'); setVisibleCount(PAGE_SIZE);
-    setBriefExpanded(false);
+    setBriefExpanded(true);
     searchWeb(safeQuery)
       .then(resp => {
         setAllResults(resp.results.map(enrichResult));
