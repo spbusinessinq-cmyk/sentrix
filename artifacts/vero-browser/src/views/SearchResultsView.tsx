@@ -1,313 +1,339 @@
 import React, { useState, useEffect } from 'react';
 import {
-  ShieldCheck, ShieldAlert, AlertTriangle,
-  ArrowRight, Shield, Clock, Loader2, AlertCircle
+  ShieldCheck, ShieldAlert, Shield, AlertTriangle,
+  ExternalLink, Bookmark, BookmarkCheck, FolderPlus,
+  Loader2, AlertCircle, ArrowUpRight
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { searchWeb, SearchResultItem } from '@/lib/search';
+import { enrichUrl, postureColor, sourceTypeIcon, Posture, SourceType } from '@/lib/enrichment';
+import { InspectDrawer } from '@/components/InspectDrawer';
 
-type ActiveFilter = 'all' | 'safe' | 'news' | 'docs';
+type FilterKey = 'all' | 'safe' | 'caution' | 'docs' | 'news';
 
-function DomainDot({ risk, domain }: { risk: string; domain: string }) {
-  const initial = domain.charAt(0).toUpperCase();
-  const cls =
-    risk === 'safe'    ? 'bg-primary/15 text-primary/80 border-primary/20' :
-    risk === 'caution' ? 'bg-amber-500/15 text-amber-500/80 border-amber-500/20' :
-    risk === 'danger'  ? 'bg-red-500/15 text-red-500/80 border-red-500/20' :
-    'bg-white/[0.06] text-muted-foreground/50 border-white/10';
-  return (
-    <div className={twMerge('w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 text-[11px] font-bold font-mono', cls)}>
-      {initial}
-    </div>
-  );
+interface EnrichedItem extends SearchResultItem {
+  posture: Posture;
+  sourceType: SourceType;
+  reasoning: string;
 }
 
-function RiskBadge({ risk }: { risk: string }) {
-  const map: Record<string, { label: string; cls: string; Icon: React.ElementType }> = {
-    safe:    { label: 'SAFE',    cls: 'text-primary border-primary/25 bg-primary/[0.07]',          Icon: ShieldCheck },
-    caution: { label: 'CAUTION', cls: 'text-amber-500 border-amber-500/25 bg-amber-500/[0.07]',    Icon: AlertTriangle },
-    danger:  { label: 'DANGER',  cls: 'text-red-500 border-red-500/25 bg-red-500/[0.07]',          Icon: ShieldAlert },
-    unknown: { label: 'UNKNOWN', cls: 'text-muted-foreground border-white/[0.08] bg-white/[0.03]', Icon: Shield },
+function enrichResult(r: SearchResultItem): EnrichedItem {
+  const e = enrichUrl(r.url, r.title, r.snippet);
+  return {
+    ...r,
+    posture: e.posture,
+    sourceType: e.sourceType,
+    reasoning: e.reasoning,
   };
-  const { label, cls, Icon } = map[risk] ?? map.unknown;
+}
+
+function PostureBadge({ posture }: { posture: Posture }) {
+  const c = postureColor(posture);
+  const Icon = posture === 'SAFE' ? ShieldCheck : posture === 'DANGER' ? ShieldAlert : posture === 'CAUTION' ? AlertTriangle : Shield;
   return (
-    <div className={twMerge('flex items-center gap-1 px-2 py-0.5 rounded border text-[9px] font-bold tracking-[0.12em] uppercase shrink-0', cls)}>
+    <div className={twMerge('flex items-center gap-1 px-1.5 py-0.5 rounded border text-[9px] font-bold tracking-[0.12em] uppercase shrink-0', c.text, c.border, c.bg)}>
       <Icon className="w-2.5 h-2.5" />
-      {label}
+      {posture}
     </div>
   );
 }
 
-function ResultCard({ result, index, onClick }: { result: SearchResultItem; index: number; onClick: () => void }) {
-  const [expanded, setExpanded] = useState(false);
-  const isBlocked = result.risk === 'danger';
+function SourceTypePill({ type }: { type: SourceType }) {
+  const icon = sourceTypeIcon(type);
+  return (
+    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-white/[0.07] bg-white/[0.03] text-[9px] font-mono text-muted-foreground/45 uppercase tracking-wider shrink-0">
+      <span className="text-[8px]">{icon}</span>
+      {type}
+    </span>
+  );
+}
 
-  const riskAccent =
-    result.risk === 'safe' ? 'bg-primary' :
-    result.risk === 'caution' ? 'bg-amber-500' :
-    result.risk === 'danger' ? 'bg-red-500' : 'bg-muted-foreground/30';
+function ResultCard({ result, index, onInspect }: {
+  result: EnrichedItem; index: number; onInspect: () => void;
+}) {
+  const { navigate, saveItem, isSaved, unsaveItem, savedItems, addBookmark, isBookmarked, bookmarks, removeBookmark } = useBrowserState();
+  const saved = isSaved(result.url);
+  const savedObj = savedItems.find(s => s.url === result.url);
+  const bookmarked = isBookmarked(result.url);
+  const bookmarkObj = bookmarks.find(b => b.url === result.url);
+  const isBlocked = result.posture === 'DANGER';
+  const c = postureColor(result.posture);
 
-  const cardHover = isBlocked
-    ? 'hover:bg-red-500/[0.04] hover:border-red-500/20'
-    : 'hover:bg-white/[0.03] hover:border-white/[0.09]';
+  const handleSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (saved && savedObj) { unsaveItem(savedObj.id); return; }
+    saveItem({ title: result.title, url: result.url, domain: result.domain, posture: result.posture, sourceType: result.sourceType, reasoning: result.reasoning });
+  };
+
+  const handleBookmark = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (bookmarked && bookmarkObj) { removeBookmark(bookmarkObj.id); return; }
+    addBookmark({ title: result.title, url: result.url, domain: result.domain });
+  };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04, duration: 0.2 }}
+      transition={{ delay: index * 0.03, duration: 0.18 }}
       className={twMerge(
-        'group relative border rounded-lg transition-all duration-150 overflow-hidden',
-        isBlocked ? 'border-red-500/15 bg-black/30' : 'border-white/[0.05] bg-black/25',
-        cardHover
+        'group relative border rounded-xl overflow-hidden transition-all duration-150',
+        isBlocked
+          ? 'border-red-500/15 bg-black/30'
+          : 'border-white/[0.05] bg-black/20 hover:bg-black/28 hover:border-white/[0.09]'
       )}
     >
-      <div className={twMerge('absolute left-0 top-0 w-[2px] h-full opacity-50 group-hover:opacity-90 transition-opacity', riskAccent)} />
+      {/* Left accent */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-[2px] opacity-40 group-hover:opacity-70 transition-opacity"
+        style={{ background: result.posture === 'SAFE' ? 'hsl(142 72% 40%)' : result.posture === 'CAUTION' ? '#f59e0b' : result.posture === 'DANGER' ? '#ef4444' : 'rgba(148,163,184,0.3)' }}
+      />
 
-      <div className="pl-4 pr-4 pt-3.5 pb-0 ml-0.5">
-        <div className="flex items-start gap-3 mb-2.5">
-          <DomainDot risk={result.risk} domain={result.domain} />
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className={twMerge('text-[11px] font-mono truncate',
-                result.risk === 'safe' ? 'text-primary/60' :
-                result.risk === 'caution' ? 'text-amber-500/60' :
-                result.risk === 'danger' ? 'text-red-500/60' : 'text-muted-foreground/50'
-              )}>
-                {result.domain}
-              </span>
-              {result.provider === 'brave' && (
-                <>
-                  <span className="text-muted-foreground/20 text-[10px]">·</span>
-                  <span className="text-[10px] font-mono text-muted-foreground/30 uppercase tracking-widest">{result.category}</span>
-                </>
-              )}
-            </div>
-
-            <button
-              onClick={onClick}
-              className={twMerge(
-                'text-[13px] font-semibold leading-snug text-left transition-colors',
-                isBlocked
-                  ? 'text-red-400/80 hover:text-red-400 line-through decoration-red-500/30'
-                  : 'text-foreground/85 group-hover:text-foreground hover:text-primary'
-              )}
-            >
-              {result.title}
-            </button>
-          </div>
-
-          <RiskBadge risk={result.risk} />
+      <div className="pl-4 pr-4 pt-4 pb-0 ml-0.5">
+        {/* Domain + tags */}
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <span className={twMerge('text-[10px] font-mono', c.text, 'opacity-80 truncate')}>{result.domain}</span>
+          <PostureBadge posture={result.posture} />
+          <SourceTypePill type={result.sourceType} />
+          {result.provider === 'brave' && (
+            <span className="text-[8px] font-mono text-muted-foreground/20 uppercase tracking-widest">live</span>
+          )}
         </div>
 
-        <p className={twMerge(
-          'text-[12px] leading-relaxed mb-3 pl-11',
-          isBlocked ? 'text-red-400/40 line-through' : 'text-foreground/50'
-        )}>
+        {/* Title */}
+        <div
+          className={twMerge(
+            'text-[13px] font-semibold leading-snug mb-2',
+            isBlocked ? 'text-red-400/70 line-through decoration-red-500/30' : 'text-foreground/82'
+          )}
+        >
+          {result.title}
+        </div>
+
+        {/* Snippet */}
+        <p className={twMerge('text-[12px] leading-relaxed mb-3', isBlocked ? 'text-muted-foreground/25 line-through' : 'text-foreground/45')}>
           {result.snippet}
         </p>
 
+        {/* Footer bar */}
         <div className={twMerge(
           'flex items-center justify-between gap-3 py-2.5 px-3 mx-[-1rem] border-t',
           isBlocked ? 'border-red-500/10 bg-red-500/[0.04]' : 'border-white/[0.04] bg-black/20'
         )}>
-          <div className="flex items-center gap-2 min-w-0">
-            <ShieldCheck className={twMerge('w-3 h-3 shrink-0',
-              result.risk === 'safe' ? 'text-primary/60' :
-              result.risk === 'caution' ? 'text-amber-500/60' :
-              'text-red-500/60'
-            )} />
-            <span className={twMerge('text-[10px] font-mono truncate',
-              result.risk === 'safe' ? 'text-muted-foreground/50' :
-              result.risk === 'caution' ? 'text-amber-500/60' :
-              'text-red-500/70 font-semibold'
-            )}>
-              {result.bdSummary}
-            </span>
+          {/* Reasoning */}
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <ShieldCheck className={twMerge('w-2.5 h-2.5 shrink-0', c.text, 'opacity-60')} />
+            <span className="text-[10px] font-mono text-muted-foreground/40 truncate">{result.reasoning}</span>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          {/* Actions */}
+          <div className="flex items-center gap-2 shrink-0">
             {!isBlocked && (
               <>
-                <button
-                  onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
-                  className="text-[10px] font-mono text-muted-foreground/30 hover:text-muted-foreground/70 transition-colors uppercase tracking-widest"
+                <ResultAction
+                  icon={bookmarked ? <BookmarkCheck className="w-3 h-3" /> : <Bookmark className="w-3 h-3" />}
+                  label="Save"
+                  active={bookmarked}
+                  onClick={handleBookmark}
+                />
+                <ResultAction
+                  icon={<FolderPlus className="w-3 h-3" />}
+                  label="Collect"
+                  active={saved}
+                  onClick={handleSave}
+                />
+                <ResultAction
+                  icon={<Shield className="w-3 h-3" />}
+                  label="Inspect"
+                  onClick={onInspect}
+                />
+                <a
+                  href={result.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="flex items-center gap-1 text-[9px] font-mono text-primary/50 hover:text-primary uppercase tracking-widest transition-colors"
                 >
-                  {expanded ? 'Less' : 'Details'}
-                </button>
-                <button
-                  onClick={onClick}
-                  className="flex items-center gap-1 text-[10px] font-mono text-primary/50 hover:text-primary transition-colors uppercase tracking-widest"
-                >
-                  Open <ArrowRight className="w-2.5 h-2.5" />
-                </button>
+                  Open <ArrowUpRight className="w-2.5 h-2.5" />
+                </a>
               </>
             )}
-            {isBlocked && (
-              <span className="text-[10px] font-mono text-red-500/70 uppercase tracking-widest font-bold">BLOCKED</span>
-            )}
+            {isBlocked && <span className="text-[9px] font-mono text-red-500/70 uppercase font-bold tracking-widest">BLOCKED</span>}
           </div>
         </div>
-
-        <AnimatePresence>
-          {expanded && !isBlocked && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              className="overflow-hidden"
-            >
-              <div className="py-2.5 px-3 mx-[-1rem] border-t border-white/[0.04] bg-black/30">
-                <div className="text-[10px] font-mono text-muted-foreground/50 leading-relaxed">
-                  <span className="text-primary/50 uppercase tracking-widest mr-2">URL:</span>
-                  <span className="text-muted-foreground/40 break-all">{result.url}</span>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </motion.div>
   );
 }
 
+function ResultAction({ icon, label, active, onClick }: {
+  icon: React.ReactNode; label: string; active?: boolean; onClick?: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <button
+      onClick={e => { e.stopPropagation(); onClick?.(e); }}
+      className={twMerge(
+        'flex items-center gap-1 text-[9px] font-mono uppercase tracking-widest transition-colors',
+        active ? 'text-primary/70' : 'text-muted-foreground/30 hover:text-muted-foreground/70'
+      )}
+    >
+      {icon}{label}
+    </button>
+  );
+}
+
 export function SearchResultsView() {
   const { searchQuery, navigate } = useBrowserState();
-  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
-  const [results, setResults] = useState<SearchResultItem[]>([]);
+  const [results, setResults] = useState<EnrichedItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [provider, setProvider] = useState<'brave' | 'mock'>('mock');
+  const [filter, setFilter] = useState<FilterKey>('all');
+  const [inspectUrl, setInspectUrl] = useState<{ url: string; title: string; snippet: string } | null>(null);
+
   const safeQuery = searchQuery ?? '';
 
   useEffect(() => {
     if (!safeQuery) return;
-    setLoading(true);
-    setError(false);
+    setLoading(true); setError(false); setFilter('all');
     searchWeb(safeQuery).then(resp => {
-      setResults(resp.results);
+      setResults(resp.results.map(enrichResult));
       setProvider(resp.provider);
       setError(!!resp.error && resp.results.length === 0);
-    }).catch(() => {
-      setError(true);
-      setResults([]);
-    }).finally(() => setLoading(false));
+    }).catch(() => { setError(true); setResults([]); })
+     .finally(() => setLoading(false));
   }, [safeQuery]);
 
   const filtered = results.filter(r => {
-    if (activeFilter === 'all') return true;
-    if (activeFilter === 'safe') return r.risk === 'safe';
-    if (activeFilter === 'news') return r.category === 'news';
-    if (activeFilter === 'docs') return r.category === 'docs';
+    if (filter === 'safe')    return r.posture === 'SAFE';
+    if (filter === 'caution') return r.posture === 'CAUTION' || r.posture === 'UNKNOWN';
+    if (filter === 'docs')    return r.sourceType === 'Documentation' || r.sourceType === 'Reference';
+    if (filter === 'news')    return r.sourceType === 'News';
     return true;
   });
 
-  const safeCount    = results.filter(r => r.risk === 'safe').length;
-  const flaggedCount = results.filter(r => r.risk !== 'safe').length;
+  const counts = {
+    all:     results.length,
+    safe:    results.filter(r => r.posture === 'SAFE').length,
+    caution: results.filter(r => r.posture === 'CAUTION' || r.posture === 'UNKNOWN').length,
+    docs:    results.filter(r => r.sourceType === 'Documentation' || r.sourceType === 'Reference').length,
+    news:    results.filter(r => r.sourceType === 'News').length,
+  };
 
-  const filters: { id: ActiveFilter; label: string; count: number }[] = [
-    { id: 'all',  label: 'All',      count: results.length },
-    { id: 'safe', label: 'Safe Only', count: safeCount },
-    { id: 'news', label: 'News',      count: results.filter(r => r.category === 'news').length },
-    { id: 'docs', label: 'Docs',      count: results.filter(r => r.category === 'docs').length },
+  const filters: { key: FilterKey; label: string }[] = [
+    { key: 'all',     label: 'All' },
+    { key: 'safe',    label: 'Safe' },
+    { key: 'caution', label: 'Review' },
+    { key: 'docs',    label: 'Docs' },
+    { key: 'news',    label: 'News' },
   ];
 
   return (
-    <div className="h-full overflow-y-auto bg-background">
-      <div className="border-b border-white/[0.05] bg-black/25 px-6 pt-4 pb-0 sticky top-0 z-10 backdrop-blur-sm">
+    <div className="h-full flex flex-col overflow-hidden bg-background">
+      {/* Sticky header */}
+      <div
+        className="shrink-0 px-5 pt-4 pb-0 border-b border-white/[0.05]"
+        style={{ background: 'rgba(6,7,10,0.95)', backdropFilter: 'blur(8px)' }}
+      >
         <div className="flex items-start justify-between mb-3">
-          <div>
-            <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-muted-foreground/40 mb-1.5 flex items-center gap-1.5">
-              <ShieldCheck className="w-2.5 h-2.5 text-primary/50" />
-              Sentrix Search
-              {provider === 'brave' && <span className="text-primary/40 ml-1">· Brave Search</span>}
-              {provider === 'mock' && <span className="text-muted-foreground/30 ml-1">· local results</span>}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <ShieldCheck className="w-3 h-3 text-primary/40 shrink-0" />
+              <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-muted-foreground/35">
+                Sentrix Intelligence Search
+                {provider === 'brave' && <span className="text-primary/35 ml-2">· Brave Search</span>}
+              </span>
             </div>
-            <h2 className="text-[15px] font-semibold text-foreground/90 leading-tight">
+            <h2 className="text-[15px] font-semibold text-foreground/88 leading-tight truncate">
               "{safeQuery || '—'}"
             </h2>
           </div>
-          <div className="text-right shrink-0 ml-4">
-            {loading ? (
-              <Loader2 className="w-4 h-4 text-primary/50 animate-spin mt-1" />
-            ) : (
-              <>
-                <div className="text-[10px] font-mono text-muted-foreground/35">{results.length} results</div>
-                <div className="text-[10px] font-mono mt-0.5">
-                  <span className="text-primary/60">{safeCount} safe</span>
-                  <span className="text-muted-foreground/20 mx-1">·</span>
-                  <span className={flaggedCount > 0 ? 'text-amber-500/60' : 'text-muted-foreground/40'}>{flaggedCount} flagged</span>
-                </div>
-              </>
-            )}
-          </div>
+          {loading ? (
+            <Loader2 className="w-4 h-4 text-primary/50 animate-spin mt-1 shrink-0 ml-4" />
+          ) : (
+            <div className="text-right shrink-0 ml-4">
+              <div className="text-[10px] font-mono text-muted-foreground/30">{results.length} results</div>
+              <div className="text-[10px] font-mono text-primary/50 mt-0.5">{counts.safe} safe</div>
+            </div>
+          )}
         </div>
 
+        {/* Filters */}
         <div className="flex items-center gap-0.5 -mx-1">
           {filters.map(f => (
             <button
-              key={f.id}
-              onClick={() => setActiveFilter(f.id)}
+              key={f.key}
+              onClick={() => setFilter(f.key)}
               className={twMerge(
                 'relative px-3 py-2.5 text-[11px] font-mono tracking-wide transition-all flex items-center gap-1.5',
-                activeFilter === f.id
-                  ? 'text-foreground/90'
-                  : 'text-muted-foreground/40 hover:text-muted-foreground/70'
+                filter === f.key ? 'text-foreground/88' : 'text-muted-foreground/35 hover:text-muted-foreground/65'
               )}
             >
               {f.label}
-              <span className={twMerge('text-[9px] font-bold tabular-nums', activeFilter === f.id ? 'text-primary/70' : 'text-muted-foreground/30')}>
-                {f.count}
+              <span className={twMerge('text-[9px] font-bold tabular-nums', filter === f.key ? 'text-primary/65' : 'text-muted-foreground/25')}>
+                {counts[f.key]}
               </span>
-              {activeFilter === f.id && (
-                <motion.div layoutId="filter-underline" className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-primary/70" />
+              {filter === f.key && (
+                <motion.div layoutId="search-filter" className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-primary/65" />
               )}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="px-5 py-4 flex flex-col gap-2.5 max-w-3xl">
+      {/* Results */}
+      <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-2.5">
         {loading && (
-          <div className="flex items-center justify-center py-16 gap-3">
+          <div className="flex items-center justify-center py-16 gap-2.5">
             <Loader2 className="w-4 h-4 text-primary/50 animate-spin" />
-            <span className="text-[12px] font-mono text-muted-foreground/40">Searching…</span>
+            <span className="text-[12px] font-mono text-muted-foreground/35">Searching…</span>
           </div>
         )}
 
         {!loading && error && (
-          <div className="flex items-center gap-3 py-12 justify-center text-center">
-            <AlertCircle className="w-4 h-4 text-amber-500/60" />
+          <div className="flex items-center justify-center py-12 gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-500/50" />
             <span className="text-[12px] font-mono text-muted-foreground/40">Search unavailable — check your connection</span>
           </div>
         )}
 
-        {!loading && !error && filtered.map((result, i) => (
+        {!loading && !error && filtered.map((r, i) => (
           <ResultCard
-            key={result.id}
-            result={result}
+            key={r.id}
+            result={r}
             index={i}
-            onClick={() => navigate(result.url)}
+            onInspect={() => setInspectUrl({ url: r.url, title: r.title, snippet: r.snippet })}
           />
         ))}
 
         {!loading && !error && filtered.length === 0 && results.length > 0 && (
-          <div className="text-center py-16 text-muted-foreground/30 font-mono text-[12px]">
+          <div className="text-center py-14 text-muted-foreground/28 font-mono text-[12px]">
             — no results match this filter —
+          </div>
+        )}
+
+        {!loading && !error && results.length > 0 && (
+          <div className="flex items-center gap-2 py-3 border-t border-white/[0.04] mt-2">
+            <ShieldCheck className="w-3 h-3 text-primary/30" />
+            <span className="text-[10px] font-mono text-muted-foreground/25">
+              Results enriched with heuristic domain classification. Open externally to view live pages.
+            </span>
           </div>
         )}
       </div>
 
-      <div className="px-6 py-4 border-t border-white/[0.04] flex items-center gap-3">
-        <ShieldCheck className="w-3 h-3 text-primary/40" />
-        <span className="text-[10px] font-mono text-muted-foreground/30">
-          Results classified by heuristic domain reputation. Exercise independent judgment.
-        </span>
-      </div>
+      <AnimatePresence>
+        {inspectUrl && (
+          <InspectDrawer
+            url={inspectUrl.url}
+            title={inspectUrl.title}
+            snippet={inspectUrl.snippet}
+            onClose={() => setInspectUrl(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

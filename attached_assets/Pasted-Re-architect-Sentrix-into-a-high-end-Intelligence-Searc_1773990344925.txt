@@ -1,0 +1,361 @@
+Re-architect Sentrix into a high-end Intelligence Search Engine.
+
+IMPORTANT:
+This is a product identity pivot, not a cosmetic tweak.
+Sentrix is no longer a browser-first product.
+Do not frame it as a full browser.
+Do not rely on internal website rendering as the primary experience.
+External opening of links is expected and correct.
+
+MISSION:
+Transform Sentrix into a serious intelligence search environment where users:
+- search the web
+- evaluate source posture before clicking
+- inspect pages and domains
+- save findings
+- build collections
+- move with clarity and control
+
+Sentrix should feel like:
+- a premium intelligence search system
+- a research command surface
+- a pre-click analysis engine
+- a disciplined alternative to generic search
+
+NOT:
+- a browser clone
+- a dashboard
+- a toy “threat feed”
+- a fake cyber UI
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. PRODUCT IDENTITY — HARD PIVOT
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Sentrix is now:
+
+“SENTRIX — Intelligence Search Engine”
+“Search clearly. Decide before you click.”
+
+BLACKDOG remains:
+- hidden engine
+- status only
+- no fake detections
+- no user-facing engine controls
+
+Make the entire product feel intentionally built around search, evaluation, and external decision-making.
+
+De-emphasize the old browser framing:
+- website rendering is secondary
+- search and inspection are primary
+- external opening is a normal action
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. HOMEPAGE — TOTAL REBUILD
+━━━━━━━━━━━━━━━━━━━━━━━
+
+The homepage must become the center of the product.
+
+Build a strong premium landing/search surface with:
+
+CENTERPIECE:
+- large SENTRIX brand
+- refined tagline:
+  “Search clearly. Decide before you click.”
+- concise subline:
+  “Intelligence-powered search with BLACKDOG analysis.”
+
+PRIMARY UI:
+- large dominant search bar
+- immediate focus on load
+- premium, tactical, glassy styling
+- supports both search terms and direct URLs
+
+SECONDARY SECTIONS:
+A. Quick Actions
+- Link Check
+- Recent Searches
+- Bookmarks
+- Collections
+- Privacy Report
+
+B. Intelligence Context Strip
+Show lightweight real stats only:
+- BLACKDOG engine status
+- bookmarks count
+- collections count
+- recent searches count
+- session status
+
+C. Recent / Saved Surface
+- recent searches
+- recent inspected links
+- saved/bookmarked items
+
+The page must feel useful the second it opens.
+No empty hero. No dead space. No fake filler.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. SEARCH RESULTS — MAKE THEM THE PRODUCT
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Search Results must become the main experience.
+
+Each result card should feel like an intelligence object, not a generic blue link.
+
+Every result should include:
+
+CORE:
+- title
+- domain
+- snippet
+- source type
+- risk posture
+- reasoning line
+
+SOURCE TYPE OPTIONS:
+- News
+- Documentation
+- Reference
+- Commercial
+- Forum
+- Download
+- Unknown
+
+RISK POSTURE:
+- SAFE
+- CAUTION
+- UNKNOWN
+- DANGER
+
+REASONING EXAMPLES:
+- Common reference domain
+- Commercial destination
+- Login/verification language detected
+- Download-oriented result
+- Insecure protocol
+- Unverified source posture
+
+ACTIONS:
+- Open externally
+- Inspect
+- Save
+- Add to Collection
+
+Do not show fake tracker/script counts.
+Do not invent telemetry.
+Keep the analysis simple, believable, and useful.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. INTELLIGENCE ENRICHMENT LAYER
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Build a real first-pass enrichment system over search results and URLs.
+
+Use:
+- URL pattern logic
+- protocol detection
+- keyword heuristics
+- domain categorization
+- result metadata if available from the search provider
+
+Generate:
+- source type
+- posture/risk label
+- short reasoning line
+- simple notes for inspect view
+
+Signals can include:
+- http vs https
+- presence of “login”, “verify”, “reset-password”
+- presence of “download”, “free”, “setup”, “installer”
+- known reference domains
+- known documentation domains
+- file/download-type patterns
+
+Keep it disciplined and transparent.
+No fake advanced claims.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. INSPECT EXPERIENCE — CORE FEATURE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Sentrix must have a strong inspect flow.
+
+Clicking “Inspect” on a result or submitted URL should open a serious intelligence drawer/modal/panel.
+
+Include:
+- full URL
+- root domain
+- protocol
+- source type
+- posture/risk label
+- reasoning
+- short analysis notes
+- ability to Save
+- ability to Add to Collection
+- ability to Open externally
+
+This should feel like a product-defining feature.
+It must be clean, premium, and useful.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. COLLECTIONS SYSTEM — FIRST VERSION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add a lightweight but real Collections feature.
+
+Users should be able to:
+- save items
+- create collections
+- add a result to a collection
+- view saved items later
+
+Examples:
+- Research
+- Watchlist
+- Sources
+- Investigate Later
+
+Keep it simple but real.
+Persist locally.
+Make it part of the Sentrix identity.
+
+If needed, expose:
+- a Collections view
+- collection count
+- simple create/add/remove actions
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. BOOKMARKS + SAVED INTEL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Preserve bookmarks, but strengthen their role.
+
+Bookmarks should now feel like:
+- saved sources
+- saved intel targets
+- saved domains/pages
+
+Differentiate slightly between:
+- bookmarks
+- saved/inspected items
+- collections
+
+Make this hierarchy clean and understandable.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. REMOVE BROWSER IDENTITY CONFUSION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not present Sentrix as if it is a full embedded browser.
+
+If Website View remains:
+- make it secondary
+- label it as Sentrix Preview when not truly live
+- do not show fake site navigation
+- do not imitate real websites with dead buttons
+
+External opening is correct and expected.
+Build around that truth.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. BLACKDOG — KEEP IT MINIMAL AND CREDIBLE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+BLACKDOG is a hidden engine layer only.
+
+Allowed:
+- BLACKDOG ACTIVE
+- ENGINE ONLINE
+- PROTECTION ACTIVE
+- SESSION PROTECTED
+
+Not allowed:
+- fake detections
+- fake domain-level logs
+- fake counts
+- fake engine controls
+- fake threat telemetry
+
+Use BLACKDOG as a credibility/status layer, not a pretend SOC console.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. SIDEBAR / INFORMATION ARCHITECTURE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Refocus the sidebar/navigation around the new product.
+
+Preferred primary nav:
+- Search
+- Recent
+- Bookmarks
+- Collections
+- Downloads
+- Privacy
+- Settings
+
+De-emphasize browser-first wording.
+Make the structure feel like an intelligence workspace.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+11. KEEP REAL THINGS, REMOVE FAKE THINGS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep and strengthen:
+- real search API integration
+- bookmarks
+- downloads
+- session persistence
+- settings that truly work
+- privacy report based on real session/app data
+- link check
+
+Remove or relabel:
+- anything pretending to be deep engine security
+- any fake page render behaviors
+- any non-functional site-like controls
+- any settings that imply BLACKDOG control if not real
+
+━━━━━━━━━━━━━━━━━━━━━━━
+12. DESIGN DIRECTION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep the existing Sentrix visual DNA:
+- dark tactical premium UI
+- controlled green glow
+- glassy layered panels
+- sharp chrome
+- polished motion
+
+But refocus it around:
+- search
+- inspection
+- saved intelligence
+- decision-making
+
+The product should feel:
+- serious
+- premium
+- deliberate
+- useful
+- intelligent
+
+Not cluttered. Not gimmicky. Not fake-cyber.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Return a significantly stronger first-pass Sentrix product that now clearly functions as an Intelligence Search Engine.
+
+The result should:
+- feel intentionally search-first
+- make results the centerpiece
+- make Inspect a core product action
+- support Save + Collections
+- reduce browser confusion
+- remove fake security theater
+- create a clear, premium, differentiated identity
+
+Sentrix should now feel like a serious pre-click intelligence system, not a browser mockup.

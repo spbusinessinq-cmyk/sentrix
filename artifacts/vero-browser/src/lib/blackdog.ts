@@ -25,7 +25,8 @@ export type PageType =
   | 'privacy'
   | 'vault'
   | 'settings'
-  | 'bookmarks';
+  | 'bookmarks'
+  | 'collections';
 
 // ─── Domain classification lists ──────────────────────────────────────────────
 
@@ -157,7 +158,7 @@ export function analyzeUrl(url: string): { riskLevel: RiskLevel; blackdog: Black
 const INTERNAL_PAGES: Record<string, PageType> = {
   newtab: 'newtab', history: 'history', vault: 'vault',
   settings: 'settings', privacy: 'privacy', downloads: 'downloads',
-  search: 'search', bookmarks: 'bookmarks',
+  search: 'search', bookmarks: 'bookmarks', collections: 'collections',
 };
 
 export function classifyInput(input: string): {

@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, RotateCw, Lock, ShieldAlert, Bookmark, BookmarkCheck, ShieldCheck, Eye } from 'lucide-react';
+import {
+  ArrowLeft, ArrowRight, Search,
+  Bookmark, BookmarkCheck, ShieldCheck, Eye
+} from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function AddressBar() {
   const {
-    currentUrl, navigate, setAddressBarUrl, riskLevel,
+    currentUrl, navigate, setAddressBarUrl,
+    riskLevel, pageType,
     navigateBack, navigateForward, canGoBack, canGoForward, isNavigating,
-    addBookmark, removeBookmark, isBookmarked, bookmarks, pageType,
+    addBookmark, removeBookmark, isBookmarked, bookmarks,
     setBlackdogPanelOpen, blackdogPanelOpen,
   } = useBrowserState();
+
   const [inputValue, setInputValue] = useState(currentUrl);
   const [focused, setFocused] = useState(false);
 
@@ -23,18 +28,21 @@ export function AddressBar() {
     if (e.key === 'Escape') { setInputValue(currentUrl); e.currentTarget.blur(); }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
-    setAddressBarUrl(e.target.value);
-  };
+  const riskAccentColor =
+    riskLevel === 'safe'    ? 'hsl(142 72% 40%)' :
+    riskLevel === 'caution' ? '#f59e0b' :
+    riskLevel === 'danger'  ? '#ef4444' :
+    'rgba(148,163,184,0.5)';
 
-  const riskMap = {
-    safe:    { label: 'SAFE',    lockColor: 'hsl(142 72% 38%)', cls: 'risk-safe',    Icon: ShieldCheck },
-    caution: { label: 'CAUTION', lockColor: '#f59e0b',          cls: 'risk-caution', Icon: ShieldAlert },
-    danger:  { label: 'DANGER',  lockColor: '#ef4444',          cls: 'risk-danger',  Icon: ShieldAlert },
-    unknown: { label: 'UNKNOWN', lockColor: 'rgba(148,163,184,0.5)', cls: 'risk-unknown', Icon: ShieldCheck },
-  };
-  const risk = riskMap[riskLevel] ?? riskMap.safe;
+  const riskLabel =
+    riskLevel === 'safe'    ? 'SAFE' :
+    riskLevel === 'caution' ? 'CAUTION' :
+    riskLevel === 'danger'  ? 'DANGER' : 'UNKNOWN';
+
+  const riskCls =
+    riskLevel === 'safe'    ? 'risk-safe' :
+    riskLevel === 'caution' ? 'risk-caution' :
+    riskLevel === 'danger'  ? 'risk-danger' : 'risk-unknown';
 
   const canBookmark = pageType === 'website';
   const bookmarked = isBookmarked(currentUrl);
@@ -49,17 +57,23 @@ export function AddressBar() {
     }
   };
 
+  // Determine placeholder based on page
+  const placeholder =
+    pageType === 'newtab' ? 'Search or enter a URL…' :
+    pageType === 'search' ? 'Refine your search…' :
+    'Search or navigate…';
+
   return (
     <div className="relative z-10 shrink-0">
       {/* Navigation progress bar */}
       <AnimatePresence>
         {isNavigating && (
           <motion.div
-            key="nav-progress"
+            key="nav-bar"
             initial={{ scaleX: 0, opacity: 1 }}
             animate={{ scaleX: 0.88, opacity: 1 }}
             exit={{ scaleX: 1, opacity: 0 }}
-            transition={{ duration: 0.42, ease: 'easeOut' }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
             className="absolute top-0 left-0 right-0 h-[2px] origin-left z-50"
             style={{
               background: 'linear-gradient(90deg, hsl(142 72% 28%), hsl(142 72% 46%), hsl(142 72% 36%))',
@@ -74,10 +88,9 @@ export function AddressBar() {
         style={{
           background: 'linear-gradient(180deg, rgba(8,8,11,0.95) 0%, rgba(6,6,9,0.98) 100%)',
           borderBottom: '1px solid rgba(255,255,255,0.05)',
-          boxShadow: '0 1px 0 rgba(255,255,255,0.02)',
         }}
       >
-        {/* Navigation buttons */}
+        {/* Back / Forward */}
         <div className="flex items-center gap-0.5 shrink-0">
           <NavBtn title="Back" disabled={!canGoBack} onClick={navigateBack}>
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -85,76 +98,62 @@ export function AddressBar() {
           <NavBtn title="Forward" disabled={!canGoForward} onClick={navigateForward}>
             <ArrowRight className="w-3.5 h-3.5" />
           </NavBtn>
-          <NavBtn title="Refresh" onClick={() => navigate(currentUrl)}>
-            <RotateCw className={twMerge('w-3.5 h-3.5', isNavigating && 'animate-spin')} />
-          </NavBtn>
         </div>
 
         <div className="w-px h-4 mx-1 shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }} />
 
-        {/* Address input */}
+        {/* Search / address bar */}
         <div
           className="flex flex-1 items-center h-[28px] px-3 gap-2 rounded-md min-w-0 transition-all duration-200"
           style={{
-            background: focused ? 'rgba(0,0,0,0.58)' : 'rgba(0,0,0,0.42)',
-            border: `1px solid ${focused ? 'rgba(22,163,74,0.3)' : 'rgba(255,255,255,0.07)'}`,
+            background: focused ? 'rgba(0,0,0,0.58)' : 'rgba(0,0,0,0.4)',
+            border: `1px solid ${focused ? 'rgba(22,163,74,0.28)' : 'rgba(255,255,255,0.07)'}`,
             boxShadow: focused
-              ? '0 0 0 1px rgba(22,163,74,0.12), 0 0 20px rgba(22,163,74,0.07), inset 0 1px 0 rgba(255,255,255,0.04)'
+              ? '0 0 0 1px rgba(22,163,74,0.1), 0 0 16px rgba(22,163,74,0.06), inset 0 1px 0 rgba(255,255,255,0.04)'
               : 'inset 0 1px 0 rgba(255,255,255,0.03)',
-            transition: 'box-shadow 0.2s ease, border-color 0.2s ease, background 0.15s ease',
           }}
         >
-          <Lock
+          <Search
             className="w-3 h-3 shrink-0 transition-colors duration-200"
-            style={{ color: focused ? risk.lockColor : 'rgba(22,163,74,0.5)' }}
+            style={{ color: focused ? 'hsl(142 72% 40%)' : 'rgba(148,163,184,0.3)' }}
           />
           <input
             type="text"
             value={inputValue}
-            onChange={handleChange}
+            onChange={e => { setInputValue(e.target.value); setAddressBarUrl(e.target.value); }}
             onKeyDown={handleKeyDown}
             onFocus={e => { setFocused(true); e.target.select(); }}
             onBlur={() => { setFocused(false); setInputValue(currentUrl); }}
-            className="flex-1 bg-transparent border-none outline-none text-[12px] font-mono text-foreground/82 placeholder:text-muted-foreground/28 min-w-0 caret-primary"
-            placeholder="Search securely or enter an address"
+            className="flex-1 bg-transparent border-none outline-none text-[12px] font-mono text-foreground/80 placeholder:text-muted-foreground/25 min-w-0 caret-primary"
+            placeholder={placeholder}
             spellCheck={false}
             autoComplete="off"
           />
-          {!focused && (
-            <div
-              className={twMerge(
-                'flex items-center gap-[4px] px-[7px] py-[2px] rounded border text-[9px] font-bold tracking-[0.13em] uppercase shrink-0',
-                risk.cls
-              )}
-            >
-              <risk.Icon className="w-2.5 h-2.5" />
-              {risk.label}
+          {!focused && pageType !== 'newtab' && (
+            <div className={twMerge('flex items-center gap-[4px] px-[6px] py-[2px] rounded border text-[9px] font-bold tracking-[0.12em] uppercase shrink-0', riskCls)}>
+              {riskLabel}
             </div>
           )}
         </div>
 
         <div className="w-px h-4 mx-1 shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }} />
 
-        {/* Action buttons */}
+        {/* Actions */}
         <div className="flex items-center gap-0.5 shrink-0">
           <NavBtn
-            title={bookmarked ? 'Remove bookmark' : canBookmark ? 'Bookmark this page' : 'Bookmarks'}
+            title={bookmarked ? 'Remove bookmark' : canBookmark ? 'Bookmark' : 'Bookmark'}
             active={bookmarked}
             onClick={canBookmark ? handleBookmark : undefined}
           >
-            {bookmarked
-              ? <BookmarkCheck className="w-3.5 h-3.5" />
-              : <Bookmark className="w-3.5 h-3.5" />
-            }
+            {bookmarked ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
           </NavBtn>
           <NavBtn
-            title="BLACKDOG Security Panel"
+            title="BLACKDOG Panel"
             active={blackdogPanelOpen}
             onClick={() => setBlackdogPanelOpen(!blackdogPanelOpen)}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
           </NavBtn>
-          <NavBtn title="Page Inspection"><Eye className="w-3.5 h-3.5" /></NavBtn>
         </div>
       </div>
     </div>
@@ -167,15 +166,6 @@ function NavBtn({
   children: React.ReactNode; title?: string; disabled?: boolean; active?: boolean; onClick?: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
-
-  const color = disabled
-    ? 'rgba(148,163,184,0.18)'
-    : active
-    ? 'hsl(142 72% 40%)'
-    : hovered
-    ? 'rgba(148,163,184,0.82)'
-    : 'rgba(148,163,184,0.44)';
-
   return (
     <button
       title={title}
@@ -185,7 +175,7 @@ function NavBtn({
       onMouseLeave={() => setHovered(false)}
       className="flex items-center justify-center w-7 h-7 rounded-md transition-colors duration-150"
       style={{
-        color,
+        color: disabled ? 'rgba(148,163,184,0.15)' : active ? 'hsl(142 72% 40%)' : hovered ? 'rgba(148,163,184,0.8)' : 'rgba(148,163,184,0.4)',
         background: hovered && !disabled ? 'rgba(255,255,255,0.05)' : 'transparent',
         cursor: disabled ? 'default' : 'pointer',
       }}

@@ -8,12 +8,13 @@ import {
   SentrixSettings, DEFAULT_SETTINGS,
   loadSettings, saveSettings, applyCompactInterface,
 } from '@/lib/settings';
+import { EnrichedResult } from '@/lib/enrichment';
 
 export type { RiskLevel, PageType };
 export type BlackdogStatus = 'connecting' | 'connected' | 'unavailable';
 
-const SESSION_VERSION = 4;
-const STORAGE_KEY = 'sentrix-session-v4';
+const SESSION_VERSION = 5;
+const STORAGE_KEY = 'sentrix-session-v5';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -64,6 +65,36 @@ export interface LogEntry {
   type: 'info' | 'warn' | 'alert';
 }
 
+// ─── Collections ──────────────────────────────────────────────────────────────
+
+export interface SavedItem {
+  id: string;
+  title: string;
+  url: string;
+  domain: string;
+  posture: string;
+  sourceType: string;
+  reasoning: string;
+  savedAt: Date;
+  collectionId?: string;
+}
+
+export interface Collection {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  createdAt: Date;
+  itemCount: number;
+}
+
+const DEFAULT_COLLECTIONS: Collection[] = [
+  { id: 'research',   name: 'Research',         description: 'Sources under investigation', color: '#3b82f6', createdAt: new Date(), itemCount: 0 },
+  { id: 'watchlist',  name: 'Watchlist',         description: 'Domains to monitor',          color: '#f59e0b', createdAt: new Date(), itemCount: 0 },
+  { id: 'sources',    name: 'Trusted Sources',   description: 'Verified reference sources',  color: '#22c55e', createdAt: new Date(), itemCount: 0 },
+  { id: 'later',      name: 'Investigate Later', description: 'Queued for follow-up',       color: '#a78bfa', createdAt: new Date(), itemCount: 0 },
+];
+
 // ─── File extension detection ──────────────────────────────────────────────────
 
 const FILE_EXTENSIONS = /\.(pdf|zip|dmg|exe|msi|pkg|tar|gz|rar|7z|apk|deb|rpm|csv|xlsx|docx|pptx|mp4|mp3)(\?.*)?$/i;
@@ -98,7 +129,7 @@ const INTERNAL_BLACKDOG: BlackdogData = {
 function makeTab(overrides: Partial<Tab> = {}): Tab {
   return {
     id: `tab-${Math.random().toString(36).slice(2, 8)}`,
-    title: 'New Tab',
+    title: 'New Search',
     url: 'sentrix://newtab',
     pageType: 'newtab',
     searchQuery: '',
@@ -116,24 +147,19 @@ function makeInitialLogs(): LogEntry[] {
     { id: '1', time: format(new Date(now - 60000), 'HH:mm:ss'), text: 'BLACKDOG Engine connected — v4.1.2', type: 'info' },
     { id: '2', time: format(new Date(now - 45000), 'HH:mm:ss'), text: 'Session encryption active (TLS 1.3)', type: 'info' },
     { id: '3', time: format(new Date(now - 20000), 'HH:mm:ss'), text: 'Protection active — monitoring enabled', type: 'info' },
-    { id: '4', time: format(new Date(now - 8000),  'HH:mm:ss'), text: 'Analysis ready — awaiting page interaction', type: 'info' },
+    { id: '4', time: format(new Date(now - 8000),  'HH:mm:ss'), text: 'Analysis ready — awaiting search interaction', type: 'info' },
   ];
 }
 
 // ─── Session persistence ──────────────────────────────────────────────────────
 
-interface PersistedTab {
-  id: string; title: string; url: string; pageType: PageType;
-  searchQuery: string; riskLevel: RiskLevel; blackdog: BlackdogData;
-}
-
 function serializeSession(
   tabs: Tab[], activeTabId: string, history: HistoryEntry[],
   bookmarks: BookmarkEntry[], downloads: DownloadEntry[],
+  savedItems: SavedItem[], collections: Collection[],
 ): string {
   return JSON.stringify({
-    version: SESSION_VERSION,
-    activeTabId,
+    version: SESSION_VERSION, activeTabId,
     tabs: tabs.map(t => ({
       id: t.id, title: t.title, url: t.url,
       pageType: t.pageType, searchQuery: t.searchQuery,
@@ -142,12 +168,15 @@ function serializeSession(
     history: history.map(h => ({ ...h, visitedAt: h.visitedAt.toISOString() })),
     bookmarks: bookmarks.map(b => ({ ...b, savedAt: b.savedAt.toISOString() })),
     downloads,
+    savedItems: savedItems.map(s => ({ ...s, savedAt: s.savedAt.toISOString() })),
+    collections: collections.map(c => ({ ...c, createdAt: c.createdAt.toISOString() })),
   });
 }
 
 function loadPersistedSession(settings: SentrixSettings): {
   tabs: Tab[]; activeTabId: string; history: HistoryEntry[];
   bookmarks: BookmarkEntry[]; downloads: DownloadEntry[];
+  savedItems: SavedItem[]; collections: Collection[];
 } | null {
   if (!settings.sessionRestore) return null;
   try {
@@ -156,30 +185,16 @@ function loadPersistedSession(settings: SentrixSettings): {
     const data = JSON.parse(raw);
     if (data.version !== SESSION_VERSION || !Array.isArray(data.tabs) || data.tabs.length === 0) return null;
 
-    const tabs: Tab[] = data.tabs.map((t: PersistedTab) => ({
-      ...makeTab(),
-      id: t.id, title: t.title, url: t.url ?? 'sentrix://newtab',
-      pageType: t.pageType ?? 'newtab', searchQuery: t.searchQuery ?? '',
-      riskLevel: t.riskLevel ?? 'safe', blackdog: t.blackdog ?? INTERNAL_BLACKDOG,
-    }));
-
-    const history: HistoryEntry[] = (data.history ?? [])
-      .map((h: any) => ({ ...h, visitedAt: new Date(h.visitedAt) }))
-      .filter((h: HistoryEntry) => !isNaN(h.visitedAt.getTime()));
-
-    const bookmarks: BookmarkEntry[] = (data.bookmarks ?? [])
-      .map((b: any) => ({ ...b, savedAt: new Date(b.savedAt) }))
-      .filter((b: BookmarkEntry) => !isNaN(b.savedAt.getTime()));
-
+    const tabs: Tab[] = data.tabs.map((t: any) => ({ ...makeTab(), ...t }));
+    const history: HistoryEntry[] = (data.history ?? []).map((h: any) => ({ ...h, visitedAt: new Date(h.visitedAt) })).filter((h: HistoryEntry) => !isNaN(h.visitedAt.getTime()));
+    const bookmarks: BookmarkEntry[] = (data.bookmarks ?? []).map((b: any) => ({ ...b, savedAt: new Date(b.savedAt) })).filter((b: BookmarkEntry) => !isNaN(b.savedAt.getTime()));
     const downloads: DownloadEntry[] = data.downloads ?? [];
+    const savedItems: SavedItem[] = (data.savedItems ?? []).map((s: any) => ({ ...s, savedAt: new Date(s.savedAt) }));
+    const collections: Collection[] = (data.collections ?? DEFAULT_COLLECTIONS).map((c: any) => ({ ...c, createdAt: new Date(c.createdAt) }));
 
-    const activeTabId = tabs.find(t => t.id === data.activeTabId)
-      ? data.activeTabId : tabs[0].id;
-
-    return { tabs, activeTabId, history, bookmarks, downloads };
-  } catch {
-    return null;
-  }
+    const activeTabId = tabs.find(t => t.id === data.activeTabId) ? data.activeTabId : tabs[0].id;
+    return { tabs, activeTabId, history, bookmarks, downloads, savedItems, collections };
+  } catch { return null; }
 }
 
 // ─── Context interface ────────────────────────────────────────────────────────
@@ -217,6 +232,16 @@ interface BrowserState {
   downloads: DownloadEntry[];
   clearDownloads: () => void;
 
+  savedItems: SavedItem[];
+  saveItem: (item: Omit<SavedItem, 'id' | 'savedAt'>) => void;
+  unsaveItem: (id: string) => void;
+  isSaved: (url: string) => boolean;
+  addToCollection: (itemId: string, collectionId: string) => void;
+
+  collections: Collection[];
+  createCollection: (name: string, description?: string, color?: string) => Collection;
+  deleteCollection: (id: string) => void;
+
   logs: LogEntry[];
   addLog: (text: string, type?: 'info' | 'warn' | 'alert') => void;
   clearLogs: () => void;
@@ -244,6 +269,8 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
   const [history, setHistory] = useState<HistoryEntry[]>(persisted?.history ?? []);
   const [bookmarks, setBookmarks] = useState<BookmarkEntry[]>(persisted?.bookmarks ?? []);
   const [downloads, setDownloads] = useState<DownloadEntry[]>(persisted?.downloads ?? []);
+  const [savedItems, setSavedItems] = useState<SavedItem[]>(persisted?.savedItems ?? []);
+  const [collections, setCollections] = useState<Collection[]>(persisted?.collections ?? DEFAULT_COLLECTIONS);
   const [logs, setLogs] = useState<LogEntry[]>(makeInitialLogs());
   const [blackdogPanelOpen, setBlackdogPanelOpen] = useState(settings.blackdogPanelOpenByDefault);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -258,59 +285,29 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
 
   const activeTab = tabs.find(t => t.id === activeTabId) ?? tabs[0] ?? makeTab({ id: 'tab-fallback' });
 
-  // Apply compact interface on settings change
-  useEffect(() => {
-    applyCompactInterface(settings.compactInterface);
-  }, [settings.compactInterface]);
-
-  // BLACKDOG connection simulation
-  useEffect(() => {
-    const timer = setTimeout(() => setBlackdogStatus('connected'), 900);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Clear data on exit if setting enabled
+  useEffect(() => { applyCompactInterface(settings.compactInterface); }, [settings.compactInterface]);
+  useEffect(() => { const timer = setTimeout(() => setBlackdogStatus('connected'), 900); return () => clearTimeout(timer); }, []);
   useEffect(() => {
     if (!settings.clearDataOnExit) return;
-    const handler = () => {
-      try { localStorage.removeItem(STORAGE_KEY); } catch {}
-    };
+    const handler = () => { try { localStorage.removeItem(STORAGE_KEY); } catch {} };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [settings.clearDataOnExit]);
-
-  // Persist to localStorage (respects clearDataOnExit — only persists if not set)
   useEffect(() => {
     if (settings.clearDataOnExit) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, serializeSession(tabs, activeTabId, history, bookmarks, downloads));
-    } catch {}
-  }, [tabs, activeTabId, history, bookmarks, downloads, settings.clearDataOnExit]);
-
-  // ─── Settings ─────────────────────────────────────────────────────────────
+    try { localStorage.setItem(STORAGE_KEY, serializeSession(tabs, activeTabId, history, bookmarks, downloads, savedItems, collections)); } catch {}
+  }, [tabs, activeTabId, history, bookmarks, downloads, savedItems, collections, settings.clearDataOnExit]);
 
   const updateSettings = useCallback((patch: Partial<SentrixSettings>) => {
-    setSettings(prev => {
-      const next = { ...prev, ...patch };
-      saveSettings(next);
-      return next;
-    });
+    setSettings(prev => { const next = { ...prev, ...patch }; saveSettings(next); return next; });
   }, []);
-
-  // ─── Logging ──────────────────────────────────────────────────────────────
 
   const addLog = useCallback((text: string, type: 'info' | 'warn' | 'alert' = 'info') => {
-    setLogs(prev => [
-      { id: Math.random().toString(36).slice(2), time: format(new Date(), 'HH:mm:ss'), text, type },
-      ...prev,
-    ].slice(0, 100));
+    setLogs(prev => [{ id: Math.random().toString(36).slice(2), time: format(new Date(), 'HH:mm:ss'), text, type }, ...prev].slice(0, 100));
   }, []);
-
   const clearLogs = useCallback(() => {
     setLogs([{ id: 'cleared', time: format(new Date(), 'HH:mm:ss'), text: 'Session log cleared', type: 'info' }]);
   }, []);
-
-  // ─── Tab management ───────────────────────────────────────────────────────
 
   const setActiveTabId = useCallback((id: string) => setActiveTabIdRaw(id), []);
 
@@ -319,7 +316,7 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
     setTabs(prev => [...prev, tab]);
     setActiveTabIdRaw(tab.id);
     setAddressBarUrls(prev => ({ ...prev, [tab.id]: 'sentrix://newtab' }));
-    addLog('New secure tab opened', 'info');
+    addLog('New session tab opened', 'info');
   }, [addLog]);
 
   const closeTab = useCallback((id: string) => {
@@ -335,82 +332,58 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
       if (activeTabId === id) setActiveTabIdRaw(next[Math.min(idx, next.length - 1)].id);
       return next;
     });
-    addLog('Tab closed', 'info');
-  }, [activeTabId, addLog]);
+  }, [activeTabId]);
 
-  // ─── Core navigation ──────────────────────────────────────────────────────
-
-  const _applyNavigation = useCallback((
-    tabId: string,
-    input: string,
-    navBackOverride?: string[],
-    navForwardOverride?: string[],
-  ) => {
+  const _applyNavigation = useCallback((tabId: string, input: string, navBackOverride?: string[], navForwardOverride?: string[]) => {
     const { pageType, url, searchQuery } = classifyInput(input);
     const { riskLevel, blackdog } = analyzeUrl(url);
 
     const title = (() => {
-      if (pageType === 'search')    return searchQuery ? `${searchQuery} — Search` : 'Search';
-      if (pageType === 'website')   return getDomainTitle(url);
-      if (pageType === 'history')   return 'History';
-      if (pageType === 'downloads') return 'Downloads';
-      if (pageType === 'privacy')   return 'Privacy Report';
-      if (pageType === 'vault')     return 'Secure Vault';
-      if (pageType === 'settings')  return 'Settings';
-      if (pageType === 'bookmarks') return 'Bookmarks';
-      return 'New Tab';
+      if (pageType === 'search')      return searchQuery ? `${searchQuery}` : 'Search';
+      if (pageType === 'website')     return getDomainTitle(url);
+      if (pageType === 'history')     return 'Recent';
+      if (pageType === 'downloads')   return 'Downloads';
+      if (pageType === 'privacy')     return 'Privacy';
+      if (pageType === 'vault')       return 'Vault';
+      if (pageType === 'settings')    return 'Settings';
+      if (pageType === 'bookmarks')   return 'Bookmarks';
+      if (pageType === 'collections') return 'Collections';
+      return 'New Search';
     })();
 
     setTabs(prev => prev.map(t => {
       if (t.id !== tabId) return t;
-      return {
-        ...t, title, url, pageType, searchQuery, riskLevel, blackdog,
-        navBack:    navBackOverride    ?? t.navBack,
-        navForward: navForwardOverride ?? t.navForward,
-      };
+      return { ...t, title, url, pageType, searchQuery, riskLevel, blackdog,
+        navBack: navBackOverride ?? t.navBack, navForward: navForwardOverride ?? t.navForward };
     }));
     setAddressBarUrls(prev => ({ ...prev, [tabId]: url }));
 
-    // Add to history
     if (pageType === 'website' || pageType === 'search') {
-      setHistory(prev => [
-        { id: Math.random().toString(36).slice(2), title, url, visitedAt: new Date(), riskLevel },
-        ...prev,
-      ].slice(0, 200));
+      setHistory(prev => [{ id: Math.random().toString(36).slice(2), title, url, visitedAt: new Date(), riskLevel }, ...prev].slice(0, 200));
     }
 
-    // Auto-track file downloads
     if (pageType === 'website') {
       const { isFile, filename, size } = isFileUrl(url);
       if (isFile) {
         const dl: DownloadEntry = {
-          id: Math.random().toString(36).slice(2),
-          name: filename,
-          url,
-          source: getDomainTitle(url),
-          size,
-          status: riskLevel === 'danger' ? 'blocked' : 'downloaded',
-          risk: riskLevel,
-          date: format(new Date(), 'MMM d, HH:mm'),
+          id: Math.random().toString(36).slice(2), name: filename, url,
+          source: getDomainTitle(url), size, status: riskLevel === 'danger' ? 'blocked' : 'downloaded',
+          risk: riskLevel, date: format(new Date(), 'MMM d, HH:mm'),
         };
         setDownloads(prev => [dl, ...prev].slice(0, 50));
-        addLog(`${riskLevel === 'danger' ? 'Download blocked' : 'Download tracked'}: ${filename}`, riskLevel === 'danger' ? 'alert' : 'info');
       }
     }
 
-    const logMsg =
-      riskLevel === 'danger'  ? `High-risk domain detected: ${getDomainTitle(url)}` :
-      riskLevel === 'caution' ? `Caution — ${getDomainTitle(url)}: ${blackdog.findings[0]}` :
-                                `Navigated: ${url}`;
+    const logMsg = riskLevel === 'danger' ? `High-risk domain detected: ${getDomainTitle(url)}` :
+                   riskLevel === 'caution' ? `Caution — ${getDomainTitle(url)}` :
+                   pageType === 'search' ? `Search: ${searchQuery}` : `Navigate: ${url}`;
     addLog(logMsg, riskLevel === 'danger' ? 'alert' : riskLevel === 'caution' ? 'warn' : 'info');
 
     if (pageType === 'website') {
       setIsNavigating(true);
       if (navTimerRef.current) clearTimeout(navTimerRef.current);
       navTimerRef.current = setTimeout(() => setIsNavigating(false), 480);
-    } else {
-      setIsNavigating(false);
-    }
+    } else { setIsNavigating(false); }
   }, [addLog]);
 
   const navigate = useCallback((input: string) => {
@@ -439,85 +412,94 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
     setAddressBarUrls(prev => ({ ...prev, [activeTabId]: url }));
   }, [activeTabId]);
 
-  // ─── History ──────────────────────────────────────────────────────────────
-
-  const clearHistory = useCallback(() => {
-    setHistory([]);
-    addLog('Browsing history cleared', 'info');
-  }, [addLog]);
-
-  // ─── Bookmarks ────────────────────────────────────────────────────────────
+  const clearHistory = useCallback(() => { setHistory([]); addLog('History cleared', 'info'); }, [addLog]);
 
   const addBookmark = useCallback((entry?: Partial<BookmarkEntry>) => {
     const url = entry?.url ?? activeTab.url;
     const title = entry?.title ?? activeTab.title;
     setBookmarks(prev => {
       if (prev.some(b => b.url === url)) return prev;
-      const bm: BookmarkEntry = {
-        id: Math.random().toString(36).slice(2),
-        title,
-        url,
-        domain: getDomainTitle(url),
-        riskLevel: activeTab.riskLevel,
-        savedAt: new Date(),
-        ...entry,
-      };
+      const bm: BookmarkEntry = { id: Math.random().toString(36).slice(2), title, url, domain: getDomainTitle(url), riskLevel: activeTab.riskLevel, savedAt: new Date(), ...entry };
       addLog(`Bookmarked: ${getDomainTitle(url)}`, 'info');
       return [bm, ...prev].slice(0, 100);
     });
   }, [activeTab, addLog]);
 
-  const removeBookmark = useCallback((id: string) => {
-    setBookmarks(prev => prev.filter(b => b.id !== id));
-    addLog('Bookmark removed', 'info');
+  const removeBookmark = useCallback((id: string) => { setBookmarks(prev => prev.filter(b => b.id !== id)); }, []);
+  const isBookmarked = useCallback((url: string) => bookmarks.some(b => b.url === url), [bookmarks]);
+  const clearDownloads = useCallback(() => { setDownloads([]); addLog('Downloads cleared', 'info'); }, [addLog]);
+
+  // ── Collections & Saved Items ──────────────────────────────────────────────
+
+  const saveItem = useCallback((item: Omit<SavedItem, 'id' | 'savedAt'>) => {
+    setSavedItems(prev => {
+      if (prev.some(s => s.url === item.url)) return prev;
+      const newItem: SavedItem = { ...item, id: Math.random().toString(36).slice(2), savedAt: new Date() };
+      addLog(`Saved: ${item.domain}`, 'info');
+      return [newItem, ...prev].slice(0, 200);
+    });
   }, [addLog]);
 
-  const isBookmarked = useCallback((url: string) => {
-    return bookmarks.some(b => b.url === url);
-  }, [bookmarks]);
+  const unsaveItem = useCallback((id: string) => {
+    setSavedItems(prev => prev.filter(s => s.id !== id));
+  }, []);
 
-  // ─── Downloads ────────────────────────────────────────────────────────────
+  const isSaved = useCallback((url: string) => savedItems.some(s => s.url === url), [savedItems]);
 
-  const clearDownloads = useCallback(() => {
-    setDownloads([]);
-    addLog('Downloads list cleared', 'info');
+  const addToCollection = useCallback((itemId: string, collectionId: string) => {
+    setSavedItems(prev => prev.map(s => s.id === itemId ? { ...s, collectionId } : s));
+    setCollections(prev => prev.map(c => {
+      if (c.id !== collectionId) return c;
+      return { ...c, itemCount: prev.find(p => p.id === collectionId)?.itemCount ?? 0 };
+    }));
+    addLog(`Added to collection`, 'info');
   }, [addLog]);
 
-  // ─── Burn session ─────────────────────────────────────────────────────────
+  const createCollection = useCallback((name: string, description = '', color = '#22c55e'): Collection => {
+    const col: Collection = { id: Math.random().toString(36).slice(2), name, description, color, createdAt: new Date(), itemCount: 0 };
+    setCollections(prev => [...prev, col]);
+    addLog(`Collection created: ${name}`, 'info');
+    return col;
+  }, [addLog]);
+
+  const deleteCollection = useCallback((id: string) => {
+    setCollections(prev => prev.filter(c => c.id !== id));
+    setSavedItems(prev => prev.map(s => s.collectionId === id ? { ...s, collectionId: undefined } : s));
+  }, []);
 
   const burnSession = useCallback(() => {
     if (navTimerRef.current) clearTimeout(navTimerRef.current);
-    setIsNavigating(false);
     const fresh = makeTab();
-    setTabs([fresh]);
-    setActiveTabIdRaw(fresh.id);
+    setTabs([fresh]); setActiveTabIdRaw(fresh.id);
     setAddressBarUrls({ [fresh.id]: 'sentrix://newtab' });
-    setHistory([]);
-    setBookmarks([]);
-    setDownloads([]);
+    setHistory([]); setBookmarks([]); setDownloads([]); setSavedItems([]);
+    setCollections(DEFAULT_COLLECTIONS);
     clearLogs();
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
-    addLog('Session burned — all data sanitized. Environment clean.', 'info');
+    addLog('Session burned — environment sanitized', 'info');
   }, [clearLogs, addLog]);
-
-  // ─── Derived ──────────────────────────────────────────────────────────────
 
   const currentUrl = addressBarUrls[activeTabId] ?? activeTab.url;
   const canGoBack = (activeTab.navBack ?? []).length > 0;
   const canGoForward = (activeTab.navForward ?? []).length > 0;
+
+  // Compute real collection item counts
+  const collectionsWithCounts = collections.map(c => ({
+    ...c,
+    itemCount: savedItems.filter(s => s.collectionId === c.id).length,
+  }));
 
   return (
     <BrowserContext.Provider value={{
       tabs, activeTabId, activeTab,
       addTab, closeTab, setActiveTabId, navigate, navigateBack, navigateForward, setAddressBarUrl,
       canGoBack, canGoForward, isNavigating,
-      currentUrl,
-      riskLevel: activeTab.riskLevel,
-      searchQuery: activeTab.searchQuery,
-      pageType: activeTab.pageType,
+      currentUrl, riskLevel: activeTab.riskLevel, searchQuery: activeTab.searchQuery, pageType: activeTab.pageType,
       history, clearHistory,
       bookmarks, addBookmark, removeBookmark, isBookmarked,
       downloads, clearDownloads,
+      savedItems, saveItem, unsaveItem, isSaved, addToCollection,
+      collections: collectionsWithCounts, createCollection, deleteCollection,
       logs, addLog, clearLogs,
       blackdogPanelOpen, setBlackdogPanelOpen, blackdogStatus,
       settings, updateSettings,
