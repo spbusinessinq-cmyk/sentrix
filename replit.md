@@ -1,33 +1,37 @@
-# Sentrix Browser
+# Sentrix
 
-A dark tactical **Signal & Truth Filter** system. Product identity: "Search clearly. Decide before you click." Primary function: analyze claims, headlines, URLs and return structured intelligence (ANSWER → SIGNAL → AGREEMENT → RISK → WHAT MATTERS → WHAT TO QUESTION → SOURCES). Powered by BLACKDOG private security engine and Sage (Gemini 2.5 Flash AI). Search is secondary; clarity is primary.
+A dark tactical **Signal & Truth Filter** system. Product identity: "Analyze before you believe." Primary function: analyze claims, headlines, URLs and return structured intelligence (ANSWER → SIGNAL → AGREEMENT → RISK → WHAT MATTERS → WHAT TO QUESTION → SOURCES). Powered by BLACKDOG private security engine and Sage (Gemini 2.5 Flash AI).
 
 ## Architecture
 
 **Monorepo** (`pnpm workspaces`):
 - `artifacts/vero-browser/` — React + Vite frontend (port via `$PORT` in dev, static build for prod)
-- `artifacts/api-server/` — Express API server (port 8080), **unified production server**
+- `artifacts/api-server/` — Express API server (port 8080), **dev/Replit production server**
 - `artifacts/mockup-sandbox/` — Component preview server (dev only)
+- `cloud-functions/` — **EdgeOne Pages Node Functions** (production API for `sentrix.live`)
+- `edgeone.json` — EdgeOne Pages build + functions config
 
-### Unified Production Architecture (CRITICAL)
+### EdgeOne Pages Production Architecture (sentrix.live)
 
-In **production**, the api-server is the **single, self-contained entry point** at `paths = ["/"]`.
-It serves both:
-1. All `/api/*` routes (search, sage, healthz)
-2. The Vite-built frontend static files from `artifacts/vero-browser/dist/public`
-3. SPA fallback (`index.html`) for all non-API, non-asset paths
+On **EdgeOne Pages**, the deployment is:
+1. **Static frontend** built from `artifacts/vero-browser/dist/public`
+2. **Node Functions** in `cloud-functions/` handle all `/api/*` routes same-origin:
+   - `cloud-functions/api/healthz.js` → `/api/healthz`
+   - `cloud-functions/api/search.js` → `/api/search`
+   - `cloud-functions/api/sage/query.js` → `/api/sage/query`
 
-Production build order (enforced in artifact.toml):
-```
-pnpm --filter @workspace/vero-browser run build && pnpm --filter @workspace/api-server run build
-```
+EdgeOne environment variables required:
+- `GEMINI_API_KEY` — Google AI API key for Sage (Gemini 2.5 Flash)
+- `BRAVE_SEARCH_API_KEY` — (optional) Brave Search API key; falls back to DuckDuckGo → mock
+
+Frontend api-client uses relative `/api/...` paths (no `VITE_API_BASE_URL` needed) — same-origin automatically.
+
+### Replit Dev Architecture
 
 In **development**, the api-server acts as a **reverse proxy**:
 - `/api/*` → handled directly by Express (port 8080)
 - All other requests → proxied to Vite dev server (port 22442) via Node `http` module
 - Vite also has `proxy: { '/api': 'http://localhost:8080' }` as belt-and-suspenders
-
-This means: **no separate backend required**, **no platform routing ambiguity**, **no mixed content**, **no index.html-as-JSON failures**.
 
 ## Design System
 

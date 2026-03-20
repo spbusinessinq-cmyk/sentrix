@@ -1,0 +1,103 @@
+Refactor Sentrix to deploy correctly on EdgeOne Pages using EdgeOne’s native Node Functions model.
+
+CRITICAL:
+Do NOT redesign the app.
+Do NOT create a separate product.
+Do NOT create a separate domain.
+Do NOT rely on a long-running custom Express server as the production runtime.
+
+MISSION:
+Make Sentrix fully work on EdgeOne Pages using:
+- static frontend for the UI
+- same-origin API routes implemented as EdgeOne Node Functions
+
+WHY:
+EdgeOne Pages supports server-side APIs through Pages Functions / Node Functions, with routes generated from the /cloud-functions directory. The current Express-style runtime is not the right production model here.
+
+GOAL:
+Make sentrix.live support:
+- /api/healthz
+- /api/search
+- /api/sage/query
+inside the same EdgeOne Pages project, using the platform’s supported serverless routing model.
+
+REQUIREMENTS:
+
+1. MOVE API ROUTES TO EDGEONE NODE FUNCTIONS
+Create Node Functions under /cloud-functions so these same-origin routes exist in production:
+- /api/healthz
+- /api/search
+- /api/sage/query
+
+Use EdgeOne’s file-based function routing conventions.
+
+2. KEEP FRONTEND STATIC
+The Sentrix UI remains a static frontend build.
+Do not make the UI depend on a long-running Express process.
+
+3. SAME-ORIGIN API
+Frontend must call:
+- /api/search
+- /api/sage/query
+- /api/healthz
+on the same sentrix.live origin.
+
+4. SEARCH FUNCTION
+Implement /api/search as a Node Function that:
+- returns JSON only
+- preserves current ranking / signal logic as much as possible
+- falls back gracefully if upstream provider fails
+- never returns HTML
+
+5. SAGE FUNCTION
+Implement /api/sage/query as a Node Function that:
+- keeps credentials server-side only
+- returns structured JSON / streaming if supported
+- preserves Sage behavior:
+  - ANSWER
+  - SIGNAL
+  - AGREEMENT
+  - RISK
+  - WHAT MATTERS
+  - WHAT TO QUESTION
+  - SOURCES
+
+6. HEALTH FUNCTION
+Implement /api/healthz returning JSON with:
+- status
+- searchReady
+- sageReady
+- environment diagnostics useful for EdgeOne
+
+7. EDGEONE CONFIG
+Use edgeone.json correctly for:
+- buildCommand
+- installCommand
+- outputDirectory
+- any needed rewrites/headers if required
+
+Do not rely on unsupported runtime assumptions.
+
+8. FRONTEND CLIENT ALIGNMENT
+Update api-client so it intentionally uses same-origin /api/... in production on EdgeOne.
+Keep logging for exact failing URLs.
+
+9. PRODUCTION SAFETY
+- no html-as-json
+- no mixed-content
+- no blank Sage output
+- no broken search UI
+
+10. FINAL VERIFICATION
+At the end, confirm these are valid in production:
+- https://sentrix.live/api/healthz
+- https://sentrix.live/api/search?q=test
+- https://sentrix.live/api/sage/query
+
+OUTPUT GOAL:
+Return a version of Sentrix that fits EdgeOne Pages correctly:
+- static UI
+- same-origin Node Function APIs
+- one domain
+- one project
+- real Search and Sage working live

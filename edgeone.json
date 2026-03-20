@@ -1,0 +1,10 @@
+{
+  "build": {
+    "installCommand": "npm install -g pnpm && pnpm install",
+    "buildCommand": "pnpm --filter @workspace/vero-browser run build",
+    "outputDirectory": "artifacts/vero-browser/dist/public"
+  },
+  "functions": {
+    "directory": "cloud-functions"
+  }
+}
