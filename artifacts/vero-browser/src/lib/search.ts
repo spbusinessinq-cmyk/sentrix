@@ -334,11 +334,27 @@ export async function searchWeb(query: string): Promise<SearchResponse> {
 }
 
 async function _doSearch(query: string): Promise<SearchResponse> {
+  const url = apiUrl(`/api/search?q=${encodeURIComponent(query)}`);
+  console.info(`[Sentrix] Search request → ${url}`);
+
   try {
-    const resp = await fetch(apiUrl(`/api/search?q=${encodeURIComponent(query)}`), {
-      signal: AbortSignal.timeout(12000),
-    });
-    if (!resp.ok) throw new Error(`Search API ${resp.status}`);
+    const resp = await fetch(url, { signal: AbortSignal.timeout(12000) });
+
+    if (!resp.ok) {
+      console.error(`[Sentrix] Search API returned ${resp.status} for: ${url}`);
+      return { results: rankAndProcess(mockResults(query), query), provider: 'mock', query, error: true };
+    }
+
+    // Guard against the SPA rewrite returning index.html instead of JSON.
+    // This happens when the frontend static host intercepts /api/* paths.
+    const contentType = resp.headers.get('content-type') ?? '';
+    if (!contentType.includes('application/json')) {
+      console.error(
+        `[Sentrix] Search API returned non-JSON content-type "${contentType}" for: ${url} — ` +
+        `check that /api/* routes are served by the API server, not the static frontend.`
+      );
+      return { results: rankAndProcess(mockResults(query), query), provider: 'mock', query, error: true };
+    }
 
     const data = await resp.json() as {
       results: Array<{ id: number; title: string; url: string; domain: string; snippet: string; provider: 'brave' | 'duckduckgo' | 'mock' }>;
@@ -351,7 +367,13 @@ async function _doSearch(query: string): Promise<SearchResponse> {
     toCache(query, results, data.provider);
 
     return { results, provider: data.provider, query, error: data.error };
-  } catch {
-    return { results: [], provider: 'mock', query, error: true };
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      console.error(`[Sentrix] Search timed out (12s) for: ${url}`);
+    } else {
+      console.error(`[Sentrix] Search failed for: ${url}`, err);
+    }
+    // Fall back to mock results so the UI always shows something useful.
+    return { results: rankAndProcess(mockResults(query), query), provider: 'mock', query, error: true };
   }
 }

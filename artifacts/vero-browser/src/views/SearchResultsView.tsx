@@ -819,9 +819,10 @@ export function SearchResultsView() {
               <ShieldCheck className="w-3 h-3 shrink-0" style={{ color: 'rgba(148,163,184,0.28)' }} />
               <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-muted-foreground/35">
                 Intelligence Search
-                {provider === 'brave' && <span className="text-muted-foreground/22 ml-2">· Brave Search</span>}
-                {provider === 'duckduckgo' && <span className="text-muted-foreground/22 ml-2">· DuckDuckGo</span>}
-                {provider === 'mock' && <span className="text-muted-foreground/18 ml-2">· Heuristic</span>}
+                {provider === 'brave' && !error && <span className="text-muted-foreground/22 ml-2">· Brave Search</span>}
+                {provider === 'duckduckgo' && !error && <span className="text-muted-foreground/22 ml-2">· DuckDuckGo</span>}
+                {(provider === 'mock' && !error) && <span className="text-muted-foreground/18 ml-2">· Heuristic</span>}
+                {error && <span className="ml-2" style={{ color: 'rgba(245,158,11,0.55)' }}>· Offline — reference results only</span>}
               </span>
             </div>
             <h2 className="text-[15px] font-semibold text-foreground/85 leading-tight truncate">"{safeQuery || '—'}"</h2>
@@ -896,34 +897,36 @@ export function SearchResultsView() {
             <span className="text-[12px] font-mono text-muted-foreground/35">Analyzing results…</span>
           </div>
         )}
-        {!loading && error && (
+        {!loading && error && allResults.length === 0 && (
           <div className="flex flex-col items-center justify-center py-14 gap-3">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-amber-500/50" />
-              <span className="text-[12px] font-mono text-muted-foreground/40">Unable to fetch live results</span>
+              <span className="text-[12px] font-mono text-muted-foreground/40">
+                Search API unreachable — check console for the failing URL
+              </span>
             </div>
             <button onClick={() => doSearch()}
               className="px-3 py-1.5 text-[11px] font-mono rounded border cursor-pointer transition-colors"
               style={{ borderColor: 'rgba(255,255,255,0.14)', color: 'rgba(200,205,210,0.80)', background: 'rgba(255,255,255,0.04)' }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}>
-              Retry search
+              Retry
             </button>
           </div>
         )}
-        {!loading && !error && visible.map((r, i) => (
+        {!loading && allResults.length > 0 && visible.map((r, i) => (
           <ResultCard key={r.id} result={r} index={i}
             onInspect={() => setInspectTarget({ url: r.url, title: r.title, snippet: r.snippet })}
             tier={intelligence?.signalTiers.get(r.id)}
             compare={intelligence?.compareTheseIds.includes(r.id) && intelligence?.signalTiers.get(r.id) !== 'primary'} />
         ))}
-        {!loading && !error && filtered.length === 0 && allResults.length > 0 && (
+        {!loading && allResults.length > 0 && filtered.length === 0 && (
           <div className="text-center py-14">
             <p className="text-muted-foreground/28 font-mono text-[12px] mb-2">— no results match this filter —</p>
             {filter === 'strict' && <p className="text-muted-foreground/22 font-mono text-[10px]">Strict mode shows only high-confidence, SAFE-rated results</p>}
           </div>
         )}
-        {!loading && !error && hasMore && (
+        {!loading && allResults.length > 0 && hasMore && (
           <button onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
             className="w-full py-2.5 text-[11px] font-mono rounded border cursor-pointer transition-colors mt-1"
             style={{ borderColor: 'rgba(255,255,255,0.06)', color: 'rgba(148,163,184,0.45)', background: 'transparent' }}
@@ -932,11 +935,11 @@ export function SearchResultsView() {
             Load more — {filtered.length - visibleCount} remaining
           </button>
         )}
-        {!loading && !error && allResults.length > 0 && !hasMore && (
+        {!loading && allResults.length > 0 && !hasMore && (
           <div className="flex items-center gap-2 py-3 border-t border-white/[0.04] mt-2">
             <ShieldCheck className="w-3 h-3" style={{ color: 'rgba(148,163,184,0.22)' }} />
             <span className="text-[10px] font-mono text-muted-foreground/22">
-              {provider === 'duckduckgo' ? 'DuckDuckGo' : provider === 'brave' ? 'Brave Search' : 'Heuristic'} · click title to inspect · Open visits externally
+              {error ? 'Offline mode' : provider === 'duckduckgo' ? 'DuckDuckGo' : provider === 'brave' ? 'Brave Search' : 'Heuristic'} · click title to inspect · Open visits externally
             </span>
           </div>
         )}

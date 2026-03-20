@@ -34,9 +34,12 @@ export interface SageQueryOptions {
 export async function streamSageQuery(opts: SageQueryOptions): Promise<void> {
   const { query, results, context, messages, userMessage, onChunk, onDone, onError, signal } = opts;
 
+  const url = apiUrl('/api/sage/query');
+
   let response: Response;
   try {
-    response = await fetch(apiUrl('/api/sage/query'), {
+    console.info(`[Sentrix] Sage request → ${url}`);
+    response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query, results, context, messages, userMessage }),
@@ -44,12 +47,14 @@ export async function streamSageQuery(opts: SageQueryOptions): Promise<void> {
     });
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') return;
-    onError('Could not reach Sage — check your connection');
+    console.error(`[Sentrix] Sage fetch failed for: ${url}`, err);
+    onError('Could not reach Sage — check your connection and browser console');
     return;
   }
 
   if (!response.ok) {
-    onError(`Sage returned an error (${response.status})`);
+    console.error(`[Sentrix] Sage API returned ${response.status} for: ${url}`);
+    onError(`Sage returned an error (${response.status}) — check console for the API URL`);
     return;
   }
 
