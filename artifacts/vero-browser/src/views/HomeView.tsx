@@ -17,9 +17,9 @@ const RISK_DOT: Record<string, string> = {
 };
 
 const SAGE_STARTERS = [
-  'Summarize this topic for me',
-  'What should I verify first?',
-  'Turn this into an investigation angle',
+  'Analyze this claim',
+  'Break this down for me',
+  'What should I question here?',
 ];
 
 export function HomeView() {
@@ -117,7 +117,7 @@ export function HomeView() {
             <span style={{ color: 'rgba(56,189,248,0.88)' }}>Decide before you click.</span>
           </h1>
           <p className="text-[11px] font-mono text-muted-foreground/35 tracking-wide">
-            Intelligence-powered search with BLACKDOG analysis.
+            Signal Engine · Truth Filter · powered by Sage
           </p>
         </div>
 
@@ -147,7 +147,7 @@ export function HomeView() {
               onChange={e => setQuery(e.target.value)}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
-              placeholder="Search or enter a URL to inspect…"
+              placeholder="Ask or paste anything — headline, claim, URL, or question"
               className="flex-1 bg-transparent border-none outline-none py-3.5 text-[14px] text-foreground/80 placeholder:text-muted-foreground/25 font-mono caret-primary"
               spellCheck={false}
               autoComplete="off"
@@ -192,7 +192,7 @@ export function HomeView() {
           </div>
         </form>
 
-        {/* ── Ask Sage module (upgraded — answer engine) ────────────────────── */}
+        {/* ── Ask or Analyze module (primary Sage entry point) ────────────── */}
         <div
           className="w-full mb-7 rounded-2xl overflow-hidden"
           style={{
@@ -211,10 +211,10 @@ export function HomeView() {
             </div>
             <div>
               <div className="text-[13px] font-semibold" style={{ color: 'rgba(139,92,246,0.9)' }}>
-                Ask Sage
+                Ask or Analyze
               </div>
               <div className="text-[10px] font-mono" style={{ color: 'rgba(148,163,184,0.45)' }}>
-                Ask anything — get a direct answer
+                Paste a claim, headline, URL, or question
               </div>
             </div>
             <div className="ml-auto text-[8px] font-mono uppercase tracking-widest px-2 py-1 rounded"
@@ -241,23 +241,37 @@ export function HomeView() {
                 onChange={e => setSageInput(e.target.value)}
                 onFocus={() => setSageFocused(true)}
                 onBlur={() => setSageFocused(false)}
-                placeholder="How do I make sourdough bread? What is quantum computing?"
+                placeholder="Ask or paste anything…"
                 className="flex-1 bg-transparent border-none outline-none px-4 py-3 text-[13px] font-mono text-foreground/75 placeholder:text-muted-foreground/22 caret-primary"
                 spellCheck={false}
                 autoComplete="off"
               />
               {sageInput.trim() && (
-                <button
-                  type="submit"
-                  className="flex items-center gap-1.5 mx-2 px-3 py-2 rounded-lg text-[10px] font-bold tracking-[0.1em] uppercase cursor-pointer transition-all"
-                  style={{
-                    background: 'rgba(139,92,246,0.2)',
-                    border: '1px solid rgba(139,92,246,0.35)',
-                    color: 'rgba(139,92,246,0.95)',
-                  }}
-                >
-                  <Sparkles className="w-3 h-3" /> Answer
-                </button>
+                <div className="flex items-center gap-1.5 mr-2 shrink-0">
+                  <button
+                    type="submit"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold tracking-[0.1em] uppercase cursor-pointer transition-all"
+                    style={{
+                      background: 'rgba(139,92,246,0.2)',
+                      border: '1px solid rgba(139,92,246,0.35)',
+                      color: 'rgba(139,92,246,0.95)',
+                    }}
+                  >
+                    <Sparkles className="w-3 h-3" /> Ask Sage
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateToSage('Analyze this: ' + sageInput.trim())}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold tracking-[0.1em] uppercase cursor-pointer transition-all"
+                    style={{
+                      background: 'rgba(56,189,248,0.10)',
+                      border: '1px solid rgba(56,189,248,0.28)',
+                      color: 'rgba(56,189,248,0.90)',
+                    }}
+                  >
+                    Analyze
+                  </button>
+                </div>
               )}
             </div>
           </form>

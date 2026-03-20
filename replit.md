@@ -1,6 +1,6 @@
 # Sentrix Browser
 
-A dark tactical intelligence search engine UI. Product identity: "Search clearly. Decide before you click." Powered by BLACKDOG private security engine and Ask Sage (Gemini 2.5 Flash AI).
+A dark tactical **Signal & Truth Filter** system. Product identity: "Search clearly. Decide before you click." Primary function: analyze claims, headlines, URLs and return structured intelligence (ANSWER → SIGNAL → AGREEMENT → RISK → WHAT MATTERS → WHAT TO QUESTION → SOURCES). Powered by BLACKDOG private security engine and Sage (Gemini 2.5 Flash AI). Search is secondary; clarity is primary.
 
 ## Architecture
 

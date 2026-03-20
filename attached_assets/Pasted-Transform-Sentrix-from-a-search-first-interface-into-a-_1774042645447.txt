@@ -1,0 +1,192 @@
+Transform Sentrix from a search-first interface into a Signal & Truth Filter system.
+
+CRITICAL:
+Do NOT rebuild the app.
+Do NOT remove the existing Sentrix shell, Sage system, or BLACKDOG layer.
+This is a behavioral + UI evolution using what already exists.
+
+MISSION:
+Sentrix must help users understand information before they trust or act on it.
+
+PRIMARY USE CASE:
+User pastes or asks about a piece of information (headline, link, claim, topic).
+Sentrix returns a structured clarity output.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+CORE PRODUCT SHIFT
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Sentrix is no longer a search engine.
+
+Sentrix is:
+→ a Signal Engine
+→ a Truth Filter
+→ an Information Clarity System
+
+Search becomes secondary or optional.
+Clarity becomes primary.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+PRIMARY FLOWS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+1. ASK SAGE (Answer-first)
+- user asks a question
+- Sage MUST respond with a direct answer first
+- no redirecting to links first
+
+2. ANALYZE INPUT (CORE FEATURE)
+- user pastes:
+  • URL
+  • article text
+  • headline
+  • claim
+
+Sentrix processes and outputs structured intelligence
+
+━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT STRUCTURE (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Every Sage response must follow this format:
+
+## ANSWER
+Clear, direct explanation of what the information actually means
+
+## SIGNAL
+- HIGH / MEDIUM / LOW
+Based on source quality and consistency
+
+## AGREEMENT
+- CONSENSUS / MIXED / CONFLICT
+Do sources agree or contradict each other
+
+## RISK (BLACKDOG)
+- SAFE / CAUTION / DANGER
+Based on trust signals, manipulation patterns, or weak sourcing
+
+## WHAT MATTERS
+Bullet list of:
+- key facts
+- important context
+- entities involved
+
+## WHAT TO QUESTION
+Bullet list of:
+- missing information
+- possible bias
+- weak claims
+- contradictions
+
+## SOURCES (OPTIONAL)
+Only show if relevant
+Keep clean and minimal
+
+━━━━━━━━━━━━━━━━━━━━━━━
+UI CHANGES (NO FULL REDESIGN)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+1. HOMEPAGE
+
+Replace “search-first” messaging with:
+
+Primary input:
+→ “Ask or paste anything”
+
+Below input:
+- Ask Sage button
+- Analyze button
+
+Add 3 quick prompts:
+- “Analyze this claim”
+- “Break this down for me”
+- “What should I question here?”
+
+2. REMOVE SEARCH EMPHASIS
+
+- Search results are no longer the main view
+- Do NOT show GitHub/dev-heavy results unless query clearly technical
+- Reduce dependency on live search
+
+3. RESULT / RESPONSE VIEW
+
+Sage output becomes the centerpiece:
+- large readable ANSWER section
+- structured sections below
+- clean spacing
+- no clutter
+
+4. SIGNAL VISUALS
+
+Add a compact signal bar or badges:
+- Signal (confidence)
+- Agreement
+- Risk
+
+Keep minimal and clean.
+
+5. BLACKDOG
+
+- Keep as classification layer only
+- do NOT spam “BLACKDOG” everywhere
+- show risk level clearly but subtly
+
+━━━━━━━━━━━━━━━━━━━━━━━
+INTELLIGENCE ENGINE ADJUSTMENTS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Modify current intelligence logic:
+
+- prioritize clarity over link ranking
+- de-emphasize raw search results
+- boost:
+  • explanatory sources
+  • news context
+  • reference sources
+
+- reduce:
+  • GitHub unless technical query
+  • forums unless explicitly requested
+
+━━━━━━━━━━━━━━━━━━━━━━━
+BEHAVIOR RULES
+━━━━━━━━━━━━━━━━━━━━━━━
+
+- Answer first, always
+- No fluff
+- No SEO-style writing
+- No “click these links” as primary output
+- User must feel:
+  → informed
+  → in control
+  → able to think critically
+
+━━━━━━━━━━━━━━━━━━━━━━━
+GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Sentrix should feel like:
+
+→ a system that explains reality
+→ not a system that lists links
+
+When a user pastes something confusing, political, technical, or controversial:
+
+They should walk away with:
+- understanding
+- clarity
+- direction on what to question next
+
+NOT more confusion.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT EXPECTATION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Return a fully integrated update where:
+
+- homepage reflects “Ask or Analyze”
+- Sage outputs follow the structured intelligence format
+- signal / agreement / risk are clearly visible
+- search is secondary
+- the product feels like a clarity engine, not a search engine

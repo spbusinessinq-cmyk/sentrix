@@ -4,7 +4,7 @@ import {
   Bookmark, BookmarkCheck, FolderPlus, Check,
   Loader2, AlertCircle, ArrowUpRight, Plus,
   ChevronDown, ChevronUp, Zap, Sparkles,
-  Send, X, RotateCcw, Lock,
+  Send, X, RotateCcw, Lock, GitMerge,
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
@@ -43,17 +43,102 @@ function enrichResult(r: SearchResultItem): EnrichedItem {
 }
 
 // ── Sage response parsing ─────────────────────────────────────────────────────
-interface ParsedSage { answer: string; sources: string; intelligence: string; }
+interface ParsedSage {
+  answer: string;
+  signal: string;
+  agreement: string;
+  risk: string;
+  whatMatters: string;
+  whatToQuestion: string;
+  sources: string;
+  // legacy fallback
+  intelligence: string;
+}
 
 function parseSageResponse(text: string): ParsedSage {
-  const answerMatch  = text.match(/##\s*ANSWER\s*([\s\S]*?)(?=##\s*SOURCES|##\s*INTELLIGENCE|$)/i);
-  const sourcesMatch = text.match(/##\s*SOURCES\s*([\s\S]*?)(?=##\s*INTELLIGENCE|$)/i);
-  const intelMatch   = text.match(/##\s*INTELLIGENCE\s*([\s\S]*?)$/i);
-  return {
-    answer:       answerMatch?.[1]?.trim()  ?? text,
-    sources:      sourcesMatch?.[1]?.trim() ?? '',
-    intelligence: intelMatch?.[1]?.trim()   ?? '',
+  const sec = (header: string, next?: string[]) => {
+    const nextPat = next?.length ? next.map(h => `##\\s*${h}`).join('|') : '$';
+    const m = text.match(new RegExp(`##\\s*${header}\\s*([\\s\\S]*?)(?=${nextPat}|$)`, 'i'));
+    return m?.[1]?.trim() ?? '';
   };
+
+  const HEADERS = ['SIGNAL','AGREEMENT','RISK','WHAT MATTERS','WHAT TO QUESTION','SOURCES','INTELLIGENCE'];
+  const answer      = sec('ANSWER', HEADERS);
+  const signal      = sec('SIGNAL', HEADERS.slice(1));
+  const agreement   = sec('AGREEMENT', HEADERS.slice(2));
+  const risk        = sec('RISK', HEADERS.slice(3));
+  const whatMatters = sec('WHAT MATTERS', HEADERS.slice(4));
+  const whatToQ     = sec('WHAT TO QUESTION', HEADERS.slice(5));
+  const sources     = sec('SOURCES', ['INTELLIGENCE']);
+  const intelligence = sec('INTELLIGENCE');
+
+  return {
+    answer:        answer || text,
+    signal,
+    agreement,
+    risk,
+    whatMatters,
+    whatToQuestion: whatToQ,
+    sources,
+    intelligence,
+  };
+}
+
+// ── Signal badge helpers ──────────────────────────────────────────────────────
+function extractRating(text: string): string {
+  return text.split(/[\s—–]/)[0]?.toUpperCase() ?? '';
+}
+
+function extractDetail(text: string): string {
+  return text.replace(/^[A-Z]+\s*[—–\-]\s*/i, '').trim();
+}
+
+const SIGNAL_STYLES: Record<string, { color: string; border: string; bg: string; dot: string }> = {
+  HIGH:      { color: '#38BDF8',              border: 'rgba(56,189,248,0.30)',  bg: 'rgba(56,189,248,0.08)',  dot: '#38BDF8' },
+  MEDIUM:    { color: 'rgba(245,158,11,0.80)', border: 'rgba(245,158,11,0.28)', bg: 'rgba(245,158,11,0.07)', dot: '#f59e0b' },
+  LOW:       { color: 'rgba(148,163,184,0.55)', border: 'rgba(255,255,255,0.10)', bg: 'transparent',           dot: 'rgba(148,163,184,0.4)' },
+  CONSENSUS: { color: '#38BDF8',              border: 'rgba(56,189,248,0.25)',  bg: 'rgba(56,189,248,0.06)',  dot: '#38BDF8' },
+  MIXED:     { color: 'rgba(245,158,11,0.80)', border: 'rgba(245,158,11,0.22)', bg: 'rgba(245,158,11,0.05)', dot: '#f59e0b' },
+  CONFLICT:  { color: 'rgba(239,68,68,0.80)',  border: 'rgba(239,68,68,0.25)',  bg: 'rgba(239,68,68,0.06)',  dot: '#ef4444' },
+  SAFE:      { color: '#38BDF8',              border: 'rgba(56,189,248,0.25)',  bg: 'rgba(56,189,248,0.06)',  dot: '#38BDF8' },
+  CAUTION:   { color: 'rgba(245,158,11,0.80)', border: 'rgba(245,158,11,0.25)', bg: 'rgba(245,158,11,0.06)', dot: '#f59e0b' },
+  DANGER:    { color: 'rgba(239,68,68,0.85)',  border: 'rgba(239,68,68,0.30)',  bg: 'rgba(239,68,68,0.07)',  dot: '#ef4444' },
+};
+
+function RatingBadge({ label, rating }: { label: string; rating: string }) {
+  const s = SIGNAL_STYLES[rating] ?? SIGNAL_STYLES['LOW'];
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[8px] font-mono uppercase tracking-[0.18em]" style={{ color: 'rgba(148,163,184,0.35)' }}>{label}</span>
+      <span
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold tracking-[0.14em] uppercase border"
+        style={{ color: s.color, borderColor: s.border, background: s.bg }}
+      >
+        <span className="w-1 h-1 rounded-full shrink-0" style={{ background: s.dot }} />
+        {rating}
+      </span>
+    </div>
+  );
+}
+
+function CollapsibleSection({
+  label, labelColor, children, defaultOpen = true,
+}: { label: string; labelColor?: string; children: React.ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-t pt-3" style={{ borderColor: 'rgba(255,255,255,0.055)' }}>
+      <button onClick={() => setOpen(v => !v)} className="flex items-center gap-2 w-full text-left mb-2 cursor-pointer">
+        <span className="text-[8px] font-mono uppercase tracking-[0.22em] transition-colors duration-150"
+          style={{ color: open ? (labelColor ?? 'rgba(148,163,184,0.55)') : 'rgba(148,163,184,0.28)' }}>
+          {label}
+        </span>
+        {open
+          ? <ChevronUp className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.28)' }} />
+          : <ChevronDown className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.28)' }} />}
+      </button>
+      {open && children}
+    </div>
+  );
 }
 
 // ── Markdown renderer (lightweight, no deps) ──────────────────────────────────
@@ -361,8 +446,6 @@ function IntelligenceBrief({ report, expanded, onToggle, sageOpen, onToggleSage 
 
 // ── Structured Sage message ───────────────────────────────────────────────────
 function SageAnswerBlock({ msg }: { msg: RichSageMessage }) {
-  const [sourcesOpen, setSourcesOpen] = useState(true);
-  const [intelOpen, setIntelOpen]     = useState(true);
   const p = msg.parsed;
 
   if (!p || !p.answer) {
@@ -373,50 +456,93 @@ function SageAnswerBlock({ msg }: { msg: RichSageMessage }) {
     );
   }
 
+  const signalRating    = extractRating(p.signal);
+  const signalDetail    = extractDetail(p.signal);
+  const agreementRating = extractRating(p.agreement);
+  const agreementDetail = extractDetail(p.agreement);
+  const riskRating      = extractRating(p.risk);
+  const riskDetail      = extractDetail(p.risk);
+
+  const hasSignalBar = signalRating || agreementRating || riskRating;
+
   return (
     <div className="flex flex-col gap-4">
-      {/* ANSWER — rendered markdown, dominant */}
+
+      {/* ANSWER — dominant, full-width rendered markdown */}
       <div style={{ fontFamily: "'Inter', sans-serif" }}>
         {renderMarkdown(p.answer)}
       </div>
 
-      {/* SOURCES — collapsible, starts open */}
-      {p.sources && (
-        <div className="border-t pt-3" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-          <button onClick={() => setSourcesOpen(v => !v)}
-            className="flex items-center gap-2 w-full text-left mb-2.5 cursor-pointer">
-            <span className="text-[8px] font-mono uppercase tracking-[0.22em]"
-              style={{ color: sourcesOpen ? 'rgba(148,163,184,0.55)' : 'rgba(148,163,184,0.3)', transition: 'color 150ms ease-out' }}>
-              Sources
-            </span>
-            {sourcesOpen
-              ? <ChevronUp className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.28)' }} />
-              : <ChevronDown className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.28)' }} />}
-          </button>
-          {sourcesOpen && renderSources(p.sources)}
-        </div>
-      )}
-
-      {/* INTELLIGENCE — collapsible, starts OPEN (core product output) */}
-      {p.intelligence && (
-        <div className="border-t pt-3" style={{ borderColor: 'rgba(139,92,246,0.10)' }}>
-          <button onClick={() => setIntelOpen(v => !v)}
-            className="flex items-center gap-2 w-full text-left mb-2.5 cursor-pointer">
-            <span className="text-[8px] font-mono uppercase tracking-[0.22em]"
-              style={{ color: intelOpen ? 'rgba(139,92,246,0.60)' : 'rgba(148,163,184,0.28)', transition: 'color 150ms ease-out' }}>
-              Intelligence
-            </span>
-            {intelOpen
-              ? <ChevronUp className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(139,92,246,0.30)' }} />
-              : <ChevronDown className="w-2.5 h-2.5 ml-auto" style={{ color: 'rgba(148,163,184,0.22)' }} />}
-          </button>
-          {intelOpen && (
-            <div className="text-[11.5px] font-mono leading-relaxed"
-              style={{ color: 'rgba(148,163,184,0.55)', lineHeight: '1.7', borderLeft: '2px solid rgba(139,92,246,0.20)', paddingLeft: '0.75rem' }}>
-              {renderInline(p.intelligence)}
+      {/* SIGNAL BAR — compact horizontal badges when any rating present */}
+      {hasSignalBar && (
+        <div
+          className="flex items-start gap-4 flex-wrap rounded-lg px-3 py-2.5"
+          style={{ background: 'rgba(0,0,0,0.28)', border: '1px solid rgba(255,255,255,0.055)' }}
+        >
+          {signalRating && (
+            <div className="flex flex-col gap-1 min-w-0">
+              <RatingBadge label="Signal" rating={signalRating} />
+              {signalDetail && (
+                <span className="text-[9.5px] font-mono leading-snug" style={{ color: 'rgba(148,163,184,0.40)' }}>
+                  {signalDetail}
+                </span>
+              )}
+            </div>
+          )}
+          {signalRating && agreementRating && <div className="w-px self-stretch" style={{ background: 'rgba(255,255,255,0.05)', minHeight: '24px' }} />}
+          {agreementRating && (
+            <div className="flex flex-col gap-1 min-w-0">
+              <RatingBadge label="Agreement" rating={agreementRating} />
+              {agreementDetail && (
+                <span className="text-[9.5px] font-mono leading-snug" style={{ color: 'rgba(148,163,184,0.40)' }}>
+                  {agreementDetail}
+                </span>
+              )}
+            </div>
+          )}
+          {agreementRating && riskRating && <div className="w-px self-stretch" style={{ background: 'rgba(255,255,255,0.05)', minHeight: '24px' }} />}
+          {riskRating && (
+            <div className="flex flex-col gap-1 min-w-0">
+              <RatingBadge label="Risk" rating={riskRating} />
+              {riskDetail && (
+                <span className="text-[9.5px] font-mono leading-snug" style={{ color: 'rgba(148,163,184,0.40)' }}>
+                  {riskDetail}
+                </span>
+              )}
             </div>
           )}
         </div>
+      )}
+
+      {/* WHAT MATTERS — collapsible, open by default */}
+      {p.whatMatters && (
+        <CollapsibleSection label="What Matters" labelColor="rgba(56,189,248,0.55)" defaultOpen>
+          {renderMarkdown(p.whatMatters)}
+        </CollapsibleSection>
+      )}
+
+      {/* WHAT TO QUESTION — collapsible, open by default */}
+      {p.whatToQuestion && (
+        <CollapsibleSection label="What to Question" labelColor="rgba(245,158,11,0.55)" defaultOpen>
+          {renderMarkdown(p.whatToQuestion)}
+        </CollapsibleSection>
+      )}
+
+      {/* SOURCES — collapsible, closed by default (secondary) */}
+      {p.sources && (
+        <CollapsibleSection label="Sources" defaultOpen={false}>
+          {renderSources(p.sources)}
+        </CollapsibleSection>
+      )}
+
+      {/* INTELLIGENCE — legacy fallback for old-format responses */}
+      {!hasSignalBar && p.intelligence && (
+        <CollapsibleSection label="Intelligence" labelColor="rgba(139,92,246,0.55)" defaultOpen>
+          <div className="text-[11.5px] font-mono leading-relaxed"
+            style={{ color: 'rgba(148,163,184,0.55)', lineHeight: '1.7', borderLeft: '2px solid rgba(139,92,246,0.20)', paddingLeft: '0.75rem' }}>
+            {renderInline(p.intelligence)}
+          </div>
+        </CollapsibleSection>
       )}
     </div>
   );
@@ -519,7 +645,7 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
         style={{ borderBottom: '1px solid rgba(139,92,246,0.1)' }}>
         <Sparkles className="w-3.5 h-3.5" style={{ color: SAGE_COLOR }} />
         <span className="text-[9px] font-mono font-bold uppercase tracking-[0.2em]" style={{ color: SAGE_COLOR }}>SAGE</span>
-        <span className="text-[8px] font-mono text-muted-foreground/20 ml-1">· answer engine · gemini-2.5-flash</span>
+        <span className="text-[8px] font-mono text-muted-foreground/20 ml-1">· signal & truth filter · gemini-2.5-flash</span>
         <div className="flex items-center gap-2 ml-auto">
           {hasMessages && (
             <button onClick={clearSession}
@@ -540,10 +666,10 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
           <div className="flex flex-col items-center justify-center h-full gap-3 py-4">
             <Sparkles className="w-6 h-6 opacity-20" style={{ color: SAGE_COLOR }} />
             <p className="text-[11px] font-mono text-center leading-relaxed" style={{ color: 'rgba(148,163,184,0.35)' }}>
-              Ask Sage anything.<br />Get a direct answer, then explore sources.
+              Paste a claim, headline, or question.<br />Sage will filter the signal from the noise.
             </p>
             <div className="flex flex-wrap gap-2 justify-center mt-1">
-              {['What are the key signals?', 'Which source to start with?', 'Are there conflicting claims?'].map(s => (
+              {['Analyze this claim', 'Break this down for me', 'What should I question here?'].map(s => (
                 <button key={s} onClick={() => send(s)}
                   className="px-2.5 py-1 rounded-lg text-[10px] font-mono cursor-pointer transition-all"
                   style={{ background: SAGE_BG, border: `1px solid ${SAGE_BORDER}`, color: SAGE_COLOR }}>
