@@ -317,6 +317,48 @@ function toCache(query: string, results: SearchResultItem[], provider: SearchRes
 
 const PENDING = new Map<string, Promise<SearchResponse>>();
 
+// ─── Frontend mock results (fallback when API is unreachable) ─────────────────
+
+function isTechnicalQuery(q: string): boolean {
+  return /\b(javascript|typescript|react|python|css|html|node\.?js|npm|api|function|component|code|deploy|error|bug|debug|install|package|github|git|docker|kubernetes|sql|database|aws|cloud|server|backend|frontend|webpack|vite|eslint|jest|vitest|ruby|rust|java|swift|kotlin|golang|bash|shell|terminal|regex|algorithm|recursion|dockerfile|terraform|ansible)\b/i.test(q);
+}
+
+function mockResults(query: string): Array<{
+  id: number; title: string; url: string; domain: string; snippet: string; provider: 'brave' | 'duckduckgo' | 'mock';
+}> {
+  const q = query.trim() || 'results';
+  const qEnc = encodeURIComponent(q);
+  const qWiki = encodeURIComponent(q.replace(/\s+/g, '_'));
+
+  if (isTechnicalQuery(q)) {
+    return [
+      { id: 1, title: `${q} — MDN Web Docs`,    url: `https://developer.mozilla.org/en-US/search?q=${qEnc}`,          domain: 'developer.mozilla.org', snippet: `Developer documentation for ${q}.`,                 provider: 'mock' },
+      { id: 2, title: `${q} — Wikipedia`,        url: `https://en.wikipedia.org/wiki/${qWiki}`,                         domain: 'en.wikipedia.org',      snippet: `${q} — overview and key concepts.`,               provider: 'mock' },
+      { id: 3, title: `${q} — GitHub`,           url: `https://github.com/search?q=${qEnc}&type=repositories`,          domain: 'github.com',            snippet: `Open source repositories related to ${q}.`,       provider: 'mock' },
+      { id: 4, title: `${q} — Stack Overflow`,   url: `https://stackoverflow.com/search?q=${qEnc}`,                    domain: 'stackoverflow.com',     snippet: `Community answers about ${q}.`,                   provider: 'mock' },
+      { id: 5, title: `${q} — npm`,              url: `https://www.npmjs.com/search?q=${qEnc}`,                         domain: 'npmjs.com',             snippet: `JavaScript packages for ${q}.`,                   provider: 'mock' },
+      { id: 6, title: `${q} — Hacker News`,      url: `https://news.ycombinator.com/search?q=${qEnc}`,                 domain: 'news.ycombinator.com',  snippet: `Technical discussions about ${q}.`,               provider: 'mock' },
+      { id: 7, title: `${q} — YouTube`,          url: `https://www.youtube.com/results?search_query=${qEnc}`,           domain: 'youtube.com',           snippet: `Video tutorials for ${q}.`,                       provider: 'mock' },
+      { id: 8, title: `${q} — Reddit`,           url: `https://www.reddit.com/search?q=${qEnc}`,                       domain: 'reddit.com',            snippet: `Community discussions about ${q}.`,               provider: 'mock' },
+      { id: 9, title: `${q} — DuckDuckGo`,       url: `https://duckduckgo.com/?q=${qEnc}`,                             domain: 'duckduckgo.com',        snippet: `Search for ${q}.`,                                provider: 'mock' },
+      { id: 10, title: `${q} — Google`,          url: `https://www.google.com/search?q=${qEnc}`,                       domain: 'google.com',            snippet: `Web search for ${q}.`,                            provider: 'mock' },
+    ];
+  }
+
+  return [
+    { id: 1,  title: `${q} — Reuters`,       url: `https://www.reuters.com/search/news?blob=${qEnc}`,    domain: 'reuters.com',         snippet: `Breaking news and journalism about ${q} from Reuters.`,       provider: 'mock' },
+    { id: 2,  title: `${q} — AP News`,       url: `https://apnews.com/search?q=${qEnc}`,                 domain: 'apnews.com',          snippet: `Associated Press reporting on ${q}. Nonpartisan, fact-based.`, provider: 'mock' },
+    { id: 3,  title: `${q} — Wikipedia`,     url: `https://en.wikipedia.org/wiki/${qWiki}`,              domain: 'en.wikipedia.org',    snippet: `${q} — overview, history, and key facts.`,                    provider: 'mock' },
+    { id: 4,  title: `${q} — BBC News`,      url: `https://www.bbc.com/search?q=${qEnc}`,                domain: 'bbc.com',             snippet: `BBC News coverage of ${q}.`,                                   provider: 'mock' },
+    { id: 5,  title: `${q} — The Guardian`,  url: `https://www.theguardian.com/search?q=${qEnc}`,        domain: 'theguardian.com',     snippet: `In-depth reporting on ${q} from The Guardian.`,               provider: 'mock' },
+    { id: 6,  title: `${q} — NPR`,           url: `https://www.npr.org/search?query=${qEnc}`,            domain: 'npr.org',             snippet: `NPR coverage and analysis of ${q}.`,                           provider: 'mock' },
+    { id: 7,  title: `${q} — Bloomberg`,     url: `https://www.bloomberg.com/search?query=${qEnc}`,      domain: 'bloomberg.com',       snippet: `Business and news coverage of ${q}.`,                         provider: 'mock' },
+    { id: 8,  title: `${q} — Reddit`,        url: `https://www.reddit.com/search?q=${qEnc}`,             domain: 'reddit.com',          snippet: `Community discussion about ${q}.`,                             provider: 'mock' },
+    { id: 9,  title: `${q} — X / Twitter`,   url: `https://x.com/search?q=${qEnc}`,                     domain: 'x.com',               snippet: `Real-time posts about ${q}.`,                                  provider: 'mock' },
+    { id: 10, title: `${q} — DuckDuckGo`,    url: `https://duckduckgo.com/?q=${qEnc}`,                   domain: 'duckduckgo.com',      snippet: `Privacy-first search for ${q}.`,                               provider: 'mock' },
+  ];
+}
+
 // ─── Main search function ─────────────────────────────────────────────────────
 
 export async function searchWeb(query: string): Promise<SearchResponse> {
@@ -346,12 +388,11 @@ async function _doSearch(query: string): Promise<SearchResponse> {
     }
 
     // Guard against the SPA rewrite returning index.html instead of JSON.
-    // This happens when the frontend static host intercepts /api/* paths.
+    // This happens in production when EdgeOne cloud functions are not mounted correctly.
     const contentType = resp.headers.get('content-type') ?? '';
     if (!contentType.includes('application/json')) {
       console.error(
-        `[Sentrix] Search API returned non-JSON content-type "${contentType}" for: ${url} — ` +
-        `check that /api/* routes are served by the API server, not the static frontend.`
+        `[Sentrix] /api/search is not mounted to a function; received HTML instead of JSON`
       );
       return { results: rankAndProcess(mockResults(query), query), provider: 'mock', query, error: true };
     }

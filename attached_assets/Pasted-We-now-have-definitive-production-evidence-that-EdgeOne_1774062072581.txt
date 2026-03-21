@@ -1,0 +1,125 @@
+We now have definitive production evidence that EdgeOne is not serving the expected fixed build or cloud functions.
+
+Console proof:
+- /api/search returns HTML instead of JSON
+- frontend still throws “mockResults is not defined”
+- POST /api/sage/query still returns 405
+
+This means the live deployment is not using the intended code/config.
+
+MISSION:
+Do a production deployment integrity pass for EdgeOne and make the live deployment unmistakably correct.
+
+GOAL:
+Prove whether EdgeOne is mounting the correct cloud-functions directory and serving the newest frontend bundle.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. ADD A CANARY FUNCTION (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Create:
+cloud-functions/api/_canary/index.js
+
+It should return JSON like:
+
+{
+  "ok": true,
+  "source": "edgeone-cloud-function",
+  "timestamp": "<current timestamp>",
+  "version": "sentrix-canary-1"
+}
+
+No dependencies. Keep it extremely simple.
+
+Why:
+If /api/_canary does not return this exact JSON in production, then EdgeOne is not mounting functions correctly.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. ADD A FRONTEND CANARY STRING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+In the frontend app, add a visible or console-logged version marker:
+
+console.log("[Sentrix] Frontend build marker:", "sentrix-build-canary-1");
+
+Also optionally render a small hidden build marker in the DOM or footer if easy.
+
+Why:
+We need to prove the live JS bundle is the newest one, not stale code.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. VERIFY ROOT DEPLOYMENT FILES
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Verify at repo root:
+- edgeone.json exists
+- cloud-functions directory exists
+- functions.directory points to "cloud-functions"
+
+Return the exact effective edgeone.json content in your summary.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. VERIFY LIVE FILE PATHS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Confirm the deployed function paths are exactly:
+
+- cloud-functions/api/search.js OR equivalent valid mounted route
+- cloud-functions/api/sage/query/index.js
+- cloud-functions/api/healthz.js
+- cloud-functions/api/_canary/index.js
+
+If any path pattern is invalid for EdgeOne Pages functions, fix it to the correct path convention.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. FIX SEARCH FALLBACK CRASH FOR REAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+The console proves the live bundle still throws:
+ReferenceError: mockResults is not defined
+
+Find the real source of that error in the deployed/frontend code path.
+Do not assume it is fixed just because one file defines mockResults.
+
+Requirements:
+- eliminate all undefined mockResults references in production code
+- if fallback is needed, safely return []
+- no frontend runtime ReferenceError allowed
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. HARDEN API FALLBACK DETECTION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep existing API guards, but make errors more diagnostic:
+
+If /api/search returns HTML:
+log:
+"[Sentrix] /api/search is not mounted to a function; received HTML instead of JSON"
+
+If /api/sage/query returns 405:
+log:
+"[Sentrix] /api/sage/query function exists but method handling/routing is wrong"
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. PRODUCE A DEPLOYMENT INTEGRITY CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━
+
+After changes, provide this exact checklist:
+
+- /api/_canary → JSON yes/no
+- /api/healthz → JSON yes/no
+- /api/search?q=test → JSON yes/no
+- /api/sage/query?q=test → JSON/stream yes/no
+- frontend build marker visible in console yes/no
+- mockResults runtime error eliminated yes/no
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. DO NOT REDESIGN OR ADD FEATURES
+━━━━━━━━━━━━━━━━━━━━━━━
+
+No UI redesign.
+No new product features.
+This pass is ONLY about proving and fixing deployment integrity.
+
+Final objective:
+Make it impossible for us to mistake a stale or mis-mounted EdgeOne deployment for the correct live system.

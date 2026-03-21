@@ -53,7 +53,11 @@ export async function streamSageQuery(opts: SageQueryOptions): Promise<void> {
   }
 
   if (!response.ok) {
-    console.error(`[Sentrix] Sage API returned ${response.status} for: ${url}`);
+    if (response.status === 405) {
+      console.error(`[Sentrix] /api/sage/query function exists but method handling/routing is wrong`);
+    } else {
+      console.error(`[Sentrix] Sage API returned ${response.status} for: ${url}`);
+    }
     onError(`Sage returned an error (${response.status}) — check console for the API URL`);
     return;
   }
