@@ -1,0 +1,193 @@
+Fix Sentrix live verification retrieval so corroboration search does not return empty result sets for obvious public factual claims.
+
+CRITICAL:
+The current Sage output says things like:
+“provided (empty) search results”
+This means the verification pipeline is structurally working, but the retrieval layer is failing.
+
+MISSION:
+Make corroboration retrieval actually return usable sources for obvious public factual claims.
+
+GOAL:
+For claims like celebrity deaths, arrests, major news events, and public factual questions, Sentrix must retrieve real confirming and/or contradicting sources instead of passing empty search context into Sage.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. TREAT EMPTY SEARCH RESULTS AS A RETRIEVAL FAILURE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+If corroboration search returns zero results:
+- do not treat that as a completed verification
+- treat it as retrieval failure or degraded retrieval
+- log it clearly
+
+Add explicit diagnostics:
+- query used
+- source provider used
+- result count
+- whether filtering removed all results
+- whether fallback search provider was attempted
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. ADD MULTI-STAGE RETRIEVAL FALLBACK
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For each corroboration query:
+
+Stage A:
+primary search provider
+
+If empty or failed:
+Stage B:
+fallback provider / alternate query path
+
+If still empty:
+Stage C:
+broaden query automatically by removing weak modifiers and simplifying entity search
+
+Example:
+“did chuck norris die”
+should broaden to:
+- Chuck Norris death
+- Chuck Norris died
+- Chuck Norris obituary
+- Chuck Norris Reuters
+- Chuck Norris AP
+
+Do this automatically.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. ADD CLAIM-SPECIFIC QUERY TEMPLATES
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For death claims:
+generate targeted searches like:
+- [name] died
+- [name] death
+- [name] obituary
+- [name] confirmed dead
+- [name] Reuters
+- [name] AP
+
+For arrests:
+- [name] arrested
+- [name] arrest confirmed
+- [name] charges
+- [name] Reuters
+- [name] AP
+
+For attacks / war:
+- [entity] strike
+- [entity] attack confirmed
+- [entity] Reuters
+- [entity] AP
+- [entity] BBC
+
+These should exist in addition to the current query generation.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. REDUCE OVER-FILTERING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Check whether search results are being filtered too aggressively.
+
+Do NOT throw away valid sources just because they are not perfect.
+
+For live verification, keep usable results from:
+- Reuters
+- AP
+- BBC
+- CNN
+- major news
+- official statements
+- verified public statements
+
+Only exclude obvious junk / irrelevant artifacts.
+
+If filtering removes all results:
+- log this explicitly
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. PASS RAW RETRIEVAL COUNTS INTO SAGE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Before Sage responds, include:
+- confirming source count
+- contradicting source count
+- source domains used
+- whether retrieval degraded or failed
+
+Do not let Sage think “no results” means “no evidence exists.”
+It may simply mean retrieval failed.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. ADD RETRIEVAL STATUS TO OUTPUT
+━━━━━━━━━━━━━━━━━━━━━━━
+
+When search retrieval is empty or degraded, include a small internal/output note like:
+
+RETRIEVAL STATUS:
+- SUCCESS
+- DEGRADED
+- FAILED
+
+If DEGRADED or FAILED:
+Sage must say:
+“Verification is limited because retrieval did not return enough sources.”
+
+Not:
+“There is no evidence...”
+unless retrieval actually succeeded and found no corroboration.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. SPECIAL FIX FOR CELEBRITY / PUBLIC FIGURE DEATH CLAIMS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+These are common, high-interest queries and should have strong query support.
+
+Add a dedicated death-verification retrieval path:
+- [name] died
+- [name] obituary
+- [name] confirmed dead
+- [name] family statement
+- [name] Reuters
+- [name] AP
+
+If a verified public/family statement exists and/or major news confirms:
+surface it.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. DEBUGGING / LOGGING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Log for every live verification request:
+- extracted claim
+- event type
+- generated confirm queries
+- generated contradict queries
+- provider used
+- raw result count before filtering
+- result count after filtering
+- fallback query triggered yes/no
+- retrieval status selected
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. OUTPUT SAFETY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+If retrieval failed:
+- Sage must not confidently deny
+- Sage must not confidently confirm
+- Sage must clearly say retrieval was insufficient
+
+If retrieval succeeded with real corroboration:
+- Sage must use that evidence
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. FINAL GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+After this pass:
+For obvious factual claims like “did chuck norris die” or similar current-event checks,
+Sentrix should retrieve real sources instead of giving an answer based on empty search context.
+
+The problem to solve is retrieval failure, not answer formatting.

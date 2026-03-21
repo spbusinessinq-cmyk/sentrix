@@ -37,7 +37,7 @@ On **EdgeOne Pages**, the deployment is:
 
 EdgeOne environment variables required:
 - `GEMINI_API_KEY` — Google AI API key for Sage (Gemini 2.5 Flash)
-- `BRAVE_SEARCH_API_KEY` — (optional) Brave Search API key; falls back to DuckDuckGo → mock
+- `BRAVE_SEARCH_API_KEY` — (optional) Brave Search API key; falls back to Google News RSS → Wikipedia → DDG
 
 Frontend api-client uses relative `/api/...` paths (no `VITE_API_BASE_URL` needed) — same-origin automatically.
 

@@ -7,7 +7,7 @@
 // ── Input classification ──────────────────────────────────────────────────────
 
 const CURRENT_EVENTS_RE =
-  /(died|dead|killed|arrested|charged|indicted|convicted|elected|fired|resigned|appointed|invaded|attacked|struck|bombed|crashed|launched|outbreak|confirmed|signed|declared|passed\s+away|murdered|shot|leaked|hacked|bankrupt|collapsed|shooting|explosion|earthquake|hurricane|pandemic|war|invasion|sanctions|missile|airstrike|ceasefire|impeach|hospitali[sz]ed|detained|sentenced)/i;
+  /(died?|dies|dead|killed|arrested|charged|indicted|convicted|elected|fired|resigned|appointed|invaded|attacked|struck|bombed|crashed|launched|outbreak|confirmed|signed|declared|passed\s+away|murdered|shot|leaked|hacked|bankrupt|collapsed|shooting|explosion|earthquake|hurricane|pandemic|war|invasion|sanctions|missile|airstrike|ceasefire|impeach|hospitali[sz]ed|detained|sentenced)/i;
 
 function detectInputClass(msg) {
   const t = msg.trim();
@@ -19,7 +19,7 @@ function detectInputClass(msg) {
 
 function detectEventType(input) {
   const t = input.toLowerCase();
-  if (/(died|dead|killed|murder|shot dead|passed away|deceased)/.test(t)) return 'death';
+  if (/(died?|dies|dead|killed|murder|shot dead|passed away|deceased)/.test(t)) return 'death';
   if (/(arrested|charged|indicted|convicted|detained|sentenced)/.test(t)) return 'arrest';
   if (/(attacked|invaded|bombed|struck|airstrike|missile|shooting|explosion|terror attack)/.test(t)) return 'war-attack';
   if (/(lawsuit|sued|suing|litigation|legal action|court case)/.test(t)) return 'lawsuit';
@@ -42,6 +42,7 @@ function extractEntities(text) {
 function generateDualTrackQueries(input, eventType, articleTitle) {
   const base = articleTitle ?? input;
   const entities = extractEntities(base);
+  const name = entities[0] ?? '';
   const entityStr = entities.slice(0, 2).join(' ');
   const year = new Date().getFullYear();
 
@@ -50,45 +51,107 @@ function generateDualTrackQueries(input, eventType, articleTitle) {
 
   if (articleTitle) {
     confirming.push(articleTitle.slice(0, 120));
-    if (entityStr) confirming.push(`${entityStr} ${year} confirmed news`);
-    contradicting.push(`${entityStr} denied false disputed`);
-    contradicting.push(`${articleTitle.slice(0, 70)} disputed false`);
+    if (name) {
+      confirming.push(`${name} news ${year}`);
+      confirming.push(`${name} confirmed report`);
+    }
+    if (entityStr) {
+      contradicting.push(`${entityStr} denied false disputed`);
+      contradicting.push(`${articleTitle.slice(0, 70)} disputed false`);
+    }
   } else {
     confirming.push(input.slice(0, 120));
-    if (entityStr) confirming.push(`${entityStr} ${year} confirmed official`);
 
     switch (eventType) {
       case 'death':
-        contradicting.push(entityStr ? `${entityStr} alive not dead ${year}` : `${input.slice(0, 60)} false rumor`);
-        contradicting.push(entityStr ? `${entityStr} death hoax denied` : '');
+        if (name) {
+          confirming.push(`${name} died`);
+          confirming.push(`${name} death`);
+          confirming.push(`${name} obituary`);
+          confirming.push(`${name} confirmed dead`);
+          contradicting.push(`${name} alive ${year}`);
+          contradicting.push(`${name} death hoax`);
+          contradicting.push(`${name} not dead`);
+          contradicting.push(`${name} health update`);
+        } else {
+          confirming.push(`${input.slice(0, 60)} confirmed`);
+          contradicting.push(`${input.slice(0, 60)} false rumor`);
+          contradicting.push(`${input.slice(0, 60)} hoax denied`);
+        }
         break;
       case 'arrest':
-        contradicting.push(entityStr ? `${entityStr} not arrested false charges` : `${input.slice(0, 60)} false`);
-        contradicting.push(entityStr ? `${entityStr} arrest denied dropped` : '');
+        if (name) {
+          confirming.push(`${name} arrested`);
+          confirming.push(`${name} arrest charges`);
+          confirming.push(`${name} indicted`);
+          contradicting.push(`${name} not arrested`);
+          contradicting.push(`${name} arrest denied`);
+          contradicting.push(`${name} charges dropped`);
+        } else {
+          confirming.push(`${input.slice(0, 60)} confirmed`);
+          contradicting.push(`${input.slice(0, 60)} false charges`);
+        }
         break;
       case 'war-attack':
-        contradicting.push(entityStr ? `${entityStr} attack denied false report` : `${input.slice(0, 60)} denied`);
-        contradicting.push(entityStr ? `${entityStr} no attack ceasefire` : '');
+        if (entityStr) {
+          confirming.push(`${entityStr} attack strike`);
+          confirming.push(`${entityStr} attack confirmed`);
+          confirming.push(`${entityStr} airstrike missile`);
+          contradicting.push(`${entityStr} attack denied false`);
+          contradicting.push(`${entityStr} ceasefire no attack`);
+        } else {
+          confirming.push(`${input.slice(0, 60)} confirmed`);
+          contradicting.push(`${input.slice(0, 60)} denied`);
+        }
         break;
       case 'lawsuit':
-        contradicting.push(entityStr ? `${entityStr} lawsuit dismissed dropped false` : `${input.slice(0, 60)} disputed`);
+        if (name) {
+          confirming.push(`${name} lawsuit sued`);
+          confirming.push(`${name} legal case charges`);
+          contradicting.push(`${name} lawsuit dismissed`);
+          contradicting.push(`${name} case dropped acquitted`);
+        } else {
+          confirming.push(`${input.slice(0, 60)} lawsuit confirmed`);
+          contradicting.push(`${input.slice(0, 60)} dismissed disputed`);
+        }
         break;
       case 'election':
-        contradicting.push(entityStr ? `${entityStr} election disputed contested` : `${input.slice(0, 60)} disputed`);
-        contradicting.push(entityStr ? `${entityStr} election result denied fraud claims` : '');
+        if (name) {
+          confirming.push(`${name} election result won`);
+          confirming.push(`${name} elected victory`);
+          contradicting.push(`${name} election disputed contested`);
+          contradicting.push(`${name} election fraud claims`);
+        } else {
+          confirming.push(`${input.slice(0, 60)} result confirmed`);
+          contradicting.push(`${input.slice(0, 60)} disputed`);
+        }
         break;
       case 'health':
-        contradicting.push(entityStr ? `${entityStr} health update not sick false` : `${input.slice(0, 60)} false`);
+        if (name) {
+          confirming.push(`${name} hospitalized sick`);
+          confirming.push(`${name} health condition`);
+          contradicting.push(`${name} healthy fine`);
+          contradicting.push(`${name} health false rumor`);
+        } else {
+          confirming.push(`${input.slice(0, 60)} confirmed`);
+          contradicting.push(`${input.slice(0, 60)} false`);
+        }
         break;
       default:
-        contradicting.push(entityStr ? `${entityStr} denied disputed false` : `${input.slice(0, 60)} disputed`);
-        contradicting.push(entityStr ? `${entityStr} rebuttal response correction` : '');
+        if (entityStr) {
+          confirming.push(`${entityStr} ${year}`);
+          contradicting.push(`${entityStr} denied disputed`);
+          contradicting.push(`${entityStr} false misleading`);
+        } else {
+          confirming.push(`${input.slice(0, 60)}`);
+          contradicting.push(`${input.slice(0, 60)} disputed false`);
+        }
     }
   }
 
   return {
-    confirming: [...new Set(confirming)].filter(Boolean).slice(0, 2),
-    contradicting: [...new Set(contradicting)].filter(Boolean).slice(0, 2),
+    confirming:    [...new Set(confirming)].filter(Boolean).slice(0, 4),
+    contradicting: [...new Set(contradicting)].filter(Boolean).slice(0, 4),
   };
 }
 
@@ -160,11 +223,19 @@ async function fetchArticle(url) {
 
 // ── Corroboration search ──────────────────────────────────────────────────────
 
+function decodeHtmlEntities(s) {
+  return s
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ').replace(/&#\d+;/g, ' ');
+}
+
+// Stage 1: Brave Search (when API key present)
 async function searchBraveCorroboration(query, apiKey) {
   const url = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=8&safesearch=moderate&result_filter=web`;
   const res = await fetch(url, {
     headers: { 'X-Subscription-Token': apiKey, Accept: 'application/json' },
-    signal: AbortSignal.timeout(6000),
+    signal: AbortSignal.timeout(7000),
   });
   if (!res.ok) throw new Error(`Brave ${res.status}`);
   const data = await res.json();
@@ -173,10 +244,84 @@ async function searchBraveCorroboration(query, apiKey) {
     url: r.url ?? '',
     domain: r.meta_url?.hostname ?? extractDomain(r.url ?? ''),
     snippet: r.description ?? '',
-  }));
+  })).filter(r => r.title && r.domain);
 }
 
-async function searchDDGCorroboration(query) {
+// Stage 2: Google News RSS (free, real news headlines and snippets)
+async function searchGoogleNews(query) {
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; SentrixVerify/1.0; +https://sentrix.io)',
+        'Accept': 'application/rss+xml,application/xml,text/xml,*/*',
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return [];
+    const xml = await res.text();
+
+    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+    const results = [];
+
+    for (const match of items.slice(0, 12)) {
+      const itemXml = match[1] ?? '';
+
+      // Title: CDATA or plain; format is often "Article headline - Source Name"
+      const titleRaw = decodeHtmlEntities(
+        itemXml.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/)?.[1] ??
+        itemXml.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? ''
+      ).trim();
+      const lastDash = titleRaw.lastIndexOf(' - ');
+      const articleTitle = lastDash > 10 ? titleRaw.slice(0, lastDash).trim() : titleRaw;
+      const sourceName   = lastDash > 10 ? titleRaw.slice(lastDash + 3).trim() : '';
+
+      // Source element gives us the real publisher's domain
+      const sourceUrl = itemXml.match(/<source\s+url="([^"]+)"/)?.[1]?.trim() ?? '';
+      const domain = sourceUrl ? extractDomain(sourceUrl) : '';
+      if (!articleTitle || !domain) continue;
+
+      // Description: extract plain text from CDATA HTML
+      const descRaw =
+        itemXml.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/)?.[1] ??
+        itemXml.match(/<description>([\s\S]*?)<\/description>/)?.[1] ?? '';
+
+      const snippetHtml = descRaw.replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ').trim();
+      const snippet = decodeHtmlEntities(snippetHtml).slice(0, 280) ||
+                      `${articleTitle} — ${sourceName || domain}`;
+
+      // Best article URL: from description href, else source domain
+      const descLink = descRaw.match(/href="(https?:\/\/(?!news\.google\.com)[^"]+)"/)?.[1] ?? '';
+      const articleUrl = descLink || sourceUrl || `https://${domain}`;
+
+      results.push({ title: articleTitle + (sourceName ? ` — ${sourceName}` : ''), url: articleUrl, domain, snippet });
+    }
+
+    return results;
+  } catch { return []; }
+}
+
+// Stage 3: Wikipedia search API (free, no key)
+async function searchWikipedia(query) {
+  const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=4&format=json&origin=*`;
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'SentrixVerify/1.0 (fact-check)' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data?.query?.search ?? []).slice(0, 4).map(r => ({
+      title: `${r.title} — Wikipedia`,
+      url: `https://en.wikipedia.org/wiki/${encodeURIComponent(r.title.replace(/ /g, '_'))}`,
+      domain: 'en.wikipedia.org',
+      snippet: r.snippet.replace(/<[^>]+>/g, '').replace(/\s{2,}/g, ' ').trim().slice(0, 280),
+    })).filter(r => r.snippet.length > 10);
+  } catch { return []; }
+}
+
+// Stage 4: DuckDuckGo Instant Answers (knowledge cards — entity-level only)
+async function searchDDGInstant(query) {
   try {
     const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1&no_html=0&kl=us-en`;
     const res = await fetch(url, {
@@ -186,18 +331,17 @@ async function searchDDGCorroboration(query) {
     if (!res.ok) return [];
     const data = await res.json();
     const results = [];
-    if (data.AbstractURL && data.AbstractText) {
+    if (data.AbstractURL && data.AbstractText && data.AbstractText.length > 20) {
       results.push({ title: data.Heading ?? query, url: data.AbstractURL, domain: extractDomain(data.AbstractURL), snippet: data.AbstractText.slice(0, 280) });
     }
-    const topics = [...(data.RelatedTopics ?? []), ...(data.Results ?? [])];
-    for (const t of topics) {
-      if (t.FirstURL && t.Text && results.length < 8) {
-        results.push({ title: t.Text.slice(0, 100), url: t.FirstURL, domain: extractDomain(t.FirstURL), snippet: t.Text.slice(0, 280) });
+    for (const t of (data.RelatedTopics ?? [])) {
+      if (t.FirstURL && t.Text && t.Text.length > 20 && results.length < 5) {
+        results.push({ title: t.Text.slice(0, 120), url: t.FirstURL, domain: extractDomain(t.FirstURL), snippet: t.Text.slice(0, 280) });
       }
       if (t.Topics) {
         for (const sub of t.Topics) {
-          if (sub.FirstURL && sub.Text && results.length < 8) {
-            results.push({ title: sub.Text.slice(0, 100), url: sub.FirstURL, domain: extractDomain(sub.FirstURL), snippet: sub.Text.slice(0, 280) });
+          if (sub.FirstURL && sub.Text && sub.Text.length > 20 && results.length < 5) {
+            results.push({ title: sub.Text.slice(0, 120), url: sub.FirstURL, domain: extractDomain(sub.FirstURL), snippet: sub.Text.slice(0, 280) });
           }
         }
       }
@@ -206,49 +350,89 @@ async function searchDDGCorroboration(query) {
   } catch { return []; }
 }
 
-function newsMockCorroboration(query) {
-  const qEnc = encodeURIComponent(query);
-  const qWiki = encodeURIComponent(query.replace(/\s+/g, '_'));
-  return [
-    { title: `${query} — Reuters`, url: `https://www.reuters.com/search/news?blob=${qEnc}`, domain: 'reuters.com', snippet: `Reuters coverage of: ${query}` },
-    { title: `${query} — AP News`, url: `https://apnews.com/search?q=${qEnc}`, domain: 'apnews.com', snippet: `AP reporting on: ${query}` },
-    { title: `${query} — Wikipedia`, url: `https://en.wikipedia.org/wiki/${qWiki}`, domain: 'en.wikipedia.org', snippet: `Encyclopedia reference: ${query}` },
-    { title: `${query} — BBC News`, url: `https://www.bbc.com/search?q=${qEnc}`, domain: 'bbc.com', snippet: `BBC coverage: ${query}` },
-  ];
+// Broadening strategy: simplify query to entity + keyword
+function broadenQuery(query, eventType) {
+  const entities = extractEntities(query);
+  const name = entities[0] ?? query.split(' ').slice(0, 3).join(' ');
+  const keywordMap = { death: 'death', arrest: 'arrest', 'war-attack': 'attack', lawsuit: 'lawsuit', election: 'election result', health: 'health', business: 'news', general: 'news' };
+  return `${name} ${keywordMap[eventType] ?? 'news'}`;
 }
 
-async function runCorroborationSearch(queries, braveKey) {
+// Multi-stage corroboration search with fallback
+async function runCorroborationSearch(queries, eventType, braveKey) {
   const all = [];
   const seenDomains = new Set();
+  const providers = [];
 
-  await Promise.allSettled(queries.map(async (q) => {
-    let results = [];
-    if (braveKey) {
-      try { results = await searchBraveCorroboration(q, braveKey); }
-      catch { results = await searchDDGCorroboration(q); }
-    } else {
-      results = await searchDDGCorroboration(q);
-      if (results.length === 0) results = newsMockCorroboration(q);
-    }
-    for (const r of results) {
-      if (r.domain && !seenDomains.has(r.domain)) {
+  const merge = (incoming) => {
+    for (const r of incoming) {
+      if (r.domain && r.snippet && r.snippet.length > 15 && !seenDomains.has(r.domain)) {
         seenDomains.add(r.domain);
         all.push(r);
       }
     }
-  }));
+  };
 
-  return all.slice(0, 10);
+  for (const q of queries.slice(0, 4)) {
+    // Stage A: Brave (if key present)
+    if (braveKey && all.length < 3) {
+      try {
+        const bResults = await searchBraveCorroboration(q, braveKey);
+        if (bResults.length > 0) { merge(bResults); providers.push('brave'); }
+      } catch { /* fall through */ }
+    }
+
+    // Stage B: Google News RSS — primary free provider
+    if (all.length < 3) {
+      const gnResults = await searchGoogleNews(q);
+      if (gnResults.length > 0) { merge(gnResults); providers.push('google-news'); }
+    }
+
+    // Stage C: Wikipedia for entity context
+    if (all.length < 2) {
+      const wikiResults = await searchWikipedia(q);
+      if (wikiResults.length > 0) { merge(wikiResults); providers.push('wikipedia'); }
+    }
+
+    // Stage D: DDG Instant Answers (knowledge cards, entity-level)
+    if (all.length < 2) {
+      const ddgResults = await searchDDGInstant(q);
+      if (ddgResults.length > 0) { merge(ddgResults); providers.push('ddg'); }
+    }
+
+    if (all.length >= 6) break;
+  }
+
+  // Stage E: Broaden query if still empty
+  if (all.length === 0) {
+    const broad = broadenQuery(queries[0] ?? '', eventType);
+    const gnBroad = await searchGoogleNews(broad);
+    merge(gnBroad);
+    if (gnBroad.length > 0) providers.push('google-news-broad');
+
+    if (all.length === 0) {
+      const wikiBroad = await searchWikipedia(broad);
+      merge(wikiBroad);
+      if (wikiBroad.length > 0) providers.push('wikipedia-broad');
+    }
+  }
+
+  const status = all.length >= 3 ? 'SUCCESS' : all.length >= 1 ? 'DEGRADED' : 'FAILED';
+  return { results: all.slice(0, 10), status, provider: [...new Set(providers)].join('+') || 'none' };
 }
 
-async function runDualTrackSearch(queries, braveKey) {
+async function runDualTrackSearch(queries, eventType, braveKey) {
   const [confirmResult, denyResult] = await Promise.allSettled([
-    runCorroborationSearch(queries.confirming, braveKey),
-    runCorroborationSearch(queries.contradicting, braveKey),
+    runCorroborationSearch(queries.confirming, eventType, braveKey),
+    runCorroborationSearch(queries.contradicting, eventType, braveKey),
   ]);
   return {
-    confirming: confirmResult.status === 'fulfilled' ? confirmResult.value : [],
-    contradicting: denyResult.status === 'fulfilled' ? denyResult.value : [],
+    confirming:      confirmResult.status === 'fulfilled' ? confirmResult.value.results      : [],
+    contradicting:   denyResult.status    === 'fulfilled' ? denyResult.value.results         : [],
+    confirmStatus:   confirmResult.status === 'fulfilled' ? confirmResult.value.status       : 'FAILED',
+    denyStatus:      denyResult.status    === 'fulfilled' ? denyResult.value.status          : 'FAILED',
+    confirmProvider: confirmResult.status === 'fulfilled' ? confirmResult.value.provider     : 'error',
+    denyProvider:    denyResult.status    === 'fulfilled' ? denyResult.value.provider        : 'error',
   };
 }
 
@@ -402,25 +586,34 @@ function buildResultsContext(results) {
   }).join('\n\n');
 }
 
-function buildDualTrackContext(confirming, contradicting, queries) {
-  const cfmQStr = queries.confirming.map(q => `"${q}"`).join(' | ');
+function buildDualTrackContext(confirming, contradicting, queries, confirmStatus = 'FAILED', denyStatus = 'FAILED', confirmProvider = 'none', denyProvider = 'none') {
+  const cfmQStr  = queries.confirming.map(q => `"${q}"`).join(' | ');
   const denyQStr = queries.contradicting.map(q => `"${q}"`).join(' | ');
 
+  const overallStatus =
+    confirmStatus === 'SUCCESS' && denyStatus === 'SUCCESS' ? 'SUCCESS' :
+    confirmStatus === 'FAILED'  && denyStatus === 'FAILED'  ? 'FAILED'  : 'DEGRADED';
+
+  const statusNote =
+    overallStatus === 'FAILED'   ? 'RETRIEVAL STATUS: FAILED — live search returned no usable sources. Sage must not draw confident conclusions and must note retrieval failure.' :
+    overallStatus === 'DEGRADED' ? 'RETRIEVAL STATUS: DEGRADED — one or both search tracks returned limited results. Note this limitation in the analysis.' :
+                                   'RETRIEVAL STATUS: SUCCESS — live search retrieved sources on both tracks.';
+
   const confirmBlock = confirming.length > 0
-    ? `CONFIRMING SEARCH RESULTS (queries: ${cfmQStr}):\n` +
+    ? `CONFIRMING SEARCH RESULTS [status:${confirmStatus} via:${confirmProvider}] (queries: ${cfmQStr}):\n` +
       confirming.map((s, i) =>
         `[Confirm ${i + 1}] ${s.domain}\nTitle: ${s.title}\nURL: ${s.url}\nSnippet: ${s.snippet}`
       ).join('\n\n')
-    : `CONFIRMING SEARCH RESULTS: No confirming sources retrieved.\nQueries attempted: ${cfmQStr}`;
+    : `CONFIRMING SEARCH RESULTS [status:${confirmStatus}]: No confirming sources retrieved — retrieval returned empty.\nQueries attempted: ${cfmQStr}\nNote: Empty retrieval ≠ no evidence exists. The search may have failed to reach the relevant sources.`;
 
   const denyBlock = contradicting.length > 0
-    ? `DENIAL/CONTRADICTION SEARCH RESULTS (queries: ${denyQStr}):\n` +
+    ? `DENIAL/CONTRADICTION SEARCH RESULTS [status:${denyStatus} via:${denyProvider}] (queries: ${denyQStr}):\n` +
       contradicting.map((s, i) =>
         `[Deny ${i + 1}] ${s.domain}\nTitle: ${s.title}\nURL: ${s.url}\nSnippet: ${s.snippet}`
       ).join('\n\n')
-    : `DENIAL/CONTRADICTION SEARCH RESULTS: No contradicting sources retrieved.\nQueries attempted: ${denyQStr}`;
+    : `DENIAL/CONTRADICTION SEARCH RESULTS [status:${denyStatus}]: No contradicting sources retrieved.\nQueries attempted: ${denyQStr}`;
 
-  return `${confirmBlock}\n\n${denyBlock}`;
+  return `${statusNote}\n\n${confirmBlock}\n\n${denyBlock}`;
 }
 
 function sseChunk(obj) { return `data: ${JSON.stringify(obj)}\n\n`; }
@@ -526,6 +719,10 @@ export async function onRequest(context) {
   let confirmingSources = [];
   let contradictingSources = [];
   let dualTrackQueries = { confirming: [], contradicting: [] };
+  let confirmStatus = 'FAILED';
+  let denyStatus    = 'FAILED';
+  let confirmProvider = 'none';
+  let denyProvider    = 'none';
 
   if (needsCorroboration) {
     const initialQueries = generateDualTrackQueries(userMessage, eventType, undefined);
@@ -535,7 +732,7 @@ export async function onRequest(context) {
 
     const [fetchResult, dualResult] = await Promise.allSettled([
       inputClass === 'url' ? fetchArticle(userMessage.trim()) : Promise.resolve(undefined),
-      runDualTrackSearch(initialQueries, braveKey),
+      runDualTrackSearch(initialQueries, eventType, braveKey),
     ]);
 
     if (fetchResult.status === 'fulfilled' && fetchResult.value) {
@@ -546,7 +743,7 @@ export async function onRequest(context) {
         const betterQueries = generateDualTrackQueries(userMessage, eventType, articleData.title);
         dualTrackQueries = betterQueries;
         console.log(`[Sentrix] Refined queries from title — confirming: [${betterQueries.confirming.join(' | ')}]`);
-        const extra = await runDualTrackSearch(betterQueries, braveKey);
+        const extra = await runDualTrackSearch(betterQueries, eventType, braveKey);
         const seenConfirm = new Set();
         const seenDeny = new Set();
         for (const s of extra.confirming) {
@@ -555,21 +752,35 @@ export async function onRequest(context) {
         for (const s of extra.contradicting) {
           if (!seenDeny.has(s.domain)) { seenDeny.add(s.domain); contradictingSources.push(s); }
         }
+        confirmStatus   = extra.confirmStatus;
+        denyStatus      = extra.denyStatus;
+        confirmProvider = extra.confirmProvider;
+        denyProvider    = extra.denyProvider;
       }
     }
 
     if (dualResult.status === 'fulfilled') {
       const seenConfirm = new Set(confirmingSources.map(s => s.domain));
-      const seenDeny = new Set(contradictingSources.map(s => s.domain));
+      const seenDeny    = new Set(contradictingSources.map(s => s.domain));
       for (const s of dualResult.value.confirming) {
         if (!seenConfirm.has(s.domain)) { seenConfirm.add(s.domain); confirmingSources.push(s); }
       }
       for (const s of dualResult.value.contradicting) {
         if (!seenDeny.has(s.domain)) { seenDeny.add(s.domain); contradictingSources.push(s); }
       }
+      if (confirmStatus === 'FAILED') {
+        confirmStatus   = dualResult.value.confirmStatus;
+        denyStatus      = dualResult.value.denyStatus;
+        confirmProvider = dualResult.value.confirmProvider;
+        denyProvider    = dualResult.value.denyProvider;
+      }
     }
 
-    console.log(`[Sentrix] Dual-track complete — confirming=${confirmingSources.length} contradicting=${contradictingSources.length} domains_cfm=[${confirmingSources.map(s => s.domain).join(',')}] domains_deny=[${contradictingSources.map(s => s.domain).join(',')}]`);
+    // Re-evaluate status based on final merged counts
+    confirmStatus = confirmingSources.length >= 3 ? 'SUCCESS' : confirmingSources.length >= 1 ? 'DEGRADED' : 'FAILED';
+    denyStatus    = contradictingSources.length >= 3 ? 'SUCCESS' : contradictingSources.length >= 1 ? 'DEGRADED' : 'FAILED';
+
+    console.log(`[Sentrix] Dual-track complete — confirming=${confirmingSources.length} [${confirmStatus}/${confirmProvider}] contradicting=${contradictingSources.length} [${denyStatus}/${denyProvider}] cfm_domains=[${confirmingSources.map(s => s.domain).join(',')}]`);
   }
 
   // ── Grounding block ─────────────────────────────────────────────────────────
@@ -595,7 +806,7 @@ export async function onRequest(context) {
   }
 
   const corroborationBlock = needsCorroboration
-    ? `\n\nDUAL-TRACK CORROBORATION SOURCES (server-retrieved):\n${buildDualTrackContext(confirmingSources, contradictingSources, dualTrackQueries)}`
+    ? `\n\nDUAL-TRACK CORROBORATION SOURCES (server-retrieved):\n${buildDualTrackContext(confirmingSources, contradictingSources, dualTrackQueries, confirmStatus, denyStatus, confirmProvider, denyProvider)}`
     : '';
 
   const groundingBlock =

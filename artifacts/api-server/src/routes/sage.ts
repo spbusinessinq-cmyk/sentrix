@@ -11,7 +11,7 @@ type InputClass = "url" | "article" | "current-events" | "general";
 type EventType = "death" | "arrest" | "war-attack" | "lawsuit" | "election" | "health" | "business" | "general";
 
 const CURRENT_EVENTS_RE =
-  /(died|dead|killed|arrested|charged|indicted|convicted|elected|fired|resigned|appointed|invaded|attacked|struck|bombed|crashed|launched|outbreak|confirmed|signed|declared|passed\s+away|murdered|shot|leaked|hacked|bankrupt|collapsed|shooting|explosion|earthquake|hurricane|pandemic|war|invasion|sanctions|missile|airstrike|ceasefire|impeach|hospitali[sz]ed|detained|sentenced)/i;
+  /(died?|dies|dead|killed|arrested|charged|indicted|convicted|elected|fired|resigned|appointed|invaded|attacked|struck|bombed|crashed|launched|outbreak|confirmed|signed|declared|passed\s+away|murdered|shot|leaked|hacked|bankrupt|collapsed|shooting|explosion|earthquake|hurricane|pandemic|war|invasion|sanctions|missile|airstrike|ceasefire|impeach|hospitali[sz]ed|detained|sentenced)/i;
 
 function detectInputClass(msg: string): InputClass {
   const t = msg.trim();
@@ -23,7 +23,7 @@ function detectInputClass(msg: string): InputClass {
 
 function detectEventType(input: string): EventType {
   const t = input.toLowerCase();
-  if (/(died|dead|killed|murder|shot dead|passed away|deceased)/.test(t)) return "death";
+  if (/(died?|dies|dead|killed|murder|shot dead|passed away|deceased)/.test(t)) return "death";
   if (/(arrested|charged|indicted|convicted|detained|sentenced)/.test(t)) return "arrest";
   if (/(attacked|invaded|bombed|struck|airstrike|missile|shooting|explosion|terror attack)/.test(t)) return "war-attack";
   if (/(lawsuit|sued|suing|litigation|legal action|court case)/.test(t)) return "lawsuit";
@@ -59,6 +59,7 @@ function generateDualTrackQueries(
 ): DualTrackQueries {
   const base = articleTitle ?? input;
   const entities = extractEntities(base);
+  const name = entities[0] ?? "";                // primary named entity
   const entityStr = entities.slice(0, 2).join(" ");
   const year = new Date().getFullYear();
 
@@ -66,46 +67,110 @@ function generateDualTrackQueries(
   const contradicting: string[] = [];
 
   if (articleTitle) {
+    // Article mode — search for the article title and entity context
     confirming.push(articleTitle.slice(0, 120));
-    if (entityStr) confirming.push(`${entityStr} ${year} confirmed news`);
-    contradicting.push(`${entityStr} denied false disputed`);
-    contradicting.push(`${articleTitle.slice(0, 70)} disputed false`);
+    if (name) {
+      confirming.push(`${name} news ${year}`);
+      confirming.push(`${name} confirmed report`);
+    }
+    if (entityStr) {
+      contradicting.push(`${entityStr} denied false disputed`);
+      contradicting.push(`${articleTitle.slice(0, 70)} disputed false`);
+    }
   } else {
+    // Claim mode — generate event-type-specific queries optimised for news search
     confirming.push(input.slice(0, 120));
-    if (entityStr) confirming.push(`${entityStr} ${year} confirmed official`);
 
     switch (eventType) {
       case "death":
-        contradicting.push(entityStr ? `${entityStr} alive not dead ${year}` : `${input.slice(0, 60)} false rumor`);
-        contradicting.push(entityStr ? `${entityStr} death hoax denied` : "");
+        if (name) {
+          confirming.push(`${name} died`);
+          confirming.push(`${name} death`);
+          confirming.push(`${name} obituary`);
+          confirming.push(`${name} confirmed dead`);
+          contradicting.push(`${name} alive ${year}`);
+          contradicting.push(`${name} death hoax`);
+          contradicting.push(`${name} not dead`);
+          contradicting.push(`${name} health update`);
+        } else {
+          confirming.push(`${input.slice(0, 60)} confirmed`);
+          contradicting.push(`${input.slice(0, 60)} false rumor`);
+          contradicting.push(`${input.slice(0, 60)} hoax denied`);
+        }
         break;
       case "arrest":
-        contradicting.push(entityStr ? `${entityStr} not arrested false charges` : `${input.slice(0, 60)} false`);
-        contradicting.push(entityStr ? `${entityStr} arrest denied dropped` : "");
+        if (name) {
+          confirming.push(`${name} arrested`);
+          confirming.push(`${name} arrest charges`);
+          confirming.push(`${name} indicted`);
+          contradicting.push(`${name} not arrested`);
+          contradicting.push(`${name} arrest denied`);
+          contradicting.push(`${name} charges dropped`);
+        } else {
+          confirming.push(`${input.slice(0, 60)} confirmed`);
+          contradicting.push(`${input.slice(0, 60)} false charges`);
+        }
         break;
       case "war-attack":
-        contradicting.push(entityStr ? `${entityStr} attack denied false report` : `${input.slice(0, 60)} denied`);
-        contradicting.push(entityStr ? `${entityStr} no attack ceasefire` : "");
+        if (entityStr) {
+          confirming.push(`${entityStr} attack strike`);
+          confirming.push(`${entityStr} attack confirmed`);
+          confirming.push(`${entityStr} airstrike missile`);
+          contradicting.push(`${entityStr} attack denied false`);
+          contradicting.push(`${entityStr} ceasefire no attack`);
+        } else {
+          confirming.push(`${input.slice(0, 60)} confirmed`);
+          contradicting.push(`${input.slice(0, 60)} denied`);
+        }
         break;
       case "lawsuit":
-        contradicting.push(entityStr ? `${entityStr} lawsuit dismissed dropped false` : `${input.slice(0, 60)} disputed`);
+        if (name) {
+          confirming.push(`${name} lawsuit sued`);
+          confirming.push(`${name} legal case charges`);
+          contradicting.push(`${name} lawsuit dismissed`);
+          contradicting.push(`${name} case dropped acquitted`);
+        } else {
+          confirming.push(`${input.slice(0, 60)} lawsuit confirmed`);
+          contradicting.push(`${input.slice(0, 60)} dismissed disputed`);
+        }
         break;
       case "election":
-        contradicting.push(entityStr ? `${entityStr} election disputed contested` : `${input.slice(0, 60)} disputed`);
-        contradicting.push(entityStr ? `${entityStr} election result denied fraud claims` : "");
+        if (name) {
+          confirming.push(`${name} election result won`);
+          confirming.push(`${name} elected victory`);
+          contradicting.push(`${name} election disputed contested`);
+          contradicting.push(`${name} election fraud claims`);
+        } else {
+          confirming.push(`${input.slice(0, 60)} result confirmed`);
+          contradicting.push(`${input.slice(0, 60)} disputed`);
+        }
         break;
       case "health":
-        contradicting.push(entityStr ? `${entityStr} health update not sick false` : `${input.slice(0, 60)} false`);
+        if (name) {
+          confirming.push(`${name} hospitalized sick`);
+          confirming.push(`${name} health condition`);
+          contradicting.push(`${name} healthy fine`);
+          contradicting.push(`${name} health false rumor`);
+        } else {
+          confirming.push(`${input.slice(0, 60)} confirmed`);
+          contradicting.push(`${input.slice(0, 60)} false`);
+        }
         break;
       default:
-        contradicting.push(entityStr ? `${entityStr} denied disputed false` : `${input.slice(0, 60)} disputed`);
-        contradicting.push(entityStr ? `${entityStr} rebuttal response correction` : "");
+        if (entityStr) {
+          confirming.push(`${entityStr} ${year}`);
+          contradicting.push(`${entityStr} denied disputed`);
+          contradicting.push(`${entityStr} false misleading`);
+        } else {
+          confirming.push(`${input.slice(0, 60)}`);
+          contradicting.push(`${input.slice(0, 60)} disputed false`);
+        }
     }
   }
 
   return {
-    confirming: [...new Set(confirming)].filter(Boolean).slice(0, 2),
-    contradicting: [...new Set(contradicting)].filter(Boolean).slice(0, 2),
+    confirming:    [...new Set(confirming)].filter(Boolean).slice(0, 4),
+    contradicting: [...new Set(contradicting)].filter(Boolean).slice(0, 4),
   };
 }
 
@@ -191,11 +256,22 @@ interface CorroborationResult {
   title: string; url: string; domain: string; snippet: string;
 }
 
+type RetrievalStatus = "SUCCESS" | "DEGRADED" | "FAILED";
+
+function decodeHtmlEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, " ").replace(/&#\d+;/g, " ");
+}
+
+// ── Stage 1: Brave Search (when API key present) ───────────────────────────
+
 async function searchBraveCorroboration(query: string, apiKey: string): Promise<CorroborationResult[]> {
   const url = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=8&safesearch=moderate&result_filter=web`;
   const res = await fetch(url, {
     headers: { "X-Subscription-Token": apiKey, Accept: "application/json" },
-    signal: AbortSignal.timeout(6000),
+    signal: AbortSignal.timeout(7000),
   });
   if (!res.ok) throw new Error(`Brave ${res.status}`);
   const data = await res.json() as { web?: { results?: Array<{ title: string; url: string; description?: string; meta_url?: { hostname?: string } }> } };
@@ -204,90 +280,240 @@ async function searchBraveCorroboration(query: string, apiKey: string): Promise<
     url: r.url ?? "",
     domain: r.meta_url?.hostname ?? extractDomain(r.url ?? ""),
     snippet: r.description ?? "",
-  }));
+  })).filter(r => r.title && r.domain);
 }
 
-async function searchDDGCorroboration(query: string): Promise<CorroborationResult[]> {
-  const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1&no_html=0&kl=us-en`;
-  const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "Sentrix/1.0" },
-    signal: AbortSignal.timeout(5000),
-  });
-  if (!res.ok) return [];
-  const data = await res.json() as {
-    AbstractText?: string; AbstractURL?: string; Heading?: string;
-    RelatedTopics?: Array<{ FirstURL?: string; Text?: string; Topics?: Array<{ FirstURL?: string; Text?: string }> }>;
-    Results?: Array<{ FirstURL?: string; Text?: string }>;
-  };
-  const results: CorroborationResult[] = [];
-  if (data.AbstractURL && data.AbstractText) {
-    results.push({ title: data.Heading ?? query, url: data.AbstractURL, domain: extractDomain(data.AbstractURL), snippet: data.AbstractText.slice(0, 280) });
-  }
-  const topics = [...(data.RelatedTopics ?? []), ...(data.Results ?? [])];
-  for (const t of topics) {
-    if (t.FirstURL && t.Text && results.length < 8) {
-      results.push({ title: t.Text.slice(0, 100), url: t.FirstURL, domain: extractDomain(t.FirstURL), snippet: t.Text.slice(0, 280) });
+// ── Stage 2: Google News RSS (free, real news headlines and snippets) ──────
+
+async function searchGoogleNews(query: string): Promise<CorroborationResult[]> {
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; SentrixVerify/1.0; +https://sentrix.io)",
+        "Accept": "application/rss+xml,application/xml,text/xml,*/*",
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return [];
+    const xml = await res.text();
+
+    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+    const results: CorroborationResult[] = [];
+
+    for (const match of items.slice(0, 12)) {
+      const itemXml = match[1] ?? "";
+
+      // Title: CDATA or plain; format is often "Article headline - Source Name"
+      const titleRaw = decodeHtmlEntities(
+        itemXml.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/)?.[1] ??
+        itemXml.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? ""
+      ).trim();
+      const lastDash = titleRaw.lastIndexOf(" - ");
+      const articleTitle = lastDash > 10 ? titleRaw.slice(0, lastDash).trim() : titleRaw;
+      const sourceName   = lastDash > 10 ? titleRaw.slice(lastDash + 3).trim() : "";
+
+      // Source element gives us the real publisher's domain
+      const sourceUrl = itemXml.match(/<source\s+url="([^"]+)"/)?.[1]?.trim() ?? "";
+      const domain = sourceUrl ? extractDomain(sourceUrl) : "";
+      if (!articleTitle || !domain) continue;
+
+      // Description: extract text from CDATA HTML
+      const descRaw =
+        itemXml.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/)?.[1] ??
+        itemXml.match(/<description>([\s\S]*?)<\/description>/)?.[1] ?? "";
+
+      // Extract first plain-text sentence from the description HTML
+      const snippetHtml = descRaw.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim();
+      const snippet = decodeHtmlEntities(snippetHtml).slice(0, 280) ||
+                      `${articleTitle} — ${sourceName || domain}`;
+
+      // Best article URL: from description href, else source domain
+      const descLink = descRaw.match(/href="(https?:\/\/(?!news\.google\.com)[^"]+)"/)?.[1] ?? "";
+      const articleUrl = descLink || sourceUrl || `https://${domain}`;
+
+      results.push({ title: articleTitle + (sourceName ? ` — ${sourceName}` : ""), url: articleUrl, domain, snippet });
     }
-    if ("Topics" in t && t.Topics) {
-      for (const sub of t.Topics) {
-        if (sub.FirstURL && sub.Text && results.length < 8) {
-          results.push({ title: sub.Text.slice(0, 100), url: sub.FirstURL, domain: extractDomain(sub.FirstURL), snippet: sub.Text.slice(0, 280) });
+
+    return results;
+  } catch {
+    return [];
+  }
+}
+
+// ── Stage 3: Wikipedia search API (free, no key) ───────────────────────────
+
+async function searchWikipedia(query: string): Promise<CorroborationResult[]> {
+  const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=4&format=json&origin=*`;
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "SentrixVerify/1.0 (fact-check)" },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json() as {
+      query?: { search?: Array<{ title: string; snippet: string; pageid: number }> };
+    };
+    return (data?.query?.search ?? []).slice(0, 4).map(r => ({
+      title: `${r.title} — Wikipedia`,
+      url: `https://en.wikipedia.org/wiki/${encodeURIComponent(r.title.replace(/ /g, "_"))}`,
+      domain: "en.wikipedia.org",
+      snippet: r.snippet.replace(/<[^>]+>/g, "").replace(/\s{2,}/g, " ").trim().slice(0, 280),
+    })).filter(r => r.snippet.length > 10);
+  } catch {
+    return [];
+  }
+}
+
+// ── Stage 4: DuckDuckGo Instant Answers (knowledge cards only) ─────────────
+
+async function searchDDGInstant(query: string): Promise<CorroborationResult[]> {
+  try {
+    const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1&no_html=0&kl=us-en`;
+    const res = await fetch(url, {
+      headers: { Accept: "application/json", "User-Agent": "Sentrix/1.0" },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json() as {
+      AbstractText?: string; AbstractURL?: string; Heading?: string;
+      RelatedTopics?: Array<{ FirstURL?: string; Text?: string; Topics?: Array<{ FirstURL?: string; Text?: string }> }>;
+    };
+    const results: CorroborationResult[] = [];
+    if (data.AbstractURL && data.AbstractText && data.AbstractText.length > 20) {
+      results.push({
+        title: data.Heading ?? query,
+        url: data.AbstractURL,
+        domain: extractDomain(data.AbstractURL),
+        snippet: data.AbstractText.slice(0, 280),
+      });
+    }
+    const topics = data.RelatedTopics ?? [];
+    for (const t of topics) {
+      if (t.FirstURL && t.Text && t.Text.length > 20 && results.length < 5) {
+        results.push({ title: t.Text.slice(0, 120), url: t.FirstURL, domain: extractDomain(t.FirstURL), snippet: t.Text.slice(0, 280) });
+      }
+      if ("Topics" in t && (t as { Topics?: Array<{ FirstURL?: string; Text?: string }> }).Topics) {
+        for (const sub of (t as { Topics: Array<{ FirstURL?: string; Text?: string }> }).Topics) {
+          if (sub.FirstURL && sub.Text && sub.Text.length > 20 && results.length < 5) {
+            results.push({ title: sub.Text.slice(0, 120), url: sub.FirstURL, domain: extractDomain(sub.FirstURL), snippet: sub.Text.slice(0, 280) });
+          }
         }
       }
     }
-  }
-  return results;
+    return results;
+  } catch { return []; }
 }
 
-function newsMockCorroboration(query: string): CorroborationResult[] {
-  const qEnc = encodeURIComponent(query);
-  const qWiki = encodeURIComponent(query.replace(/\s+/g, "_"));
-  return [
-    { title: `${query} — Reuters`, url: `https://www.reuters.com/search/news?blob=${qEnc}`, domain: "reuters.com", snippet: `Reuters coverage of: ${query}` },
-    { title: `${query} — AP News`, url: `https://apnews.com/search?q=${qEnc}`, domain: "apnews.com", snippet: `Associated Press reporting on: ${query}` },
-    { title: `${query} — Wikipedia`, url: `https://en.wikipedia.org/wiki/${qWiki}`, domain: "en.wikipedia.org", snippet: `Encyclopedia reference for: ${query}` },
-    { title: `${query} — BBC News`, url: `https://www.bbc.com/search?q=${qEnc}`, domain: "bbc.com", snippet: `BBC News coverage of: ${query}` },
-  ];
+// ── Broadening strategy: simplify query to entity + keyword ───────────────
+
+function broadenQuery(query: string, eventType: EventType): string {
+  const entities = extractEntities(query);
+  const name = entities[0] ?? query.split(" ").slice(0, 3).join(" ");
+  const keywordMap: Record<EventType, string> = {
+    death: "death",
+    arrest: "arrest",
+    "war-attack": "attack",
+    lawsuit: "lawsuit",
+    election: "election result",
+    health: "health",
+    business: "news",
+    general: "news",
+  };
+  return `${name} ${keywordMap[eventType] ?? "news"}`;
 }
+
+// ── Multi-stage corroboration search with fallback ────────────────────────
 
 async function runCorroborationSearch(
   queries: string[],
+  eventType: EventType,
   braveKey?: string
-): Promise<CorroborationResult[]> {
+): Promise<{ results: CorroborationResult[]; status: RetrievalStatus; provider: string }> {
   const all: CorroborationResult[] = [];
   const seenDomains = new Set<string>();
+  const providers: string[] = [];
 
-  await Promise.allSettled(queries.map(async (q) => {
-    let results: CorroborationResult[] = [];
-    if (braveKey) {
-      try { results = await searchBraveCorroboration(q, braveKey); }
-      catch { results = await searchDDGCorroboration(q); }
-    } else {
-      results = await searchDDGCorroboration(q);
-      if (results.length === 0) results = newsMockCorroboration(q);
-    }
-    for (const r of results) {
-      if (r.domain && !seenDomains.has(r.domain)) {
+  const merge = (incoming: CorroborationResult[]) => {
+    for (const r of incoming) {
+      if (r.domain && r.snippet && r.snippet.length > 15 && !seenDomains.has(r.domain)) {
         seenDomains.add(r.domain);
         all.push(r);
       }
     }
-  }));
+  };
 
-  return all.slice(0, 10);
+  for (const q of queries.slice(0, 4)) {
+    // Stage A: Brave (if key present)
+    if (braveKey && all.length < 3) {
+      try {
+        const bResults = await searchBraveCorroboration(q, braveKey);
+        if (bResults.length > 0) { merge(bResults); providers.push("brave"); }
+      } catch { /* fall through */ }
+    }
+
+    // Stage B: Google News RSS — primary free provider
+    if (all.length < 3) {
+      const gnResults = await searchGoogleNews(q);
+      if (gnResults.length > 0) { merge(gnResults); providers.push("google-news"); }
+    }
+
+    // Stage C: Wikipedia for entity context
+    if (all.length < 2) {
+      const wikiResults = await searchWikipedia(q);
+      if (wikiResults.length > 0) { merge(wikiResults); providers.push("wikipedia"); }
+    }
+
+    // Stage D: DDG Instant Answers (knowledge cards, entity-level)
+    if (all.length < 2) {
+      const ddgResults = await searchDDGInstant(q);
+      if (ddgResults.length > 0) { merge(ddgResults); providers.push("ddg"); }
+    }
+
+    if (all.length >= 6) break;
+  }
+
+  // Stage E: Broaden query if still empty
+  if (all.length === 0) {
+    const broad = broadenQuery(queries[0] ?? "", eventType);
+    const gnBroad = await searchGoogleNews(broad);
+    merge(gnBroad);
+    if (gnBroad.length > 0) providers.push("google-news-broad");
+
+    if (all.length === 0) {
+      const wikiBroad = await searchWikipedia(broad);
+      merge(wikiBroad);
+      if (wikiBroad.length > 0) providers.push("wikipedia-broad");
+    }
+  }
+
+  const status: RetrievalStatus = all.length >= 3 ? "SUCCESS" : all.length >= 1 ? "DEGRADED" : "FAILED";
+  return { results: all.slice(0, 10), status, provider: [...new Set(providers)].join("+") || "none" };
 }
 
 async function runDualTrackSearch(
   queries: DualTrackQueries,
+  eventType: EventType,
   braveKey?: string
-): Promise<{ confirming: CorroborationResult[]; contradicting: CorroborationResult[] }> {
+): Promise<{
+  confirming: CorroborationResult[];
+  contradicting: CorroborationResult[];
+  confirmStatus: RetrievalStatus;
+  denyStatus: RetrievalStatus;
+  confirmProvider: string;
+  denyProvider: string;
+}> {
   const [confirmResult, denyResult] = await Promise.allSettled([
-    runCorroborationSearch(queries.confirming, braveKey),
-    runCorroborationSearch(queries.contradicting, braveKey),
+    runCorroborationSearch(queries.confirming, eventType, braveKey),
+    runCorroborationSearch(queries.contradicting, eventType, braveKey),
   ]);
   return {
-    confirming: confirmResult.status === "fulfilled" ? confirmResult.value : [],
-    contradicting: denyResult.status === "fulfilled" ? denyResult.value : [],
+    confirming:      confirmResult.status === "fulfilled" ? confirmResult.value.results      : [],
+    contradicting:   denyResult.status    === "fulfilled" ? denyResult.value.results        : [],
+    confirmStatus:   confirmResult.status === "fulfilled" ? confirmResult.value.status      : "FAILED",
+    denyStatus:      denyResult.status    === "fulfilled" ? denyResult.value.status         : "FAILED",
+    confirmProvider: confirmResult.status === "fulfilled" ? confirmResult.value.provider    : "error",
+    denyProvider:    denyResult.status    === "fulfilled" ? denyResult.value.provider       : "error",
   };
 }
 
@@ -446,26 +672,39 @@ function buildResultsContext(
 function buildDualTrackContext(
   confirming: CorroborationResult[],
   contradicting: CorroborationResult[],
-  queries: DualTrackQueries
+  queries: DualTrackQueries,
+  confirmStatus: RetrievalStatus = "FAILED",
+  denyStatus: RetrievalStatus = "FAILED",
+  confirmProvider = "none",
+  denyProvider = "none"
 ): string {
-  const cfmQStr = queries.confirming.map(q => `"${q}"`).join(" | ");
+  const cfmQStr  = queries.confirming.map(q => `"${q}"`).join(" | ");
   const denyQStr = queries.contradicting.map(q => `"${q}"`).join(" | ");
 
+  const overallStatus: RetrievalStatus =
+    confirmStatus === "SUCCESS" && denyStatus === "SUCCESS" ? "SUCCESS" :
+    confirmStatus === "FAILED"  && denyStatus === "FAILED"  ? "FAILED"  : "DEGRADED";
+
+  const statusNote =
+    overallStatus === "FAILED"   ? "RETRIEVAL STATUS: FAILED — live search returned no usable sources. Sage must not draw confident conclusions and must note retrieval failure." :
+    overallStatus === "DEGRADED" ? "RETRIEVAL STATUS: DEGRADED — one or both search tracks returned limited results. Note this limitation in the analysis." :
+                                   "RETRIEVAL STATUS: SUCCESS — live search retrieved sources on both tracks.";
+
   const confirmBlock = confirming.length > 0
-    ? `CONFIRMING SEARCH RESULTS (queries: ${cfmQStr}):\n` +
+    ? `CONFIRMING SEARCH RESULTS [status:${confirmStatus} via:${confirmProvider}] (queries: ${cfmQStr}):\n` +
       confirming.map((s, i) =>
         `[Confirm ${i + 1}] ${s.domain}\nTitle: ${s.title}\nURL: ${s.url}\nSnippet: ${s.snippet}`
       ).join("\n\n")
-    : `CONFIRMING SEARCH RESULTS: No confirming sources retrieved.\nQueries attempted: ${cfmQStr}`;
+    : `CONFIRMING SEARCH RESULTS [status:${confirmStatus}]: No confirming sources retrieved — retrieval returned empty.\nQueries attempted: ${cfmQStr}\nNote: Empty retrieval ≠ no evidence exists. The search may have failed to reach the relevant sources.`;
 
   const denyBlock = contradicting.length > 0
-    ? `DENIAL/CONTRADICTION SEARCH RESULTS (queries: ${denyQStr}):\n` +
+    ? `DENIAL/CONTRADICTION SEARCH RESULTS [status:${denyStatus} via:${denyProvider}] (queries: ${denyQStr}):\n` +
       contradicting.map((s, i) =>
         `[Deny ${i + 1}] ${s.domain}\nTitle: ${s.title}\nURL: ${s.url}\nSnippet: ${s.snippet}`
       ).join("\n\n")
-    : `DENIAL/CONTRADICTION SEARCH RESULTS: No contradicting sources retrieved.\nQueries attempted: ${denyQStr}`;
+    : `DENIAL/CONTRADICTION SEARCH RESULTS [status:${denyStatus}]: No contradicting sources retrieved.\nQueries attempted: ${denyQStr}`;
 
-  return `${confirmBlock}\n\n${denyBlock}`;
+  return `${statusNote}\n\n${confirmBlock}\n\n${denyBlock}`;
 }
 
 // ── Limited-mode fallback ─────────────────────────────────────────────────────
@@ -542,6 +781,10 @@ sageRouter.post("/sage/query", async (req, res) => {
   let confirmingSources: CorroborationResult[] = [];
   let contradictingSources: CorroborationResult[] = [];
   let dualTrackQueries: DualTrackQueries = { confirming: [], contradicting: [] };
+  let confirmStatus: RetrievalStatus = "FAILED";
+  let denyStatus:    RetrievalStatus = "FAILED";
+  let confirmProvider = "none";
+  let denyProvider    = "none";
 
   if (needsCorroboration) {
     const initialQueries = generateDualTrackQueries(userMessage, eventType, undefined);
@@ -554,7 +797,7 @@ sageRouter.post("/sage/query", async (req, res) => {
 
     const [fetchResult, dualResult] = await Promise.allSettled([
       inputClass === "url" ? fetchArticle(userMessage.trim()) : Promise.resolve(undefined),
-      runDualTrackSearch(initialQueries, braveKey),
+      runDualTrackSearch(initialQueries, eventType, braveKey),
     ]);
 
     if (fetchResult.status === "fulfilled" && fetchResult.value) {
@@ -572,8 +815,7 @@ sageRouter.post("/sage/query", async (req, res) => {
           { confirming: betterQueries.confirming, contradicting: betterQueries.contradicting },
           "[Sentrix] Refined dual-track queries from article title"
         );
-        const extra = await runDualTrackSearch(betterQueries, braveKey);
-        // Merge extra results, deduplicating by domain
+        const extra = await runDualTrackSearch(betterQueries, eventType, braveKey);
         const seenConfirm = new Set<string>();
         const seenDeny = new Set<string>();
         for (const s of extra.confirming) {
@@ -582,32 +824,51 @@ sageRouter.post("/sage/query", async (req, res) => {
         for (const s of extra.contradicting) {
           if (!seenDeny.has(s.domain)) { seenDeny.add(s.domain); contradictingSources.push(s); }
         }
+        confirmStatus   = extra.confirmStatus;
+        denyStatus      = extra.denyStatus;
+        confirmProvider = extra.confirmProvider;
+        denyProvider    = extra.denyProvider;
       }
     }
 
     if (dualResult.status === "fulfilled") {
       const seenConfirm = new Set(confirmingSources.map(s => s.domain));
-      const seenDeny = new Set(contradictingSources.map(s => s.domain));
+      const seenDeny    = new Set(contradictingSources.map(s => s.domain));
       for (const s of dualResult.value.confirming) {
         if (!seenConfirm.has(s.domain)) { seenConfirm.add(s.domain); confirmingSources.push(s); }
       }
       for (const s of dualResult.value.contradicting) {
         if (!seenDeny.has(s.domain)) { seenDeny.add(s.domain); contradictingSources.push(s); }
       }
+      // Use the initial run's status if we didn't do an article-refined run
+      if (confirmStatus === "FAILED") {
+        confirmStatus   = dualResult.value.confirmStatus;
+        denyStatus      = dualResult.value.denyStatus;
+        confirmProvider = dualResult.value.confirmProvider;
+        denyProvider    = dualResult.value.denyProvider;
+      }
     }
+
+    // Re-evaluate status based on final merged counts
+    confirmStatus = confirmingSources.length >= 3 ? "SUCCESS" : confirmingSources.length >= 1 ? "DEGRADED" : "FAILED";
+    denyStatus    = contradictingSources.length >= 3 ? "SUCCESS" : contradictingSources.length >= 1 ? "DEGRADED" : "FAILED";
 
     logger.info(
       {
-        confirmingCount: confirmingSources.length,
+        confirmingCount:  confirmingSources.length,
         contradictingCount: contradictingSources.length,
-        confirming: dualTrackQueries.confirming,
+        confirmStatus,
+        denyStatus,
+        confirmProvider,
+        denyProvider,
+        confirming:   dualTrackQueries.confirming,
         contradicting: dualTrackQueries.contradicting,
         domains: {
-          confirming: confirmingSources.map(s => s.domain),
+          confirming:   confirmingSources.map(s => s.domain),
           contradicting: contradictingSources.map(s => s.domain),
         },
       },
-      `[Sentrix] Dual-track complete — ${confirmingSources.length} confirming, ${contradictingSources.length} contradicting`
+      `[Sentrix] Dual-track complete — ${confirmingSources.length} confirming, ${contradictingSources.length} contradicting [${confirmStatus}/${denyStatus}]`
     );
   }
 
@@ -635,7 +896,7 @@ sageRouter.post("/sage/query", async (req, res) => {
   }
 
   const corroborationBlock = needsCorroboration
-    ? `\n\nDUAL-TRACK CORROBORATION SOURCES (server-retrieved):\n${buildDualTrackContext(confirmingSources, contradictingSources, dualTrackQueries)}`
+    ? `\n\nDUAL-TRACK CORROBORATION SOURCES (server-retrieved):\n${buildDualTrackContext(confirmingSources, contradictingSources, dualTrackQueries, confirmStatus, denyStatus, confirmProvider, denyProvider)}`
     : "";
 
   const groundingBlock =
