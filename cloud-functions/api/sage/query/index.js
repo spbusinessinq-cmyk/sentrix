@@ -25,6 +25,20 @@ function detectSensitiveClaim(input) {
   return personalPatterns.some(re => re.test(input));
 }
 
+// ── Fact mode detection ───────────────────────────────────────────────────────
+
+const FACT_MODE_RE = /\b(?:what\s+is|what\s+are|what\s+was|what\s+were|what's|how\s+many|how\s+much|how\s+far|how\s+long\s+is|how\s+big|how\s+tall|how\s+old|where\s+is|where\s+are|where\s+was|who\s+is|who\s+was|who\s+are|when\s+was|when\s+did|when\s+is|capital\s+of|size\s+of|population\s+of|area\s+of|define\s+|meaning\s+of|definition\s+of)\b/i;
+
+function detectFactMode(msg) {
+  const t = msg.trim();
+  if (t.length > 150) return false;
+  if (/^https?:\/\//i.test(t)) return false;
+  if (CURRENT_EVENTS_RE.test(t)) return false;
+  // Direct math: "12 x 12", "144 / 12", etc.
+  if (/^\d+\s*[\+\-\*\/x×÷]\s*\d+/.test(t)) return true;
+  return FACT_MODE_RE.test(t);
+}
+
 // ── Input classification ──────────────────────────────────────────────────────
 
 const CURRENT_EVENTS_RE =
@@ -456,6 +470,33 @@ async function runDualTrackSearch(queries, eventType, braveKey) {
     denyProvider:    denyResult.status    === 'fulfilled' ? denyResult.value.provider        : 'error',
   };
 }
+
+// ── Fact mode system prompt ───────────────────────────────────────────────────
+
+const FACT_SYSTEM_PROMPT = `You are SAGE — Sentrix's intelligence engine, running in FACT MODE.
+
+The user has asked a direct factual question. Answer it immediately from general knowledge.
+
+Use this exact structure:
+
+**MODE: FACT**
+
+## ANSWER
+Direct answer — first sentence states the fact precisely. No preamble.
+
+## DETAIL
+Supporting information: numbers, measurements, history, context that adds value.
+
+## CONTEXT
+Optional: useful comparison, ranking, or clarification only if it genuinely helps.
+
+ABSOLUTE RULES:
+- Answer from general knowledge immediately. Do not wait for sources.
+- Do NOT say "no sources found", "not provided", "unknown", or "I cannot verify."
+- Do NOT mention retrieval, search results, or what was or was not in the input.
+- Do NOT apologize or hedge about well-known facts.
+- If it is a math question, compute it and give the exact answer.
+- Be concise, accurate, and decisive. Sage is intelligent — act like it.`;
 
 // ── System prompt ─────────────────────────────────────────────────────────────
 
@@ -979,12 +1020,13 @@ export async function onRequest(context) {
   const inputClass = detectInputClass(userMessage);
   const eventType  = detectEventType(userMessage);
   const isSensitiveClaim = detectSensitiveClaim(userMessage);
-  const needsCorroboration = inputClass === 'url' || inputClass === 'current-events' || inputClass === 'article';
+  const isFactMode = inputClass === 'general' && !isSensitiveClaim && detectFactMode(userMessage);
+  const needsCorroboration = !isFactMode && (inputClass === 'url' || inputClass === 'current-events' || inputClass === 'article');
   const isArticleMode = inputClass === 'url' || inputClass === 'article';
   const apiKey = resolveGeminiKey(env ?? {});
   const braveKey = env?.BRAVE_SEARCH_API_KEY;
 
-  console.log(`[Sentrix] /api/sage/query — class=${inputClass} event=${eventType} sensitive=${isSensitiveClaim} geminiKey=${!!apiKey} braveKey=${!!braveKey} query="${(userMessage || '').slice(0, 60)}"`);
+  console.log(`[Sentrix] /api/sage/query — class=${inputClass} event=${eventType} fact=${isFactMode} sensitive=${isSensitiveClaim} geminiKey=${!!apiKey} braveKey=${!!braveKey} query="${(userMessage || '').slice(0, 60)}"`);
 
   const sseHeaders = {
     'Content-Type': 'text/event-stream',
@@ -1003,6 +1045,73 @@ export async function onRequest(context) {
     writer.write(encoder.encode(sseChunk({ done: true })));
     writer.close();
     return new Response(readable, { headers: sseHeaders });
+  }
+
+  // ── FACT MODE fast path — bypass all retrieval ───────────────────────────────
+  if (isFactMode) {
+    console.log(`[Sentrix] FACT MODE — bypassing retrieval for: "${userMessage.trim().slice(0, 80)}"`);
+    const factPayload = {
+      system_instruction: { parts: [{ text: FACT_SYSTEM_PROMPT }] },
+      contents: [{ role: 'user', parts: [{ text: userMessage.trim() }] }],
+      generationConfig: { maxOutputTokens: 2048 },
+    };
+    const factUrl = `${resolveGeminiBase(env ?? {})}/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
+    const { readable: fReadable, writable: fWritable } = new TransformStream();
+    const fWriter = fWritable.getWriter();
+    const fEnc = new TextEncoder();
+    (async () => {
+      try {
+        const gRes = await fetch(factUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(factPayload),
+          signal: AbortSignal.timeout(30000),
+        });
+        if (!gRes.ok) {
+          const errText = await gRes.text().catch(() => String(gRes.status));
+          console.error(`[Sentrix] Fact mode Gemini error ${gRes.status}: ${errText.slice(0, 200)}`);
+          fWriter.write(fEnc.encode(sseChunk({ content: '## ANSWER\nUnable to retrieve answer — API error.' })));
+          fWriter.write(fEnc.encode(sseChunk({ done: true })));
+          fWriter.close();
+          return;
+        }
+        const fReader = gRes.body.getReader();
+        const fDec = new TextDecoder();
+        let fBuf = '';
+        let hasOutput = false;
+        while (true) {
+          const { done, value } = await fReader.read();
+          if (done) break;
+          fBuf += fDec.decode(value, { stream: true });
+          const lines = fBuf.split('\n');
+          fBuf = lines.pop() ?? '';
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith('data:')) continue;
+            const raw = trimmed.slice(5).trim();
+            if (!raw || raw === '[DONE]') continue;
+            try {
+              const evt = JSON.parse(raw);
+              const text = evt?.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (text) { hasOutput = true; fWriter.write(fEnc.encode(sseChunk({ content: text }))); }
+            } catch { /* skip */ }
+          }
+        }
+        if (!hasOutput) {
+          fWriter.write(fEnc.encode(sseChunk({ content: '## ANSWER\nUnable to generate a response.' })));
+        }
+        fWriter.write(fEnc.encode(sseChunk({ done: true })));
+        fWriter.close();
+        console.log(`[Sentrix] Fact mode completed for: "${userMessage.trim().slice(0, 60)}"`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        console.error(`[Sentrix] Fact mode stream error: ${msg}`);
+        fWriter.write(fEnc.encode(sseChunk({ content: '## ANSWER\nStream error — please try again.' })));
+        fWriter.write(fEnc.encode(sseChunk({ done: true })));
+        fWriter.close();
+      }
+    })();
+    return new Response(fReadable, { headers: sseHeaders });
   }
 
   // ── Parallel: article fetch + dual-track corroboration ─────────────────────

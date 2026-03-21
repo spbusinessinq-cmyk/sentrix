@@ -1,0 +1,195 @@
+Fix Sentrix so FACT MODE is enforced in code, not just suggested in the prompt.
+
+CRITICAL:
+Prompt-only mode selection is not enough.
+Sage is still answering simple factual questions like:
+- what is the size of ohio
+as if they are verification/search problems.
+
+This must stop.
+
+MISSION:
+Implement a real code-level mode classifier and execution split so simple factual questions bypass the verification/retrieval pipeline entirely.
+
+GOAL:
+For basic known questions, Sage must answer directly and never receive “no search results” framing.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. ADD REAL MODE CLASSIFIER IN CODE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Before any retrieval/search/corroboration logic runs, classify the input in code into one of:
+
+- FACT
+- VERIFIER
+- ANALYST
+- EXTRACTOR
+
+Do NOT rely on the model to choose mode by prompt alone.
+
+Use strong FACT signals such as:
+- "what is"
+- "how many"
+- "where is"
+- "capital of"
+- "size of"
+- "population of"
+- direct math
+- direct definition
+- direct historical/general-knowledge questions
+
+If the query is a simple factual question and does not require live verification:
+set mode = FACT
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. FACT MODE MUST BYPASS SEARCH / CORROBORATION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+If mode === FACT:
+- do NOT run search retrieval
+- do NOT build corroboration queries
+- do NOT inject “no search results” language
+- do NOT pass verification scaffolding
+- do NOT use verifier output structure
+
+Instead:
+send a dedicated FACT-MODE prompt/input path to Sage.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. CREATE A SEPARATE FACT-MODE PROMPT PATH
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For FACT mode, use a much simpler instruction set:
+
+- answer directly from general knowledge
+- be concise and correct
+- provide short supporting detail
+- do not mention missing sources
+- do not mention the input lacking information
+- do not behave like a search engine
+- if widely known, answer immediately
+
+FACT MODE output shape:
+
+## ANSWER
+Direct answer
+
+## DETAIL
+Useful supporting facts
+
+## CONTEXT
+Optional clarification
+
+Do not return verifier fields like:
+- SIGNAL
+- AGREEMENT
+- CONFIRMING EVIDENCE
+- CONTRADICTING EVIDENCE
+unless genuinely needed
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. VERIFIER MODE ONLY WHEN ACTUALLY NEEDED
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Only use verification path for:
+- current events
+- deaths
+- arrests
+- breaking news
+- article checks
+- "did X happen"
+- sensitive claims needing corroboration discipline
+
+Do NOT route basic questions into verifier mode.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. ANALYST MODE ONLY FOR BROAD CLAIMS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep analyst mode for:
+- broad geopolitical claims
+- economic assertions
+- strategic dependency questions
+- ideological/political claims
+
+Do NOT use analyst mode for simple factual questions.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. EXTRACTOR MODE ONLY FOR URLS / LONG TEXT
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep extractor mode only for:
+- URLs
+- pasted article text
+- long documents
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. FRONTEND / UI ADAPTATION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+When FACT mode is active:
+- label it clearly if helpful (FACT MODE)
+- render the simpler answer format
+- do not show empty evidence sections
+- do not show “what to verify next” unless relevant
+
+If needed, allow the parser to accept multiple output shapes:
+- fact response
+- verifier response
+- analyst response
+
+Make the UI resilient to each mode.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. HARD RULE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For queries like:
+- what is the size of ohio
+- capital of germany
+- how many states are in the us
+- what is 12 x 12
+- where is sweden
+
+Sentrix must NEVER respond with:
+- not provided in the input
+- no sources found
+- no search results available
+- unknown due to missing retrieval
+
+That behavior is a system failure.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. VALIDATION TESTS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+After implementation, verify these all go through FACT mode and answer directly:
+
+- what is the size of ohio
+- how many states are in the us
+- capital of germany
+- what is 12 x 12
+- where is sweden
+
+Also verify these still use the correct non-FACT paths:
+
+- did chuck norris die
+- can sweden survive without us help
+- fact-check this URL: [article]
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. IMPLEMENT IN BOTH BACKENDS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep behavior aligned in:
+- cloud-functions/api/sage/query/index.js
+- artifacts/api-server/src/routes/sage.ts
+
+Mode classification and execution path must match in both.
+
+FINAL OBJECTIVE:
+FACT questions must use a direct-answer path.
+VERIFIER questions must use corroboration.
+ANALYST questions must use structured reasoning.
+
+Do not patch the prompt again without changing the execution path.

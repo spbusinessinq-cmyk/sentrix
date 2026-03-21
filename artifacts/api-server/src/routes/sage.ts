@@ -21,6 +21,19 @@ function detectSensitiveClaim(input: string): boolean {
   return personalPatterns.some(re => re.test(input));
 }
 
+// ── Fact mode detection ───────────────────────────────────────────────────────
+
+const FACT_MODE_RE = /\b(?:what\s+is|what\s+are|what\s+was|what\s+were|what's|how\s+many|how\s+much|how\s+far|how\s+long\s+is|how\s+big|how\s+tall|how\s+old|where\s+is|where\s+are|where\s+was|who\s+is|who\s+was|who\s+are|when\s+was|when\s+did|when\s+is|capital\s+of|size\s+of|population\s+of|area\s+of|define\s+|meaning\s+of|definition\s+of)\b/i;
+
+function detectFactMode(msg: string): boolean {
+  const t = msg.trim();
+  if (t.length > 150) return false;
+  if (/^https?:\/\//i.test(t)) return false;
+  if (CURRENT_EVENTS_RE.test(t)) return false;
+  if (/^\d+\s*[\+\-\*\/x×÷]\s*\d+/.test(t)) return true;
+  return FACT_MODE_RE.test(t);
+}
+
 // ── Input classification ──────────────────────────────────────────────────────
 
 type InputClass = "url" | "article" | "current-events" | "general";
@@ -534,6 +547,33 @@ async function runDualTrackSearch(
   };
 }
 
+// ── Fact mode system prompt ───────────────────────────────────────────────────
+
+const FACT_SYSTEM_PROMPT = `You are SAGE — Sentrix's intelligence engine, running in FACT MODE.
+
+The user has asked a direct factual question. Answer it immediately from general knowledge.
+
+Use this exact structure:
+
+**MODE: FACT**
+
+## ANSWER
+Direct answer — first sentence states the fact precisely. No preamble.
+
+## DETAIL
+Supporting information: numbers, measurements, history, context that adds value.
+
+## CONTEXT
+Optional: useful comparison, ranking, or clarification only if it genuinely helps.
+
+ABSOLUTE RULES:
+- Answer from general knowledge immediately. Do not wait for sources.
+- Do NOT say "no sources found", "not provided", "unknown", or "I cannot verify."
+- Do NOT mention retrieval, search results, or what was or was not in the input.
+- Do NOT apologize or hedge about well-known facts.
+- If it is a math question, compute it and give the exact answer.
+- Be concise, accurate, and decisive. Sage is intelligent — act like it.`;
+
 // ── System prompt ─────────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `You are SAGE — Sentrix's Signal & Truth Filter and Intelligence Engine.
@@ -1040,14 +1080,52 @@ sageRouter.post("/sage/query", async (req, res) => {
   const inputClass = detectInputClass(userMessage);
   const eventType  = detectEventType(userMessage);
   const isSensitiveClaim = detectSensitiveClaim(userMessage);
-  const needsCorroboration = inputClass === "url" || inputClass === "current-events" || inputClass === "article";
+  const isFactMode = inputClass === "general" && !isSensitiveClaim && detectFactMode(userMessage);
+  const needsCorroboration = !isFactMode && (inputClass === "url" || inputClass === "current-events" || inputClass === "article");
   const isArticleMode = inputClass === "url" || inputClass === "article";
   const braveKey = process.env["BRAVE_SEARCH_API_KEY"];
 
   logger.info(
-    { inputClass, eventType, isSensitiveClaim, needsCorroboration, braveKey: !!braveKey, query: userMessage.trim().slice(0, 100) },
-    `[Sentrix] /api/sage/query — class=${inputClass} event=${eventType} sensitive=${isSensitiveClaim}`
+    { inputClass, eventType, isFactMode, isSensitiveClaim, needsCorroboration, braveKey: !!braveKey, query: userMessage.trim().slice(0, 100) },
+    `[Sentrix] /api/sage/query — class=${inputClass} event=${eventType} fact=${isFactMode} sensitive=${isSensitiveClaim}`
   );
+
+  // ── FACT MODE fast path — bypass all retrieval ───────────────────────────────
+  if (isFactMode) {
+    logger.info({ query: userMessage.trim().slice(0, 100) }, "[Sentrix] FACT MODE — bypassing retrieval pipeline");
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.flushHeaders();
+    try {
+      const stream = await ai.models.generateContentStream({
+        model: "gemini-2.5-flash",
+        config: { maxOutputTokens: 2048, systemInstruction: FACT_SYSTEM_PROMPT },
+        contents: [{ role: "user", parts: [{ text: userMessage.trim() }] }],
+      });
+      let hasOutput = false;
+      for await (const chunk of stream) {
+        const text = chunk.text;
+        if (text) {
+          hasOutput = true;
+          res.write(`data: ${JSON.stringify({ content: text })}\n\n`);
+        }
+      }
+      if (!hasOutput) {
+        res.write(`data: ${JSON.stringify({ content: "## ANSWER\nUnable to generate a response." })}\n\n`);
+      }
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      res.end();
+      logger.info({ query: userMessage.trim().slice(0, 100) }, "[Sentrix] Fact mode completed");
+    } catch (err) {
+      logger.error({ err }, "[Sentrix] Fact mode stream failed");
+      res.write(`data: ${JSON.stringify({ content: "## ANSWER\nStream error — please try again." })}\n\n`);
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      res.end();
+    }
+    return;
+  }
 
   // ── Parallel: article fetch + dual-track corroboration search ───────────────
   let articleData: ArticleData | undefined;

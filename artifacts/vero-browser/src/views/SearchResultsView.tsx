@@ -46,6 +46,8 @@ function enrichResult(r: SearchResultItem): EnrichedItem {
 // ── Sage response parsing ─────────────────────────────────────────────────────
 interface ParsedSage {
   answer: string;
+  detail: string;
+  context: string;
   verificationStatus: string;
   confirmingEvidence: string;
   contradictingEvidence: string;
@@ -70,7 +72,11 @@ function parseSageResponse(text: string): ParsedSage {
   };
 
   // All section names in output order — used as stop-markers for each section
+  // DETAIL and CONTEXT are FACT MODE sections; they must appear early so ANSWER
+  // only captures the direct answer, not the full fact response.
   const ALL = [
+    'DETAIL',
+    'CONTEXT',
     'VERIFICATION STATUS',
     'CONFIRMING EVIDENCE',
     'CONTRADICTING OR MISSING EVIDENCE',
@@ -87,21 +93,25 @@ function parseSageResponse(text: string): ParsedSage {
   ];
 
   const answer               = sec('ANSWER', ALL);
-  const verificationStatus   = sec('VERIFICATION STATUS', ALL.slice(1));
-  const confirmingEvidence   = sec('CONFIRMING EVIDENCE', ALL.slice(2));
-  const contradictingEvidence = sec('CONTRADICTING OR MISSING EVIDENCE', ALL.slice(3));
-  const sourceWeight         = sec('SOURCE WEIGHT', ALL.slice(4));
-  const signal               = sec('SIGNAL', ALL.slice(5));
-  const agreement            = sec('AGREEMENT', ALL.slice(6));
-  const risk                 = sec('RISK', ALL.slice(7));
-  const whatMatters          = sec('WHAT MATTERS', ALL.slice(8));
-  const whatToQ              = sec('WHAT TO QUESTION', ALL.slice(9));
-  const whatToVerify         = sec('WHAT TO VERIFY NEXT', ALL.slice(10));
+  const detail               = sec('DETAIL', ALL.slice(1));
+  const context              = sec('CONTEXT', ALL.slice(2));
+  const verificationStatus   = sec('VERIFICATION STATUS', ALL.slice(3));
+  const confirmingEvidence   = sec('CONFIRMING EVIDENCE', ALL.slice(4));
+  const contradictingEvidence = sec('CONTRADICTING OR MISSING EVIDENCE', ALL.slice(5));
+  const sourceWeight         = sec('SOURCE WEIGHT', ALL.slice(6));
+  const signal               = sec('SIGNAL', ALL.slice(7));
+  const agreement            = sec('AGREEMENT', ALL.slice(8));
+  const risk                 = sec('RISK', ALL.slice(9));
+  const whatMatters          = sec('WHAT MATTERS', ALL.slice(10));
+  const whatToQ              = sec('WHAT TO QUESTION', ALL.slice(11));
+  const whatToVerify         = sec('WHAT TO VERIFY NEXT', ALL.slice(12));
   const sources              = sec('SOURCES', ['INTELLIGENCE', 'ARTICLE']);
   const intelligence         = sec('INTELLIGENCE');
 
   return {
     answer: answer || text,
+    detail,
+    context,
     verificationStatus,
     confirmingEvidence,
     contradictingEvidence,
@@ -819,6 +829,35 @@ function SageAnswerBlock({ msg }: { msg: RichSageMessage }) {
       <div style={{ fontFamily: "'Inter', sans-serif" }}>
         {renderMarkdown(p.answer)}
       </div>
+
+      {/* FACT MODE: DETAIL + CONTEXT — compact info blocks, shown only when present */}
+      {(p.detail || p.context) && (
+        <div
+          className="rounded-xl overflow-hidden flex flex-col divide-y"
+          style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(56,189,248,0.10)', borderColor: 'rgba(255,255,255,0.06)' }}
+        >
+          {p.detail && (
+            <div className="px-4 py-3">
+              <div className="text-[8.5px] font-mono uppercase tracking-[0.20em] mb-1.5" style={{ color: 'rgba(56,189,248,0.40)' }}>
+                Detail
+              </div>
+              <div className="text-[13px] leading-relaxed" style={{ color: 'rgba(200,200,212,0.75)', fontFamily: "'Inter', sans-serif" }}>
+                {renderMarkdown(p.detail)}
+              </div>
+            </div>
+          )}
+          {p.context && (
+            <div className="px-4 py-3">
+              <div className="text-[8.5px] font-mono uppercase tracking-[0.20em] mb-1.5" style={{ color: 'rgba(148,163,184,0.35)' }}>
+                Context
+              </div>
+              <div className="text-[13px] leading-relaxed" style={{ color: 'rgba(200,200,212,0.60)', fontFamily: "'Inter', sans-serif" }}>
+                {renderMarkdown(p.context)}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* SIGNAL BAR — decisive, bold, unavoidable */}
       {hasSignalBar && (
