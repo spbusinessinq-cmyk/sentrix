@@ -1,0 +1,136 @@
+You are a senior backend engineer fixing a production deployment issue on EdgeOne Pages.
+
+The application is failing with:
+- 405 on POST /api/sage/query
+- ReferenceError: mockResults is not defined
+- Sage API not responding in production
+
+Your task is to FIX ALL ROOT CAUSES in one pass.
+
+━━━━━━━━━━━━━━━━━━━
+GOALS
+━━━━━━━━━━━━━━━━━━━
+
+1. Ensure EdgeOne correctly routes /api/sage/query
+2. Eliminate 405 errors permanently
+3. Fix search fallback crash (mockResults undefined)
+4. Guarantee Sage works in production (POST + GET fallback)
+5. Ensure no breaking changes to frontend
+
+━━━━━━━━━━━━━━━━━━━
+STEP 1 — FIX FILE STRUCTURE (CRITICAL)
+━━━━━━━━━━━━━━━━━━━
+
+Ensure cloud function uses directory index pattern:
+
+MOVE:
+cloud-functions/api/sage/query.js
+
+TO:
+cloud-functions/api/sage/query/index.js
+
+DELETE the old query.js file completely.
+
+EdgeOne must see:
+cloud-functions/api/sage/query/index.js
+
+━━━━━━━━━━━━━━━━━━━
+STEP 2 — FIX REQUEST HANDLER (NO 405 EVER)
+━━━━━━━━━━━━━━━━━━━
+
+In index.js:
+
+REMOVE ANY CODE LIKE:
+if (request.method !== 'POST') return 405
+
+REPLACE WITH:
+
+- Accept BOTH POST and GET
+- POST → read JSON body
+- GET → read query param (?query= or ?q=)
+
+If no query exists → return 400 (NOT 405)
+
+Add logging:
+console.log("[Sentrix] method:", request.method)
+console.log("[Sentrix] query:", userMessage)
+
+━━━━━━━━━━━━━━━━━━━
+STEP 3 — FIX CORS + HEADERS
+━━━━━━━━━━━━━━━━━━━
+
+Ensure ALL responses include:
+
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: GET, POST, OPTIONS
+Access-Control-Allow-Headers: Content-Type
+
+For OPTIONS → return 200 immediately
+
+━━━━━━━━━━━━━━━━━━━
+STEP 4 — FIX SEARCH CRASH
+━━━━━━━━━━━━━━━━━━━
+
+Find ANY usage of:
+mockResults(...)
+
+EITHER:
+- define mockResults() returning []
+OR
+- replace with:
+
+return []
+
+NO undefined variables allowed anywhere.
+
+━━━━━━━━━━━━━━━━━━━
+STEP 5 — ENSURE EDGEONE CONFIG
+━━━━━━━━━━━━━━━━━━━
+
+Verify edgeone.json contains:
+
+{
+  "functions": {
+    "directory": "cloud-functions"
+  }
+}
+
+DO NOT modify build output.
+
+━━━━━━━━━━━━━━━━━━━
+STEP 6 — VALIDATE ENDPOINTS
+━━━━━━━━━━━━━━━━━━━
+
+Ensure these work:
+
+GET /api/healthz → returns JSON
+POST /api/sage/query → returns response
+GET /api/sage/query?q=test → returns response
+
+NO 405 responses allowed anywhere.
+
+━━━━━━━━━━━━━━━━━━━
+STEP 7 — DO NOT TOUCH FRONTEND
+━━━━━━━━━━━━━━━━━━━
+
+Frontend already uses POST correctly.
+
+Do NOT change:
+- sage-client.ts
+- API call structure
+
+Fix is backend only.
+
+━━━━━━━━━━━━━━━━━━━
+OUTPUT REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━
+
+Return:
+1. Confirmation of file move
+2. Updated handler logic
+3. Confirmation 405 removed
+4. Confirmation search crash fixed
+5. Final checklist of working endpoints
+
+DO NOT leave partial fixes.
+System must be production-ready.
