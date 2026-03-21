@@ -655,35 +655,48 @@ export async function onRequest(context) {
     return new Response(null, {
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Max-Age': '86400',
       },
     });
   }
 
-  if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  const method = request.method || 'GET';
+  console.log('[Sentrix] Sage request method:', method);
+
+  let query = null;
+  let results = undefined;
+  let intelligenceContext = undefined;
+  let messages = undefined;
+  let userMessage = null;
+
+  if (method === 'POST') {
+    let body;
+    try { body = await request.json(); }
+    catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+    query = body?.query ?? null;
+    results = body?.results;
+    intelligenceContext = body?.context;
+    messages = body?.messages;
+    userMessage = body?.userMessage ?? query;
+  } else {
+    const reqUrl = new URL(request.url);
+    query = reqUrl.searchParams.get('query') || reqUrl.searchParams.get('q') || null;
+    userMessage = query;
   }
 
-  let body;
-  try { body = await request.json(); }
-  catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  const { query, results, context: intelligenceContext, messages, userMessage } = body;
+  console.log('[Sentrix] Query:', (query || '').slice(0, 80));
 
   if (!userMessage || typeof userMessage !== 'string' || !userMessage.trim()) {
-    return new Response(JSON.stringify({ error: 'userMessage is required' }), {
+    return new Response(JSON.stringify({ error: 'No query provided' }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });
   }
 
@@ -701,6 +714,7 @@ export async function onRequest(context) {
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive',
     'X-Accel-Buffering': 'no',
+    'Access-Control-Allow-Origin': '*',
   };
 
   if (!apiKey) {
