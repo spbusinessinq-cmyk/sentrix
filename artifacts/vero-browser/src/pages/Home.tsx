@@ -5,6 +5,7 @@ import { TacticalSidebar } from '@/components/TacticalSidebar';
 import { BrowserContent } from '@/components/BrowserContent';
 import { BlackdogPanel } from '@/components/BlackdogPanel';
 import { InvestigationControlBar } from '@/components/InvestigationControlBar';
+import { SavedIntelligencePanel } from '@/components/SavedIntelligencePanel';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ChevronLeft } from 'lucide-react';
@@ -74,6 +75,7 @@ export default function Home() {
         </AnimatePresence>
 
         <BlackdogPanel />
+        <SavedIntelligencePanel />
       </div>
     </div>
   );

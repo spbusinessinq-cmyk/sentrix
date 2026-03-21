@@ -122,6 +122,41 @@ export interface SageAnalysis {
 
 const INVESTIGATIONS_KEY = 'sentrix-investigations-v1';
 const ANALYSES_KEY = 'sentrix-analyses-v1';
+const VAULT_PASSCODE_KEY = 'sentrix-vault-passcode-v1';
+const VAULT_DATA_KEY = 'sentrix-vault-data-v1';
+
+// ─── Vault helpers ─────────────────────────────────────────────────────────────
+
+export interface VaultItem {
+  id: string;
+  type: 'analysis' | 'source';
+  title: string;
+  summary: string;
+  movedAt: Date;
+  originalId: string;
+}
+
+async function hashPin(pin: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin + 'sentrix-salt-v1'));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function loadVaultPasscodeHash(): string | null {
+  try { return localStorage.getItem(VAULT_PASSCODE_KEY) ?? null; } catch { return null; }
+}
+
+function loadVaultItems(): VaultItem[] {
+  try {
+    const raw = localStorage.getItem(VAULT_DATA_KEY);
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    return (Array.isArray(data) ? data : []).map((v: any) => ({ ...v, movedAt: new Date(v.movedAt) }));
+  } catch { return []; }
+}
+
+function persistVaultItems(items: VaultItem[]): void {
+  try { localStorage.setItem(VAULT_DATA_KEY, JSON.stringify(items.map(v => ({ ...v, movedAt: v.movedAt.toISOString() })))); } catch {}
+}
 
 function loadInvestigations(): Investigation[] {
   try {
@@ -352,6 +387,18 @@ interface BrowserState {
   setBlackdogPanelOpen: (v: boolean) => void;
   blackdogStatus: BlackdogStatus;
 
+  savedIntelPanelOpen: boolean;
+  setSavedIntelPanelOpen: (v: boolean) => void;
+
+  vaultItems: VaultItem[];
+  vaultUnlocked: boolean;
+  hasVaultPasscode: boolean;
+  setVaultUnlocked: (v: boolean) => void;
+  createVaultPasscode: (pin: string) => Promise<void>;
+  verifyVaultPasscode: (pin: string) => Promise<boolean>;
+  moveToVault: (type: 'analysis' | 'source', originalId: string, title: string, summary: string) => void;
+  removeFromVault: (id: string) => void;
+
   settings: SentrixSettings;
   updateSettings: (patch: Partial<SentrixSettings>) => void;
 
@@ -403,6 +450,43 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
   const [sageMode, setSageMode] = useState(false);
   const investigationModeRef = useRef(false);
   const activeInvestigationIdRef = useRef<string | null>(null);
+
+  const [savedIntelPanelOpen, setSavedIntelPanelOpen] = useState(false);
+  const [vaultItems, setVaultItems] = useState<VaultItem[]>(() => loadVaultItems());
+  const [vaultUnlocked, setVaultUnlocked] = useState(false);
+  const [vaultPasscodeHashState, setVaultPasscodeHashState] = useState<string | null>(() => loadVaultPasscodeHash());
+
+  useEffect(() => { persistVaultItems(vaultItems); }, [vaultItems]);
+
+  const createVaultPasscode = useCallback(async (pin: string) => {
+    const hash = await hashPin(pin);
+    try { localStorage.setItem(VAULT_PASSCODE_KEY, hash); } catch {}
+    setVaultPasscodeHashState(hash);
+    setVaultUnlocked(true);
+  }, []);
+
+  const verifyVaultPasscode = useCallback(async (pin: string): Promise<boolean> => {
+    const stored = loadVaultPasscodeHash();
+    if (!stored) return false;
+    const hash = await hashPin(pin);
+    const ok = hash === stored;
+    if (ok) setVaultUnlocked(true);
+    return ok;
+  }, []);
+
+  const moveToVault = useCallback((type: 'analysis' | 'source', originalId: string, title: string, summary: string) => {
+    setVaultItems(prev => {
+      if (prev.some(v => v.originalId === originalId && v.type === type)) return prev;
+      return [...prev, {
+        id: `vault-${Math.random().toString(36).slice(2, 10)}`,
+        type, title, summary, movedAt: new Date(), originalId,
+      }];
+    });
+  }, []);
+
+  const removeFromVault = useCallback((id: string) => {
+    setVaultItems(prev => prev.filter(v => v.id !== id));
+  }, []);
 
   const [addressBarUrls, setAddressBarUrls] = useState<Record<string, string>>(() => {
     const map: Record<string, string> = {};
@@ -843,6 +927,10 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
       sageAnalyses, saveSageAnalysis,
       logs, addLog, clearLogs,
       blackdogPanelOpen, setBlackdogPanelOpen, blackdogStatus,
+      savedIntelPanelOpen, setSavedIntelPanelOpen,
+      vaultItems, vaultUnlocked, hasVaultPasscode: !!vaultPasscodeHashState,
+      setVaultUnlocked, createVaultPasscode, verifyVaultPasscode,
+      moveToVault, removeFromVault,
       settings, updateSettings,
       burnSession, navigateOrOpen,
       sageMode, setSageMode, navigateToSage,

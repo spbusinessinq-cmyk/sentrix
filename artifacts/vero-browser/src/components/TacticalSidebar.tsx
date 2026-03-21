@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Search, Clock, BookOpen, Layers, Download,
-  Shield, Settings, Home, Crosshair
+  Shield, Settings, Home, Crosshair, LockKeyhole
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { PageType } from '@/lib/blackdog';
@@ -17,17 +17,18 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'home',           icon: Home,      label: 'Search',        target: 'sentrix://newtab',       matchPageType: 'newtab' },
-  { id: 'search',         icon: Search,    label: 'Results',       target: 'sentrix://search',       matchPageType: 'search' },
-  { id: 'recent',         icon: Clock,     label: 'Recent',        target: 'sentrix://history',      matchPageType: 'history' },
-  { id: 'bookmarks',      icon: BookOpen,  label: 'Bookmarks',     target: 'sentrix://bookmarks',    matchPageType: 'bookmarks' },
-  { id: 'collections',    icon: Layers,    label: 'Collections',   target: 'sentrix://collections',  matchPageType: 'collections' },
-  { id: 'investigations', icon: Crosshair, label: 'Investigations', target: 'sentrix://investigations', matchPageType: 'investigations' },
+  { id: 'home',           icon: Home,      label: 'Signal Analysis',    target: 'sentrix://newtab',       matchPageType: 'newtab' },
+  { id: 'search',         icon: Search,    label: 'Results',            target: 'sentrix://search',       matchPageType: 'search' },
+  { id: 'recent',         icon: Clock,     label: 'Recent',             target: 'sentrix://history',      matchPageType: 'history' },
+  { id: 'bookmarks',      icon: BookOpen,  label: 'Saved Intelligence', target: 'sentrix://bookmarks',    matchPageType: 'bookmarks' },
+  { id: 'collections',    icon: Layers,    label: 'Collections',        target: 'sentrix://collections',  matchPageType: 'collections' },
+  { id: 'investigations', icon: Crosshair, label: 'Case Files',         target: 'sentrix://investigations', matchPageType: 'investigations' },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
-  { id: 'downloads',   icon: Download, label: 'Downloads',    target: 'sentrix://downloads', matchPageType: 'downloads' },
-  { id: 'privacy',     icon: Shield,   label: 'Privacy',      target: 'sentrix://privacy',   matchPageType: 'privacy' },
+  { id: 'vault',       icon: LockKeyhole, label: 'Secure Vault',  target: 'sentrix://vault',     matchPageType: 'vault' },
+  { id: 'downloads',   icon: Download,    label: 'Downloads',     target: 'sentrix://downloads', matchPageType: 'downloads' },
+  { id: 'privacy',     icon: Shield,      label: 'Privacy',       target: 'sentrix://privacy',   matchPageType: 'privacy' },
 ];
 
 function SidebarBtn({ item, isActive, onNavigate }: {

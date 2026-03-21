@@ -195,14 +195,14 @@ export function InvestigationControlBar() {
               border: `1px solid ${investigationMode ? modeBorderColor : 'rgba(255,255,255,0.07)'}`,
               color: investigationMode ? modeColor : 'rgba(148,163,184,0.4)',
             }}
-            title={investigationMode ? 'Disable investigation mode' : 'Enable investigation mode'}
+            title={investigationMode ? 'Disable auto-save to case file' : 'Enable auto-save to case file'}
           >
             <span
               className={`w-1 h-1 rounded-full shrink-0 ${investigationMode ? 'animate-pulse' : ''}`}
               style={{ background: investigationMode ? modeColor : 'rgba(148,163,184,0.3)' }}
             />
             <span className="text-[8.5px] font-mono uppercase tracking-[0.14em] font-semibold">
-              {investigationMode ? 'ON' : 'OFF'}
+              Auto-Save: {investigationMode ? 'ON' : 'OFF'}
             </span>
           </button>
         </div>

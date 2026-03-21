@@ -1,0 +1,246 @@
+Run FINAL UX + CONTROL + VAULT SYSTEM PASS.
+
+DO NOT add complexity.
+REMOVE confusion.
+MAKE EVERYTHING ACTIONABLE.
+
+GOAL:
+User understands everything instantly and can control/save/export data with zero confusion.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. BOOKMARK SYSTEM (FIX)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Top-right bookmark icon must:
+
+ON CLICK:
+→ open RIGHT SIDE PANEL (NOT navigate away)
+
+Panel title:
+SAVED INTELLIGENCE
+
+Sections:
+- Analyses
+- Sources
+- Sessions
+
+If empty:
+→ show:
+“No saved items yet”
+“Save analyses, sources, or sessions to access them here.”
+
+Enable saving:
+
+Inside Sage output:
+[ ⭐ Save Analysis ]
+
+Inside Supporting References:
+[ ⭐ Save Source ]
+
+Top of page:
+[ Save Session ]
+
+All saves:
+→ appear instantly
+→ show confirmation “Saved”
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. INVESTIGATION MODE (SIMPLIFY)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Rename visually:
+
+❌ MODE ON
+✅ Auto-Save to Investigation: ON
+
+Add description:
+“When ON, analyses and sources are automatically saved to this case.”
+
+Make this ALWAYS visible.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. INVESTIGATION PAGE (REBUILD)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Replace with clear structure:
+
+🧠 ANALYSES  
+→ saved Sage outputs
+
+🔗 SOURCES  
+→ saved links
+
+📌 FINDINGS  
+→ extracted insights
+
+Each item:
+- clickable
+- removable
+- timestamped
+
+Empty state:
+“Run an analysis and click ‘Add to Investigation’ to start building.”
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. EXPORT / DOWNLOAD (ADD)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Inside Sage output:
+[ Download Analysis ]
+
+Formats:
+- TXT
+- JSON
+
+Inside Investigation:
+[ Export Case File ]
+
+Exports:
+- analyses
+- sources
+- findings
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. SESSION CONTROL (NEW)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add:
+
+[ Save Session ]
+
+Stores:
+- queries
+- outputs
+
+Appears in:
+Saved Intelligence → Sessions
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. VAULT SYSTEM (CRITICAL FIX)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+RIGHT NOW VAULT FEELS FAKE — FIX IT.
+
+Vault must be real, visible, and simple.
+
+━━━━━━━━━━
+VAULT ENTRY
+━━━━━━━━━━
+
+Clicking “Vault” should:
+
+IF locked:
+→ show modal:
+“Enter Vault Passcode”
+
+Add:
+[ Create Vault Passcode ] (first-time users)
+
+━━━━━━━━━━
+VAULT FUNCTION
+━━━━━━━━━━
+
+Vault stores:
+- sensitive saved analyses
+- selected sources
+- investigation items (optional toggle)
+
+Add buttons:
+[ Move to Vault ] (on analyses + sources)
+
+━━━━━━━━━━
+VAULT UI
+━━━━━━━━━━
+
+Inside Vault:
+
+Sections:
+- Secured Analyses
+- Secured Sources
+
+Each item:
+- viewable only when unlocked
+- removable
+
+━━━━━━━━━━
+VAULT FEEDBACK
+━━━━━━━━━━
+
+When saving:
+→ “Moved to Vault”
+
+When locked:
+→ blur content
+→ show “Vault Locked”
+
+━━━━━━━━━━
+IMPORTANT
+━━━━━━━━━━
+
+NO fake lock.
+
+Use simple local storage passcode for now:
+- hashed in local storage
+- session unlock state
+
+(This is phase 1 — real encryption later)
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. REMOVE CONFUSION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Fix:
+
+- Remove unnecessary GREEN (only for ACTIVE / SAFE)
+- Remove duplicate buttons
+- Ensure ONE primary action: Analyze
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. MICRO-FEEDBACK (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Every action must respond:
+
+Saved  
+Added to Investigation  
+Moved to Vault  
+Exported  
+
+NO silent behavior.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. NAVIGATION LABELS (HUMAN)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Rename:
+
+Search → Signal Analysis  
+Bookmarks → Saved Intelligence  
+Investigations → Case Files  
+Vault → Secure Vault  
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. FINAL USER FLOW
+━━━━━━━━━━━━━━━━━━━━━━━
+
+User must be able to:
+
+1. Analyze claim  
+2. Save result  
+3. Add to case  
+4. Move sensitive data to Vault  
+5. Export findings  
+
+WITHOUT confusion.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+
+This is the final usability pass.
+
+Make the system feel:
+- real
+- controlled
+- secure
+- powerful
+
+Execute cleanly.

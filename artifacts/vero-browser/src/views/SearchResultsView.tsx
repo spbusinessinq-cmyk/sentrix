@@ -5,7 +5,7 @@ import {
   Loader2, AlertCircle, ArrowUpRight, Plus,
   ChevronDown, ChevronUp, ChevronRight, Zap, Sparkles,
   Send, X, RotateCcw, Lock, GitMerge,
-  Save, Crosshair, FileSearch,
+  Save, Crosshair, FileSearch, LockKeyhole,
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
@@ -384,6 +384,14 @@ function useFlash(duration = 1600) {
   return { flashing, trigger };
 }
 
+// ── Download helper ───────────────────────────────────────────────────────────
+function dlText(filename: string, content: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 // ── Sage Action Bar — shown after each completed Sage response ────────────────
 function SageActionBar({ query, msg, isLatest }: {
   query: string;
@@ -510,12 +518,120 @@ function SageActionBar({ query, msg, isLatest }: {
         </button>
       )}
 
-      {!canInvestigate && isLatest && (
-        <span className="text-[8.5px] font-mono ml-auto" style={{ color: 'rgba(148,163,184,0.20)' }}>
-          Enable investigation mode to add
-        </span>
+      {/* Download Analysis */}
+      <DownloadAnalysisButton query={query} msg={msg} />
+
+      {/* Move to Vault */}
+      <MoveToVaultButton query={query} msg={msg} />
+    </div>
+  );
+}
+
+// ── Download Analysis button ──────────────────────────────────────────────────
+function DownloadAnalysisButton({ query, msg }: { query: string; msg: RichSageMessage }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [open]);
+
+  const makeTxt = () => [
+    `SENTRIX — SAGE ANALYSIS`,
+    `Query: ${query}`,
+    `Date:  ${new Date().toLocaleString()}`,
+    ``,
+    msg.parsed?.whatMatters    ? `── WHAT MATTERS ──\n${msg.parsed.whatMatters}\n` : '',
+    msg.parsed?.whatToQuestion ? `── WHAT TO QUESTION ──\n${msg.parsed.whatToQuestion}\n` : '',
+    msg.parsed?.sources        ? `── SOURCES ──\n${msg.parsed.sources}\n` : '',
+    `── FULL OUTPUT ──`,
+    msg.content,
+  ].filter(Boolean).join('\n');
+
+  const makeJson = () => JSON.stringify({
+    query, generatedAt: new Date().toISOString(),
+    whatMatters: msg.parsed?.whatMatters ?? '',
+    whatToQuestion: msg.parsed?.whatToQuestion ?? '',
+    sources: msg.parsed?.sources ?? '',
+    fullText: msg.content,
+  }, null, 2);
+
+  const slug = query.replace(/[^a-z0-9]/gi, '-').slice(0, 32).toLowerCase();
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9.5px] font-mono uppercase tracking-[0.12em] transition-all duration-150"
+        style={{
+          background: open ? 'rgba(56,189,248,0.08)' : 'rgba(255,255,255,0.03)',
+          border: `1px solid ${open ? 'rgba(56,189,248,0.22)' : 'rgba(255,255,255,0.06)'}`,
+          color: open ? 'rgba(56,189,248,0.75)' : 'rgba(148,163,184,0.40)',
+        }}
+      >
+        <Save className="w-3 h-3" /> Download
+      </button>
+      {open && (
+        <div
+          className="absolute bottom-full mb-1.5 left-0 rounded-lg overflow-hidden z-20 min-w-[120px]"
+          style={{ background: 'rgba(8,8,12,0.98)', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}
+        >
+          <button
+            onClick={() => { dlText(`${slug}.txt`, makeTxt(), 'text/plain'); setOpen(false); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-mono hover:bg-white/[0.06] transition-colors text-left"
+            style={{ color: 'rgba(148,163,184,0.70)' }}
+          >
+            <FileSearch className="w-2.5 h-2.5" /> TXT
+          </button>
+          <button
+            onClick={() => { dlText(`${slug}.json`, makeJson(), 'application/json'); setOpen(false); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-mono hover:bg-white/[0.06] transition-colors text-left"
+            style={{ color: 'rgba(148,163,184,0.70)' }}
+          >
+            <FileSearch className="w-2.5 h-2.5" /> JSON
+          </button>
+        </div>
       )}
     </div>
+  );
+}
+
+// ── Move to Vault button ──────────────────────────────────────────────────────
+function MoveToVaultButton({ query, msg }: { query: string; msg: RichSageMessage }) {
+  const { moveToVault, saveSageAnalysis } = useBrowserState();
+  const flash = useFlash();
+
+  const handleVault = () => {
+    if (flash.flashing) return;
+    const id = saveSageAnalysis({
+      query, fullText: msg.content,
+      whatMatters: msg.parsed?.whatMatters ?? '',
+      whatToQuestion: msg.parsed?.whatToQuestion ?? '',
+      sources: msg.parsed?.sources ?? '',
+    });
+    moveToVault('analysis', id, query, msg.parsed?.whatMatters?.slice(0, 80) ?? '');
+    flash.trigger();
+  };
+
+  return (
+    <button
+      onClick={handleVault}
+      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9.5px] font-mono uppercase tracking-[0.12em] transition-all duration-150"
+      style={{
+        background: flash.flashing ? 'rgba(22,163,74,0.08)' : 'rgba(255,255,255,0.02)',
+        border: `1px solid ${flash.flashing ? 'rgba(22,163,74,0.22)' : 'rgba(255,255,255,0.05)'}`,
+        color: flash.flashing ? 'hsl(142 72% 46%)' : 'rgba(148,163,184,0.32)',
+      }}
+      title="Move this analysis to the Secure Vault"
+    >
+      {flash.flashing
+        ? <><Check className="w-3 h-3" /> Moved to Vault</>
+        : <><LockKeyhole className="w-3 h-3" /> Move to Vault</>
+      }
+    </button>
   );
 }
 

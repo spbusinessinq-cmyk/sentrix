@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft, ArrowRight, Search,
-  Bookmark, BookmarkCheck, ShieldCheck, Crosshair
+  BookOpen, ShieldCheck, Crosshair
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
@@ -12,9 +12,10 @@ export function AddressBar() {
     currentUrl, navigate, navigateOrOpen, setAddressBarUrl,
     riskLevel, pageType,
     navigateBack, navigateForward, canGoBack, canGoForward, isNavigating,
-    addBookmark, removeBookmark, isBookmarked, bookmarks,
     setBlackdogPanelOpen, blackdogPanelOpen,
     investigationMode, toggleInvestigationMode, searchQuery,
+    savedIntelPanelOpen, setSavedIntelPanelOpen,
+    sageAnalyses, savedItems,
   } = useBrowserState();
 
   const [inputValue, setInputValue] = useState(currentUrl);
@@ -45,18 +46,7 @@ export function AddressBar() {
     riskLevel === 'caution' ? 'risk-caution' :
     riskLevel === 'danger'  ? 'risk-danger' : 'risk-unknown';
 
-  const canBookmark = pageType === 'website';
-  const bookmarked = isBookmarked(currentUrl);
-
-  const handleBookmark = () => {
-    if (!canBookmark) return;
-    if (bookmarked) {
-      const bm = bookmarks.find(b => b.url === currentUrl);
-      if (bm) removeBookmark(bm.id);
-    } else {
-      addBookmark();
-    }
-  };
+  const savedCount = sageAnalyses.length + savedItems.length;
 
   const placeholder =
     pageType === 'newtab' ? 'Search or enter a URL…' :
@@ -140,13 +130,21 @@ export function AddressBar() {
 
         {/* Actions */}
         <div className="flex items-center gap-0.5 shrink-0">
-          <NavBtn
-            title={bookmarked ? 'Remove bookmark' : canBookmark ? 'Bookmark' : 'Bookmark'}
-            active={bookmarked}
-            onClick={canBookmark ? handleBookmark : undefined}
-          >
-            {bookmarked ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
-          </NavBtn>
+          <div className="relative">
+            <NavBtn
+              title="Saved Intelligence"
+              active={savedIntelPanelOpen}
+              onClick={() => setSavedIntelPanelOpen(!savedIntelPanelOpen)}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+            </NavBtn>
+            {savedCount > 0 && !savedIntelPanelOpen && (
+              <span
+                className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full"
+                style={{ background: '#38BDF8', boxShadow: '0 0 5px rgba(56,189,248,0.5)' }}
+              />
+            )}
+          </div>
           <NavBtn
             title="System Panel"
             active={blackdogPanelOpen}
