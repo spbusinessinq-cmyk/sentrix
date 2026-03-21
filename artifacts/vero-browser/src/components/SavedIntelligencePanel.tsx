@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import {
   BookOpen, X, Sparkles, Globe, Clock, Download, ChevronDown, ChevronRight,
-  Star, Trash2, LockKeyhole,
+  Star, Trash2, LockKeyhole, ExternalLink, RotateCcw, Check,
 } from 'lucide-react';
-import { useBrowserState, SageAnalysis, SavedItem } from '@/hooks/use-browser-state';
+import { useBrowserState, SageAnalysis, SavedItem, HistoryEntry } from '@/hooks/use-browser-state';
 import { format } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -25,10 +25,38 @@ function postureColor(p?: string) {
   return 'rgba(148,163,184,0.4)';
 }
 
+function useFlash(dur = 1200) {
+  const [on, setOn] = useState(false);
+  const trigger = () => { setOn(true); setTimeout(() => setOn(false), dur); };
+  return { on, trigger };
+}
+
+// ── Micro-toast ────────────────────────────────────────────────────────────────
+
+function MicroToast({ msg, color }: { msg: string; color: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      className="mx-3 mt-2 px-3 py-1.5 rounded-lg text-[9.5px] font-mono flex items-center gap-2 shrink-0"
+      style={{ background: `${color}0d`, border: `1px solid ${color}30`, color }}
+    >
+      <Check className="w-3 h-3" />
+      {msg}
+    </motion.div>
+  );
+}
+
 // ── Analysis row ──────────────────────────────────────────────────────────────
 
-function AnalysisRow({ a, onVault }: { a: SageAnalysis; onVault: () => void }) {
-  const [open, setOpen] = useState(false);
+function AnalysisRow({ a, onOpen, onDelete, onVault }: {
+  a: SageAnalysis;
+  onOpen: () => void;
+  onDelete: () => void;
+  onVault: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
   const SAGE_COLOR = 'rgba(139,92,246,0.75)';
 
   const downloadTxt = () => {
@@ -37,43 +65,59 @@ function AnalysisRow({ a, onVault }: { a: SageAnalysis; onVault: () => void }) {
       `Query: ${a.query}`,
       `Date:  ${format(a.savedAt, 'PPpp')}`,
       ``,
-      `── WHAT MATTERS ──`,
-      a.whatMatters || '—',
-      ``,
-      `── WHAT TO QUESTION ──`,
-      a.whatToQuestion || '—',
-      ``,
-      `── SOURCES ──`,
-      a.sources || '—',
-      ``,
-      `── FULL OUTPUT ──`,
-      a.fullText,
+      `── WHAT MATTERS ──`,  a.whatMatters || '—', ``,
+      `── WHAT TO QUESTION ──`, a.whatToQuestion || '—', ``,
+      `── SOURCES ──`, a.sources || '—', ``,
+      `── FULL OUTPUT ──`, a.fullText,
     ].join('\n');
     downloadText(`sage-analysis-${a.id.slice(0, 8)}.txt`, txt, 'text/plain');
   };
 
   return (
     <div
-      className="rounded-lg overflow-hidden"
+      className="rounded-lg overflow-hidden group/row"
       style={{ border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.14)' }}
     >
-      <button
-        className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left"
-        onClick={() => setOpen(v => !v)}
-      >
+      <div className="flex items-start gap-2.5 px-3 py-2.5">
         <Sparkles className="w-3 h-3 mt-0.5 shrink-0" style={{ color: SAGE_COLOR }} />
-        <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-mono truncate" style={{ color: 'rgba(210,210,230,0.85)' }}>{a.query}</p>
+        <button
+          className="flex-1 min-w-0 text-left"
+          onClick={onOpen}
+          title="Open analysis"
+        >
+          <p className="text-[11px] font-mono truncate hover:underline decoration-dotted" style={{ color: 'rgba(210,210,230,0.85)' }}>{a.query}</p>
           <p className="text-[9px] font-mono mt-0.5" style={{ color: 'rgba(148,163,184,0.32)' }}>
             {format(a.savedAt, 'MMM d · HH:mm')}
           </p>
+        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={onOpen}
+            title="Re-open analysis"
+            className="p-1 rounded opacity-0 group-hover/row:opacity-100 transition-opacity"
+            style={{ color: 'rgba(56,189,248,0.50)' }}
+          >
+            <RotateCcw className="w-2.5 h-2.5" />
+          </button>
+          <button
+            onClick={onDelete}
+            title="Delete"
+            className="p-1 rounded opacity-0 group-hover/row:opacity-100 transition-opacity"
+            style={{ color: 'rgba(239,68,68,0.45)' }}
+          >
+            <Trash2 className="w-2.5 h-2.5" />
+          </button>
+          <button
+            onClick={() => setExpanded(v => !v)}
+            className="p-1 rounded"
+            style={{ color: 'rgba(148,163,184,0.25)' }}
+          >
+            {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          </button>
         </div>
-        <div style={{ color: 'rgba(148,163,184,0.25)' }}>
-          {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-        </div>
-      </button>
+      </div>
 
-      {open && (
+      {expanded && (
         <div className="px-3 pb-3 flex flex-col gap-2.5" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
           {a.whatMatters && (
             <div className="pt-2">
@@ -91,7 +135,14 @@ function AnalysisRow({ a, onVault }: { a: SageAnalysis; onVault: () => void }) {
               </p>
             </div>
           )}
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-2 pt-1 flex-wrap">
+            <button
+              onClick={onOpen}
+              className="flex items-center gap-1 px-2 py-1 rounded text-[8.5px] font-mono uppercase tracking-[0.12em]"
+              style={{ background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.16)', color: 'rgba(56,189,248,0.65)' }}
+            >
+              <RotateCcw className="w-2.5 h-2.5" /> Open
+            </button>
             <button
               onClick={downloadTxt}
               className="flex items-center gap-1 px-2 py-1 rounded text-[8.5px] font-mono uppercase tracking-[0.12em]"
@@ -106,6 +157,13 @@ function AnalysisRow({ a, onVault }: { a: SageAnalysis; onVault: () => void }) {
             >
               <LockKeyhole className="w-2.5 h-2.5" /> Move to Vault
             </button>
+            <button
+              onClick={onDelete}
+              className="flex items-center gap-1 px-2 py-1 rounded text-[8.5px] font-mono uppercase tracking-[0.12em] ml-auto"
+              style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.14)', color: 'rgba(239,68,68,0.50)' }}
+            >
+              <Trash2 className="w-2.5 h-2.5" /> Delete
+            </button>
           </div>
         </div>
       )}
@@ -115,66 +173,66 @@ function AnalysisRow({ a, onVault }: { a: SageAnalysis; onVault: () => void }) {
 
 // ── Source row ────────────────────────────────────────────────────────────────
 
-function SourceRow({ s, onVault }: { s: SavedItem; onVault: () => void }) {
+function SourceRow({ s, onOpen, onDelete, onVault }: {
+  s: SavedItem;
+  onOpen: () => void;
+  onDelete: () => void;
+  onVault: () => void;
+}) {
   return (
     <div
-      className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg"
+      className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg group/row"
       style={{ border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.14)' }}
     >
       <Globe className="w-3 h-3 mt-0.5 shrink-0" style={{ color: postureColor(s.posture) }} />
-      <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-mono truncate" style={{ color: 'rgba(210,210,230,0.80)' }}>{s.title}</p>
+      <button className="flex-1 min-w-0 text-left" onClick={onOpen} title="Open source">
+        <p className="text-[11px] font-mono truncate hover:underline decoration-dotted" style={{ color: 'rgba(210,210,230,0.80)' }}>{s.title}</p>
         <p className="text-[9px] font-mono truncate mt-0.5" style={{ color: 'rgba(148,163,184,0.32)' }}>{s.domain}</p>
-      </div>
-      <button
-        onClick={onVault}
-        title="Move to Vault"
-        className="shrink-0 p-1 rounded"
-        style={{ color: 'rgba(148,163,184,0.22)' }}
-      >
-        <LockKeyhole className="w-3 h-3" />
       </button>
+      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity">
+        <button onClick={onOpen} title="Open URL" className="p-1 rounded" style={{ color: 'rgba(56,189,248,0.50)' }}>
+          <ExternalLink className="w-2.5 h-2.5" />
+        </button>
+        <button onClick={onVault} title="Move to Vault" className="p-1 rounded" style={{ color: 'rgba(148,163,184,0.40)' }}>
+          <LockKeyhole className="w-2.5 h-2.5" />
+        </button>
+        <button onClick={onDelete} title="Delete" className="p-1 rounded" style={{ color: 'rgba(239,68,68,0.45)' }}>
+          <Trash2 className="w-2.5 h-2.5" />
+        </button>
+      </div>
     </div>
   );
 }
 
 // ── Session row ───────────────────────────────────────────────────────────────
 
-function SessionRow({ entry }: { entry: { query: string; time: Date } }) {
+function SessionRow({ entry, onOpen, onDelete }: {
+  entry: HistoryEntry & { searchQuery: string };
+  onOpen: () => void;
+  onDelete: () => void;
+}) {
   return (
     <div
-      className="flex items-center gap-2.5 px-3 py-2 rounded-lg"
+      className="flex items-center gap-2.5 px-3 py-2 rounded-lg group/row"
       style={{ border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.12)' }}
     >
       <Clock className="w-3 h-3 shrink-0" style={{ color: 'rgba(148,163,184,0.28)' }} />
-      <p className="flex-1 text-[10.5px] font-mono truncate" style={{ color: 'rgba(148,163,184,0.60)' }}>{entry.query}</p>
+      <button className="flex-1 min-w-0 text-left" onClick={onOpen} title="Re-run search">
+        <p className="text-[10.5px] font-mono truncate hover:underline decoration-dotted" style={{ color: 'rgba(148,163,184,0.60)' }}>
+          {entry.searchQuery}
+        </p>
+      </button>
       <p className="text-[8.5px] font-mono shrink-0" style={{ color: 'rgba(148,163,184,0.25)' }}>
-        {format(entry.time, 'HH:mm')}
+        {format(entry.visitedAt, 'HH:mm')}
       </p>
-    </div>
-  );
-}
-
-// ── Section header ────────────────────────────────────────────────────────────
-
-function SectionHeader({ icon, label, count, color }: { icon: React.ReactNode; label: string; count: number; color?: string }) {
-  return (
-    <div className="flex items-center gap-2 mb-2">
-      <span style={{ color: color ?? 'rgba(148,163,184,0.40)' }}>{icon}</span>
-      <span
-        className="text-[8.5px] font-mono uppercase tracking-[0.18em] font-semibold"
-        style={{ color: color ?? 'rgba(148,163,184,0.40)' }}
-      >
-        {label}
-      </span>
-      {count > 0 && (
-        <span
-          className="text-[8px] font-mono ml-0.5"
-          style={{ color: 'rgba(148,163,184,0.25)' }}
-        >
-          ({count})
-        </span>
-      )}
+      <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
+        <button onClick={onOpen} title="Re-run" className="p-1 rounded" style={{ color: 'rgba(56,189,248,0.50)' }}>
+          <RotateCcw className="w-2.5 h-2.5" />
+        </button>
+        <button onClick={onDelete} title="Remove" className="p-1 rounded" style={{ color: 'rgba(239,68,68,0.45)' }}>
+          <Trash2 className="w-2.5 h-2.5" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -185,28 +243,74 @@ export function SavedIntelligencePanel() {
   const {
     savedIntelPanelOpen, setSavedIntelPanelOpen,
     sageAnalyses, savedItems, history,
-    moveToVault, navigate,
+    deleteSageAnalysis, unsaveItem, removeHistoryEntry,
+    moveToVault, navigateToSage, navigate,
   } = useBrowserState();
 
   const [tab, setTab] = useState<'analyses' | 'sources' | 'sessions'>('analyses');
-  const [vaultFlash, setVaultFlash] = useState<string | null>(null);
+  const [toast, setToast]   = useState<{ msg: string; color: string } | null>(null);
 
-  const handleVaultFlash = (id: string) => {
-    setVaultFlash(id);
-    setTimeout(() => setVaultFlash(null), 1400);
+  const showToast = (msg: string, color = '#38BDF8') => {
+    setToast({ msg, color });
+    setTimeout(() => setToast(null), 1600);
   };
 
   const sessionEntries = history
-    .filter(h => h.url.startsWith('sentrix://search?') || h.url.includes('?q=') || h.url.startsWith('sentrix://search'))
-    .slice(0, 30)
+    .filter(h => h.url.startsWith('sentrix://search?') || h.url.includes('?q='))
+    .slice(0, 40)
     .map(h => ({
-      query: h.title || h.url.replace(/^sentrix:\/\/search\?q=/, '').replace(/\+/g, ' '),
-      time: h.visitedAt,
+      ...h,
+      searchQuery: h.title || decodeURIComponent(h.url.replace(/^.*\?q=/, '').replace(/\+/g, ' ')),
     }));
 
   const isEmpty = tab === 'analyses' ? sageAnalyses.length === 0
-    : tab === 'sources' ? savedItems.length === 0
+    : tab === 'sources'   ? savedItems.length === 0
     : sessionEntries.length === 0;
+
+  const handleOpenAnalysis = (a: SageAnalysis) => {
+    navigateToSage(a.query);
+    setSavedIntelPanelOpen(false);
+    showToast('Restored');
+    console.log('[Sentrix] Analysis opened:', a.id, a.query);
+  };
+
+  const handleDeleteAnalysis = (id: string) => {
+    deleteSageAnalysis(id);
+    showToast('Removed', '#ef4444');
+    console.log('[Sentrix] Analysis deleted from panel:', id);
+  };
+
+  const handleOpenSource = (s: SavedItem) => {
+    navigate(s.url);
+    setSavedIntelPanelOpen(false);
+    showToast('Opened');
+    console.log('[Sentrix] Source opened:', s.url);
+  };
+
+  const handleDeleteSource = (id: string) => {
+    unsaveItem(id);
+    showToast('Removed', '#ef4444');
+    console.log('[Sentrix] Source deleted:', id);
+  };
+
+  const handleOpenSession = (sq: string) => {
+    navigateToSage(sq);
+    setSavedIntelPanelOpen(false);
+    showToast('Session loaded');
+    console.log('[Sentrix] Session restored:', sq);
+  };
+
+  const handleDeleteSession = (id: string) => {
+    removeHistoryEntry(id);
+    showToast('Removed', '#ef4444');
+    console.log('[Sentrix] Session removed:', id);
+  };
+
+  const handleVault = (type: 'analysis' | 'source', originalId: string, title: string, summary: string) => {
+    moveToVault(type, originalId, title, summary);
+    showToast('Moved to Vault', '#22c55e');
+    console.log('[Sentrix] Moved to vault:', type, originalId);
+  };
 
   return (
     <AnimatePresence>
@@ -268,10 +372,7 @@ export function SavedIntelligencePanel() {
             </div>
 
             {/* Tabs */}
-            <div
-              className="flex shrink-0"
-              style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-            >
+            <div className="flex shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
               {(['analyses', 'sources', 'sessions'] as const).map(t => (
                 <button
                   key={t}
@@ -290,20 +391,9 @@ export function SavedIntelligencePanel() {
               ))}
             </div>
 
-            {/* Vault flash toast */}
+            {/* Toast */}
             <AnimatePresence>
-              {vaultFlash && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  className="shrink-0 mx-3 mt-2 px-3 py-1.5 rounded-lg text-[9.5px] font-mono flex items-center gap-2"
-                  style={{ background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.20)', color: 'hsl(142 72% 46%)' }}
-                >
-                  <LockKeyhole className="w-3 h-3" />
-                  Moved to Vault
-                </motion.div>
-              )}
+              {toast && <MicroToast key="toast" msg={toast.msg} color={toast.color} />}
             </AnimatePresence>
 
             {/* Content */}
@@ -326,24 +416,27 @@ export function SavedIntelligencePanel() {
                     <AnalysisRow
                       key={a.id}
                       a={a}
-                      onVault={() => {
-                        moveToVault('analysis', a.id, a.query, a.whatMatters?.slice(0, 80) ?? '');
-                        handleVaultFlash(a.id);
-                      }}
+                      onOpen={() => handleOpenAnalysis(a)}
+                      onDelete={() => handleDeleteAnalysis(a.id)}
+                      onVault={() => handleVault('analysis', a.id, a.query, a.whatMatters?.slice(0, 80) ?? '')}
                     />
                   ))}
                   {tab === 'sources' && savedItems.map(s => (
                     <SourceRow
                       key={s.id}
                       s={s}
-                      onVault={() => {
-                        moveToVault('source', s.id, s.title, s.domain);
-                        handleVaultFlash(s.id);
-                      }}
+                      onOpen={() => handleOpenSource(s)}
+                      onDelete={() => handleDeleteSource(s.id)}
+                      onVault={() => handleVault('source', s.id, s.title, s.domain)}
                     />
                   ))}
-                  {tab === 'sessions' && sessionEntries.map((e, i) => (
-                    <SessionRow key={i} entry={e} />
+                  {tab === 'sessions' && sessionEntries.map(e => (
+                    <SessionRow
+                      key={e.id}
+                      entry={e}
+                      onOpen={() => handleOpenSession(e.searchQuery)}
+                      onDelete={() => handleDeleteSession(e.id)}
+                    />
                   ))}
                 </div>
               )}

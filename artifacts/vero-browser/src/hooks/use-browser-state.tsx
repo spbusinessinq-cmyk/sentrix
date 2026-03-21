@@ -378,6 +378,8 @@ interface BrowserState {
 
   sageAnalyses: SageAnalysis[];
   saveSageAnalysis: (item: Omit<SageAnalysis, 'id' | 'savedAt'>) => string;
+  deleteSageAnalysis: (id: string) => void;
+  removeHistoryEntry: (id: string) => void;
 
   logs: LogEntry[];
   addLog: (text: string, type?: 'info' | 'warn' | 'alert') => void;
@@ -797,6 +799,7 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
     const newAnalysis: SageAnalysis = { ...item, id: newId, savedAt: new Date() };
     setSageAnalyses(prev => [newAnalysis, ...prev].slice(0, 200));
     addLog(`Analysis saved: "${item.query.slice(0, 40)}"`, 'info');
+    console.log('[Sentrix] Analysis saved:', newId, item.query);
     if (investigationModeRef.current && activeInvestigationIdRef.current) {
       const invId = activeInvestigationIdRef.current;
       setInvestigations(invs => invs.map(inv =>
@@ -807,6 +810,17 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
     }
     return newId;
   }, [addLog]);
+
+  const deleteSageAnalysis = useCallback((id: string) => {
+    setSageAnalyses(prev => prev.filter(a => a.id !== id));
+    addLog(`Analysis deleted`, 'info');
+    console.log('[Sentrix] Analysis deleted:', id);
+  }, [addLog]);
+
+  const removeHistoryEntry = useCallback((id: string) => {
+    setHistory(prev => prev.filter(h => h.id !== id));
+    console.log('[Sentrix] History entry removed:', id);
+  }, []);
 
   const exportInvestigation = useCallback((id: string, fmt: 'text' | 'json') => {
     const inv = investigations.find(i => i.id === id);
@@ -924,7 +938,7 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
       toggleInvestigationMode, startInvestigation, setActiveInvestigation,
       renameInvestigation, updateInvestigationNotes, clearInvestigationItems,
       deleteInvestigation, attachToInvestigation, detachFromInvestigation, exportInvestigation,
-      sageAnalyses, saveSageAnalysis,
+      sageAnalyses, saveSageAnalysis, deleteSageAnalysis, removeHistoryEntry,
       logs, addLog, clearLogs,
       blackdogPanelOpen, setBlackdogPanelOpen, blackdogStatus,
       savedIntelPanelOpen, setSavedIntelPanelOpen,

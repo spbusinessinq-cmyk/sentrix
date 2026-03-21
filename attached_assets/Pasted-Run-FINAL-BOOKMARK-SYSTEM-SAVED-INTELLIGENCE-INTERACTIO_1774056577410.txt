@@ -1,0 +1,226 @@
+Run FINAL BOOKMARK SYSTEM + SAVED INTELLIGENCE INTERACTION PASS.
+
+DO NOT redesign the UI.
+DO NOT change the visual style.
+ONLY make the Saved Intelligence / Bookmarks system fully real, interactive, and synced.
+
+MISSION:
+Fix the last bookmark/saved-intelligence problems so the system is launch-ready.
+
+CURRENT PROBLEMS:
+- Saved Intelligence panel shows items, but Bookmarks page can still be wrong / empty / disconnected
+- items expand inline but do not behave like a real library
+- no proper delete flow
+- no proper open / restore / navigate flow
+- panel and page are not fully unified in behavior
+- user cannot trust where saved things go
+
+GOAL:
+Make Bookmarks / Saved Intelligence feel like a real intelligence library:
+- save works
+- panel and page match
+- open works
+- delete works
+- sessions/analyses/sources are all usable
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. SINGLE SHARED STORE (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Use ONE shared bookmarks/saved-intelligence store as the single source of truth.
+
+Store shape should clearly support:
+- analyses
+- sources
+- sessions
+
+Each saved item should include:
+- id
+- type
+- title
+- timestamp
+- payload
+- optional preview metadata
+
+ALL of these must read/write from the SAME store:
+- right-side Saved Intelligence panel
+- Bookmarks page
+- save buttons in analysis/results
+- session save actions
+
+No duplicated local arrays.
+No disconnected state.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. SAVE ACTIONS (MAKE THEM REAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Ensure these actions save into the shared store correctly:
+
+- Save Analysis
+- Save Source
+- Save Session
+
+When triggered:
+- item appears instantly in right-side Saved Intelligence panel
+- item appears instantly in Bookmarks page
+- confirmation appears:
+  - Saved
+  - Session saved
+  - Source saved
+
+No silent behavior.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. OPEN / RESTORE BEHAVIOR (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Every saved item must support OPEN.
+
+For ANALYSIS items:
+- Open must restore the saved analysis into the main analysis workspace
+- restore query + output + structured sections if possible
+- user should feel they reopened a real past analysis, not just a preview card
+
+For SOURCE items:
+- Open must open the source URL directly
+OR open an internal preview if that already exists
+
+For SESSION items:
+- Open must restore that saved session/thread state in the main workspace
+- if full restore is not possible, restore as much as available and clearly open that session context
+
+Saved items must NOT remain trapped only inside the side panel.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. DELETE FUNCTIONALITY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Every saved item must support DELETE.
+
+Behavior:
+- remove immediately from shared store
+- instantly update:
+  - Saved Intelligence panel
+  - Bookmarks page
+- show feedback:
+  - Removed
+
+Optional if easy:
+- Clear All for current category
+- Clear All Saved Intelligence
+
+But individual delete is mandatory.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. PANEL INTERACTION FIX
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Right-side Saved Intelligence panel must stop acting like a dead expandable list.
+
+Keep inline expand if useful, but every item must also support:
+
+- Open
+- Delete
+
+Recommended:
+- clicking title/body opens
+- chevron/expand icon expands preview
+- trash/delete icon removes
+
+User must be able to:
+- inspect quickly
+- reopen fully
+- delete cleanly
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. BOOKMARKS PAGE SYNC
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Bookmarks page must render the exact same shared saved items as the right panel.
+
+If the panel has items, the page must have the same items.
+
+On the page, each item must also support:
+- Open
+- Delete
+
+Do NOT maintain separate behavior between page and panel.
+They are two views of the same saved-intelligence system.
+
+If the store is truly empty:
+show empty state.
+
+If not empty:
+never show “No bookmarks yet”.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. CATEGORY CONSISTENCY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Saved Intelligence categories must work consistently in both places:
+
+- Analyses
+- Sources
+- Sessions
+
+Counts should match.
+Items should match.
+Deletion/open behavior should match.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. INVESTIGATION / VAULT COMPATIBILITY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Do NOT break:
+- Investigation system
+- Vault system
+- Save-to-investigation flow
+- Move-to-vault flow
+
+Saved Intelligence should coexist cleanly with these systems.
+
+If an item is moved to Vault:
+- remove or mark it appropriately in Saved Intelligence
+- do not leave ghost entries
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. MICRO-FEEDBACK
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Every action must respond immediately:
+
+- Saved
+- Opened
+- Removed
+- Restored
+- Session loaded
+
+No silent state changes.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. DEBUG / VALIDATION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Temporarily log:
+- item saved
+- item opened
+- item deleted
+- current saved store contents
+
+This is to verify panel/page/store are all unified.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+11. FINAL UX GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+After this pass, the user must be able to:
+
+1. Save an analysis
+2. See it instantly in Saved Intelligence
+3. Open it again later
+4. Delete it if unwanted
+5. Open the Bookmarks page and see the same item there
+6. Do the same for sources and sessions
+
+Saved Intelligence must feel like a real intelligence library, not a decorative side panel.
