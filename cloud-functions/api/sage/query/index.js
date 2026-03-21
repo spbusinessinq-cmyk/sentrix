@@ -850,7 +850,7 @@ GLOBAL RULES
 - PRIORITIZE correctness over formatting
 - BE decisive when the answer is known
 - ONLY activate the verification pipeline (VERIFIER mode) when the claim requires live source confirmation
-- If the answer is widely known, answer it directly in FACT MODE\`
+- If the answer is widely known, answer it directly in FACT MODE`
 
 // ── Context builders ──────────────────────────────────────────────────────────
 
