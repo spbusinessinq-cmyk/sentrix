@@ -4,6 +4,7 @@ import { AddressBar } from '@/components/AddressBar';
 import { TacticalSidebar } from '@/components/TacticalSidebar';
 import { BrowserContent } from '@/components/BrowserContent';
 import { BlackdogPanel } from '@/components/BlackdogPanel';
+import { InvestigationControlBar } from '@/components/InvestigationControlBar';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ChevronLeft } from 'lucide-react';
@@ -28,6 +29,7 @@ export default function Home() {
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-background text-foreground font-sans">
       <VeroTabBar />
       <AddressBar />
+      <InvestigationControlBar />
 
       <div className="flex flex-1 overflow-hidden relative">
         <TacticalSidebar />

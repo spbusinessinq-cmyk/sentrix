@@ -104,10 +104,24 @@ export interface Investigation {
   updatedAt: Date;
   querySeed: string;
   savedItemIds: string[];
+  analysisIds: string[];
   notes: string;
 }
 
+// ─── Sage Analysis ──────────────────────────────────────────────────────────────
+
+export interface SageAnalysis {
+  id: string;
+  query: string;
+  fullText: string;
+  whatMatters: string;
+  whatToQuestion: string;
+  sources: string;
+  savedAt: Date;
+}
+
 const INVESTIGATIONS_KEY = 'sentrix-investigations-v1';
+const ANALYSES_KEY = 'sentrix-analyses-v1';
 
 function loadInvestigations(): Investigation[] {
   try {
@@ -116,7 +130,12 @@ function loadInvestigations(): Investigation[] {
     const data = JSON.parse(raw);
     if (!Array.isArray(data)) return [];
     return data
-      .map((inv: any) => ({ ...inv, createdAt: new Date(inv.createdAt), updatedAt: new Date(inv.updatedAt) }))
+      .map((inv: any) => ({
+        ...inv,
+        createdAt: new Date(inv.createdAt),
+        updatedAt: new Date(inv.updatedAt),
+        analysisIds: inv.analysisIds ?? [],
+      }))
       .filter((inv: any) => inv.id && inv.name);
   } catch { return []; }
 }
@@ -129,6 +148,24 @@ function persistInvestigations(invs: Investigation[]): void {
   } catch {}
 }
 
+function loadAnalyses(): SageAnalysis[] {
+  try {
+    const raw = localStorage.getItem(ANALYSES_KEY);
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    if (!Array.isArray(data)) return [];
+    return data.map((a: any) => ({ ...a, savedAt: new Date(a.savedAt) }));
+  } catch { return []; }
+}
+
+function persistAnalyses(analyses: SageAnalysis[]): void {
+  try {
+    localStorage.setItem(ANALYSES_KEY, JSON.stringify(
+      analyses.map(a => ({ ...a, savedAt: a.savedAt.toISOString() }))
+    ));
+  } catch {}
+}
+
 function makeInvestigation(name: string, querySeed = ''): Investigation {
   return {
     id: `inv-${Math.random().toString(36).slice(2, 10)}`,
@@ -137,6 +174,7 @@ function makeInvestigation(name: string, querySeed = ''): Investigation {
     updatedAt: new Date(),
     querySeed,
     savedItemIds: [],
+    analysisIds: [],
     notes: '',
   };
 }
@@ -303,6 +341,9 @@ interface BrowserState {
   detachFromInvestigation: (invId: string, savedItemId: string) => void;
   exportInvestigation: (id: string, fmt: 'text' | 'json') => void;
 
+  sageAnalyses: SageAnalysis[];
+  saveSageAnalysis: (item: Omit<SageAnalysis, 'id' | 'savedAt'>) => string;
+
   logs: LogEntry[];
   addLog: (text: string, type?: 'info' | 'warn' | 'alert') => void;
   clearLogs: () => void;
@@ -358,6 +399,7 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
   const [investigations, setInvestigations] = useState<Investigation[]>(() => loadInvestigations());
   const [investigationMode, setInvestigationMode] = useState(false);
   const [activeInvestigationId, setActiveInvestigationId] = useState<string | null>(null);
+  const [sageAnalyses, setSageAnalyses] = useState<SageAnalysis[]>(() => loadAnalyses());
   const [sageMode, setSageMode] = useState(false);
   const investigationModeRef = useRef(false);
   const activeInvestigationIdRef = useRef<string | null>(null);
@@ -375,6 +417,7 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
   useEffect(() => { investigationModeRef.current = investigationMode; }, [investigationMode]);
   useEffect(() => { activeInvestigationIdRef.current = activeInvestigationId; }, [activeInvestigationId]);
   useEffect(() => { persistInvestigations(investigations); }, [investigations]);
+  useEffect(() => { persistAnalyses(sageAnalyses); }, [sageAnalyses]);
   useEffect(() => {
     if (!settings.clearDataOnExit) return;
     const handler = () => { try { localStorage.removeItem(STORAGE_KEY); } catch {} };
@@ -665,6 +708,22 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
     addLog('Item removed from investigation', 'info');
   }, [addLog]);
 
+  const saveSageAnalysis = useCallback((item: Omit<SageAnalysis, 'id' | 'savedAt'>): string => {
+    const newId = `analysis-${Math.random().toString(36).slice(2, 10)}`;
+    const newAnalysis: SageAnalysis = { ...item, id: newId, savedAt: new Date() };
+    setSageAnalyses(prev => [newAnalysis, ...prev].slice(0, 200));
+    addLog(`Analysis saved: "${item.query.slice(0, 40)}"`, 'info');
+    if (investigationModeRef.current && activeInvestigationIdRef.current) {
+      const invId = activeInvestigationIdRef.current;
+      setInvestigations(invs => invs.map(inv =>
+        inv.id === invId
+          ? { ...inv, analysisIds: [...(inv.analysisIds ?? []), newId], updatedAt: new Date() }
+          : inv
+      ));
+    }
+    return newId;
+  }, [addLog]);
+
   const exportInvestigation = useCallback((id: string, fmt: 'text' | 'json') => {
     const inv = investigations.find(i => i.id === id);
     if (!inv) return;
@@ -717,6 +776,7 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
     setHistory([]); setBookmarks([]); setDownloads([]); setSavedItems([]);
     setCollections(DEFAULT_COLLECTIONS);
     setInvestigations([]);
+    setSageAnalyses([]);
     setInvestigationMode(false);
     setActiveInvestigationId(null);
     investigationModeRef.current = false;
@@ -725,6 +785,7 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(INVESTIGATIONS_KEY);
+      localStorage.removeItem(ANALYSES_KEY);
     } catch {}
     addLog('Session burned — environment sanitized', 'info');
   }, [clearLogs, addLog]);
@@ -779,6 +840,7 @@ export function BrowserProvider({ children }: { children: ReactNode }) {
       toggleInvestigationMode, startInvestigation, setActiveInvestigation,
       renameInvestigation, updateInvestigationNotes, clearInvestigationItems,
       deleteInvestigation, attachToInvestigation, detachFromInvestigation, exportInvestigation,
+      sageAnalyses, saveSageAnalysis,
       logs, addLog, clearLogs,
       blackdogPanelOpen, setBlackdogPanelOpen, blackdogStatus,
       settings, updateSettings,

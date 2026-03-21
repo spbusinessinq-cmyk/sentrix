@@ -5,6 +5,7 @@ import {
   Loader2, AlertCircle, ArrowUpRight, Plus,
   ChevronDown, ChevronUp, ChevronRight, Zap, Sparkles,
   Send, X, RotateCcw, Lock, GitMerge,
+  Save, Crosshair, FileSearch,
 } from 'lucide-react';
 import { useBrowserState } from '@/hooks/use-browser-state';
 import { twMerge } from 'tailwind-merge';
@@ -377,10 +378,145 @@ function CompareBadge() {
   );
 }
 
-function useFlash(duration = 1200) {
+function useFlash(duration = 1600) {
   const [flashing, setFlashing] = useState(false);
   const trigger = () => { setFlashing(true); setTimeout(() => setFlashing(false), duration); };
   return { flashing, trigger };
+}
+
+// ── Sage Action Bar — shown after each completed Sage response ────────────────
+function SageActionBar({ query, msg, isLatest }: {
+  query: string;
+  msg: RichSageMessage;
+  isLatest: boolean;
+}) {
+  const {
+    investigationMode, activeInvestigationId, investigations,
+    saveSageAnalysis, updateInvestigationNotes,
+  } = useBrowserState();
+
+  const saveFlash    = useFlash();
+  const invFlash     = useFlash();
+  const extractFlash = useFlash();
+
+  const canInvestigate = investigationMode && !!activeInvestigationId;
+  const activeInv = investigations.find(i => i.id === activeInvestigationId);
+
+  const handleSaveAnalysis = () => {
+    if (saveFlash.flashing) return;
+    saveSageAnalysis({
+      query,
+      fullText: msg.content,
+      whatMatters: msg.parsed?.whatMatters ?? '',
+      whatToQuestion: msg.parsed?.whatToQuestion ?? '',
+      sources: msg.parsed?.sources ?? '',
+    });
+    saveFlash.trigger();
+  };
+
+  const handleAddToInvestigation = () => {
+    if (invFlash.flashing || !canInvestigate) return;
+    saveSageAnalysis({
+      query,
+      fullText: msg.content,
+      whatMatters: msg.parsed?.whatMatters ?? '',
+      whatToQuestion: msg.parsed?.whatToQuestion ?? '',
+      sources: msg.parsed?.sources ?? '',
+    });
+    invFlash.trigger();
+  };
+
+  const handleExtractFindings = () => {
+    if (extractFlash.flashing || !activeInv) return;
+    const parts: string[] = [];
+    if (msg.parsed?.whatMatters)    parts.push(`## What Matters\n${msg.parsed.whatMatters}`);
+    if (msg.parsed?.whatToQuestion) parts.push(`## What to Question\n${msg.parsed.whatToQuestion}`);
+    if (!parts.length) return;
+    const findings = `[From query: "${query.slice(0, 60)}"]\n\n${parts.join('\n\n')}`;
+    const newNotes = activeInv.notes
+      ? `${activeInv.notes}\n\n---\n\n${findings}`
+      : findings;
+    updateInvestigationNotes(activeInv.id, newNotes);
+    extractFlash.trigger();
+  };
+
+  const hasFindings = !!(msg.parsed?.whatMatters || msg.parsed?.whatToQuestion);
+
+  return (
+    <div
+      className="flex items-center gap-2 pt-3 mt-3 flex-wrap"
+      style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+    >
+      {/* Save Analysis */}
+      <button
+        onClick={handleSaveAnalysis}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9.5px] font-mono uppercase tracking-[0.12em] transition-all duration-150"
+        style={{
+          background: saveFlash.flashing ? 'rgba(139,92,246,0.12)' : 'rgba(255,255,255,0.04)',
+          border: `1px solid ${saveFlash.flashing ? 'rgba(139,92,246,0.30)' : 'rgba(255,255,255,0.08)'}`,
+          color: saveFlash.flashing ? 'rgba(139,92,246,0.90)' : 'rgba(148,163,184,0.55)',
+        }}
+        title="Save this analysis to your workspace"
+      >
+        {saveFlash.flashing
+          ? <><Check className="w-3 h-3" /> Saved</>
+          : <><Save className="w-3 h-3" /> Save Analysis</>
+        }
+      </button>
+
+      {/* Add to Investigation */}
+      <button
+        onClick={handleAddToInvestigation}
+        disabled={!canInvestigate}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9.5px] font-mono uppercase tracking-[0.12em] transition-all duration-150"
+        style={{
+          background: invFlash.flashing
+            ? 'rgba(22,163,74,0.10)'
+            : canInvestigate ? 'rgba(255,255,255,0.04)' : 'transparent',
+          border: `1px solid ${invFlash.flashing ? 'rgba(22,163,74,0.30)' : canInvestigate ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)'}`,
+          color: invFlash.flashing
+            ? 'hsl(142 72% 46%)'
+            : canInvestigate ? 'rgba(148,163,184,0.55)' : 'rgba(148,163,184,0.18)',
+          cursor: canInvestigate ? 'pointer' : 'default',
+          opacity: canInvestigate ? 1 : 0.5,
+        }}
+        title={canInvestigate ? 'Add this analysis to the active investigation' : 'Enable Investigation Mode to add to investigation'}
+      >
+        {invFlash.flashing
+          ? <><Check className="w-3 h-3" /> Added to Investigation</>
+          : <><Crosshair className="w-3 h-3" /> Add to Investigation</>
+        }
+      </button>
+
+      {/* Extract Key Findings */}
+      {hasFindings && (
+        <button
+          onClick={handleExtractFindings}
+          disabled={!canInvestigate}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9.5px] font-mono uppercase tracking-[0.12em] transition-all duration-150"
+          style={{
+            background: extractFlash.flashing ? 'rgba(56,189,248,0.08)' : 'rgba(255,255,255,0.03)',
+            border: `1px solid ${extractFlash.flashing ? 'rgba(56,189,248,0.22)' : 'rgba(255,255,255,0.06)'}`,
+            color: extractFlash.flashing ? 'rgba(56,189,248,0.80)' : canInvestigate ? 'rgba(148,163,184,0.40)' : 'rgba(148,163,184,0.18)',
+            cursor: canInvestigate ? 'pointer' : 'default',
+            opacity: canInvestigate ? 1 : 0.5,
+          }}
+          title={canInvestigate ? 'Extract What Matters + What to Question into investigation notes' : 'Enable Investigation Mode to extract findings'}
+        >
+          {extractFlash.flashing
+            ? <><Check className="w-3 h-3" /> Findings Extracted</>
+            : <><FileSearch className="w-3 h-3" /> Extract Key Findings</>
+          }
+        </button>
+      )}
+
+      {!canInvestigate && isLatest && (
+        <span className="text-[8.5px] font-mono ml-auto" style={{ color: 'rgba(148,163,184,0.20)' }}>
+          Enable investigation mode to add
+        </span>
+      )}
+    </div>
+  );
 }
 
 // ── Collection picker ─────────────────────────────────────────────────────────
@@ -689,6 +825,8 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
   initialMessage?: string | null;
   onClearInitialMessage?: () => void;
 }) {
+  const { investigationMode, activeInvestigationId, saveSageAnalysis } = useBrowserState();
+
   const [history, setHistory] = useState<RichSageMessage[]>([]);
   const [streaming, setStreaming] = useState('');
   const [loading, setLoading] = useState(false);
@@ -697,6 +835,13 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
   const abortRef  = useRef<AbortController | undefined>(undefined);
   const inputRef  = useRef<HTMLInputElement>(null);
   const didAutoSend = useRef(false);
+  const investigationModeRef = useRef(investigationMode);
+  const activeInvIdRef = useRef(activeInvestigationId);
+  const saveSageAnalysisRef = useRef(saveSageAnalysis);
+
+  useEffect(() => { investigationModeRef.current = investigationMode; }, [investigationMode]);
+  useEffect(() => { activeInvIdRef.current = activeInvestigationId; }, [activeInvestigationId]);
+  useEffect(() => { saveSageAnalysisRef.current = saveSageAnalysis; }, [saveSageAnalysis]);
 
   useEffect(() => {
     setHistory([]); setStreaming(''); setInput(''); setLoading(false);
@@ -741,17 +886,28 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
     abortRef.current?.abort();
     abortRef.current = new AbortController();
 
+    const userMsg2 = msg.trim();
     let full = '';
     await streamSageQuery({
       query, results, context,
       messages: history as SageMessage[],
-      userMessage: msg.trim(),
+      userMessage: userMsg2,
       signal: abortRef.current.signal,
       onChunk: (text) => { full += text; setStreaming(full); },
       onDone: () => {
         const parsed = parseSageResponse(full);
         setHistory(h => [...h, { role: 'assistant', content: full, parsed }]);
         setStreaming(''); setLoading(false);
+        // Auto-capture into investigation when mode is active
+        if (investigationModeRef.current && activeInvIdRef.current) {
+          saveSageAnalysisRef.current({
+            query: userMsg2,
+            fullText: full,
+            whatMatters: parsed.whatMatters,
+            whatToQuestion: parsed.whatToQuestion,
+            sources: parsed.sources,
+          });
+        }
       },
       onError: (errMsg) => {
         setHistory(h => [...h, { role: 'assistant', content: `⚠ ${errMsg}` }]);
@@ -846,11 +1002,14 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
               {msg.role === 'assistant' && (
                 <div className="flex items-center gap-1.5 mb-2.5">
                   <Sparkles className="w-2.5 h-2.5" style={{ color: SAGE_COLOR }} />
-                  <span className="text-[8px] font-mono uppercase tracking-[0.15em] font-bold" style={{ color: SAGE_COLOR }}>SAGE</span>
+                  <span className="text-[8px] font-mono uppercase tracking-[0.15em] font-bold" style={{ color: SAGE_COLOR }}>SAGE · ANALYSIS ENGINE</span>
                 </div>
               )}
               {msg.role === 'assistant'
-                ? <SageAnswerBlock msg={msg} />
+                ? <>
+                    <SageAnswerBlock msg={msg} />
+                    <SageActionBar query={query} msg={msg} isLatest={i === history.length - 1} />
+                  </>
                 : <p className="text-[12px] font-mono leading-relaxed" style={{ color: 'rgba(139,92,246,0.9)' }}>{msg.content}</p>
               }
             </div>
@@ -912,7 +1071,7 @@ function ResultCard({ result, index, onInspect, tier, compare }: {
   result: EnrichedItem; index: number; onInspect: () => void;
   tier?: SignalTier; compare?: boolean;
 }) {
-  const { isSaved, savedItems, addBookmark, isBookmarked, bookmarks, removeBookmark, addToCollection, saveItemToCollection, createCollection, collections } = useBrowserState();
+  const { isSaved, savedItems, addBookmark, isBookmarked, bookmarks, removeBookmark, addToCollection, saveItemToCollection, createCollection, collections, investigationMode, saveItem, attachToInvestigation } = useBrowserState();
   const saved      = isSaved(result.url);
   const savedObj   = savedItems.find(s => s.url === result.url);
   const bookmarked = isBookmarked(result.url);
@@ -922,6 +1081,7 @@ function ResultCard({ result, index, onInspect, tier, compare }: {
   const [colPickerOpen, setColPickerOpen] = useState(false);
   const bookmarkFlash = useFlash();
   const collectFlash  = useFlash();
+  const invFlash      = useFlash();
 
   const handleBookmark = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -931,6 +1091,17 @@ function ResultCard({ result, index, onInspect, tier, compare }: {
   };
 
   const itemPayload = { title: result.title, url: result.url, domain: result.domain, posture: result.posture, sourceType: result.sourceType, reasoning: result.reasoning };
+
+  const handleAddToInvestigation = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!investigationMode) return;
+    if (saved && savedObj) {
+      attachToInvestigation(savedObj.id);
+    } else {
+      saveItem(itemPayload);
+    }
+    invFlash.trigger();
+  };
 
   const handleAddToCollection = (colId: string) => {
     if (saved && savedObj) addToCollection(savedObj.id, colId);
@@ -1050,6 +1221,13 @@ function ResultCard({ result, index, onInspect, tier, compare }: {
                 <CollectionPicker open={colPickerOpen} onClose={() => setColPickerOpen(false)} collections={collections}
                   onAdd={handleAddToCollection} onCreateAndAdd={handleCreateAndAdd} />
               </div>
+              {investigationMode && (
+                <FooterAction
+                  label={invFlash.flashing ? 'Added!' : 'Investigate'}
+                  active={invFlash.flashing}
+                  icon={invFlash.flashing ? <Check className="w-3 h-3" /> : <Crosshair className="w-3 h-3" />}
+                  onClick={handleAddToInvestigation} />
+              )}
               <FooterAction label="Inspect" icon={<Shield className="w-3 h-3" />} onClick={e => { e.stopPropagation(); onInspect(); }} />
               <a href={result.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
                 className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-widest cursor-pointer"

@@ -1,0 +1,196 @@
+Run a FINAL DEPLOYMENT PASS on Sentrix focused on CONTROL, SAVING, and INVESTIGATION.
+
+DO NOT redesign the system.
+DO NOT remove any working intelligence features.
+
+MISSION:
+Sentrix must become a usable intelligence workspace where the user can:
+- analyze information
+- save findings
+- build investigations
+- control context
+
+Right now this is missing. Fix it completely.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. GLOBAL INVESTIGATION CONTROL (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+There is currently NO clear way to:
+- turn Investigation Mode ON
+- see what investigation is active
+- understand what mode does
+
+Fix this immediately.
+
+Add a GLOBAL CONTROL BAR at the top (or near header):
+
+[ Investigation: NONE / ACTIVE ]
+[ Toggle: OFF / ON ]
+
+Behavior:
+- OFF → nothing is captured
+- ON → all saves + analysis attach to active investigation
+
+If no investigation exists:
+- clicking ON should prompt:
+  “Create Investigation”
+  (simple name input)
+
+If investigation exists:
+- show:
+  Active Investigation: [Name]
+  Items: [count]
+
+Make this ALWAYS visible.
+This is the brain of the system.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. SAGE → INVESTIGATION ACTIONS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Inside EVERY Sage output, add 3 clear buttons:
+
+[ Save Analysis ]
+[ Add to Investigation ]
+[ Extract Key Findings ]
+
+Behavior:
+
+Save Analysis:
+- stores the full Sage output in bookmarks
+
+Add to Investigation:
+- only enabled if Investigation Mode is ON
+- attaches:
+  - query
+  - Sage output
+  - sources
+  - signal/risk data
+
+Extract Key Findings:
+- pulls:
+  - WHAT MATTERS
+  - WHAT TO QUESTION
+- saves as structured notes inside investigation
+
+Add visual confirmation:
+- “Saved”
+- “Added to Investigation”
+- “Findings extracted”
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. SUPPORTING REFERENCES → SAVE CONTROL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Each source card must have:
+
+[ Save ]
+[ Add to Investigation ]
+
+When clicked:
+- Save → goes to bookmarks
+- Add → attaches to current investigation
+
+Also show:
+- saved state (highlighted icon)
+- added state
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. INVESTIGATION PANEL (NEW OR IMPROVED)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Create a real Investigation view:
+
+Each investigation contains:
+- Title
+- Created date
+- Item count
+
+Inside:
+Sections:
+- Analyses (Sage outputs)
+- Sources (saved links)
+- Findings (structured notes)
+
+Each item should be:
+- clickable
+- removable
+- organized chronologically
+
+Optional (lightweight):
+- allow renaming investigation
+- allow deleting investigation
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. AUTO-CAPTURE BEHAVIOR (MODE ON)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+When Investigation Mode is ON:
+
+Automatically:
+- Save every Sage analysis
+- Save sources used in that analysis
+
+BUT:
+- still allow manual control buttons
+
+Add subtle indicator:
+“Auto-capture active”
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. FIX CURRENT BROKEN UX
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Fix ALL of these:
+
+- No way to open BLACKDOG panel again → add persistent toggle button
+- Starter chips auto-sending → they should ONLY insert text
+- Empty query triggering Sage → block execution if input is empty
+- Supporting References should NEVER interrupt analysis
+- Remove any leftover green in analysis UI
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. PRODUCT LANGUAGE (FINAL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Make system roles crystal clear:
+
+Sentrix = intelligence system
+Sage = analysis engine
+BLACKDOG = safety/risk layer
+Investigation = user-controlled case file
+
+Add subtle labels where needed to reinforce this.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. FINAL EXPERIENCE GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+After this pass:
+
+A user should be able to:
+1. Paste a claim
+2. See analysis instantly
+3. Save it
+4. Add it to an investigation
+5. Build a full case over time
+
+WITHOUT confusion.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. DO NOT BREAK
+━━━━━━━━━━━━━━━━━━━━━━━
+
+- Sage format (ANSWER / SIGNAL / AGREEMENT / RISK etc.)
+- Dual-track evidence system
+- Analysis-first layout
+- EdgeOne API structure
+
+Only ADD control, clarity, and usability.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+
+This is the final step before Sentrix becomes a real intelligence tool.
+
+Execute cleanly.

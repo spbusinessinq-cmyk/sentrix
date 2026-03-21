@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Crosshair, Plus, Pencil, Check, X, Trash2, ExternalLink,
-  FileText, FileJson, ChevronDown, ChevronRight, Layers,
+  FileText, FileJson, ChevronDown, ChevronRight, Layers, Sparkles,
 } from 'lucide-react';
-import { useBrowserState, Investigation, SavedItem } from '@/hooks/use-browser-state';
+import { useBrowserState, Investigation, SavedItem, SageAnalysis } from '@/hooks/use-browser-state';
 import { format } from 'date-fns';
 
 // ─── Posture + Source helpers ──────────────────────────────────────────────────
@@ -132,11 +132,80 @@ function SourceRow({ item, onRemove, onOpen }: {
   );
 }
 
+// ─── Analysis row ─────────────────────────────────────────────────────────────
+
+function AnalysisRow({ analysis }: { analysis: SageAnalysis }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div
+      className="rounded-lg overflow-hidden transition-colors"
+      style={{ border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.15)' }}
+    >
+      <button
+        className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left"
+        onClick={() => setExpanded(v => !v)}
+      >
+        <Sparkles className="w-3 h-3 mt-0.5 shrink-0" style={{ color: 'rgba(139,92,246,0.55)' }} />
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] font-mono truncate leading-tight" style={{ color: 'rgba(200,200,215,0.80)' }}>
+            {analysis.query}
+          </p>
+          <p className="text-[9px] font-mono mt-0.5" style={{ color: 'rgba(148,163,184,0.35)' }}>
+            {format(analysis.savedAt, 'MMM d · HH:mm')} · SAGE analysis
+          </p>
+        </div>
+        <div className="shrink-0 mt-0.5" style={{ color: 'rgba(148,163,184,0.28)' }}>
+          {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+        </div>
+      </button>
+
+      {expanded && (
+        <div
+          className="px-3 pb-3 flex flex-col gap-3"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
+        >
+          {analysis.whatMatters && (
+            <div className="pt-2.5">
+              <p className="text-[8px] font-mono uppercase tracking-[0.18em] mb-1.5" style={{ color: 'rgba(56,189,248,0.50)' }}>
+                What Matters
+              </p>
+              <p className="text-[11px] font-mono leading-relaxed" style={{ color: 'rgba(148,163,184,0.60)' }}>
+                {analysis.whatMatters.slice(0, 400)}{analysis.whatMatters.length > 400 ? '…' : ''}
+              </p>
+            </div>
+          )}
+          {analysis.whatToQuestion && (
+            <div>
+              <p className="text-[8px] font-mono uppercase tracking-[0.18em] mb-1.5" style={{ color: 'rgba(245,158,11,0.50)' }}>
+                What to Question
+              </p>
+              <p className="text-[11px] font-mono leading-relaxed" style={{ color: 'rgba(148,163,184,0.60)' }}>
+                {analysis.whatToQuestion.slice(0, 400)}{analysis.whatToQuestion.length > 400 ? '…' : ''}
+              </p>
+            </div>
+          )}
+          {analysis.sources && (
+            <div>
+              <p className="text-[8px] font-mono uppercase tracking-[0.18em] mb-1.5" style={{ color: 'rgba(148,163,184,0.30)' }}>
+                Sources Referenced
+              </p>
+              <p className="text-[10px] font-mono leading-relaxed" style={{ color: 'rgba(148,163,184,0.40)' }}>
+                {analysis.sources.slice(0, 300)}{analysis.sources.length > 300 ? '…' : ''}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Investigation panel ──────────────────────────────────────────────────────
 
 function InvestigationPanel({ inv }: { inv: Investigation }) {
   const {
-    savedItems,
+    savedItems, sageAnalyses,
     renameInvestigation, updateInvestigationNotes,
     clearInvestigationItems, deleteInvestigation, exportInvestigation,
     detachFromInvestigation,
@@ -156,6 +225,11 @@ function InvestigationPanel({ inv }: { inv: Investigation }) {
   const invItems = useMemo(
     () => savedItems.filter(s => inv.savedItemIds.includes(s.id)),
     [savedItems, inv.savedItemIds]
+  );
+
+  const invAnalyses = useMemo(
+    () => sageAnalyses.filter(a => (inv.analysisIds ?? []).includes(a.id)),
+    [sageAnalyses, inv.analysisIds]
   );
 
   const postureCounts = useMemo(() => ({
@@ -310,6 +384,21 @@ function InvestigationPanel({ inv }: { inv: Investigation }) {
                   ))
               }
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Analyses section */}
+      {invAnalyses.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="w-2.5 h-2.5" style={{ color: 'rgba(139,92,246,0.50)' }} />
+            <p className="section-label" style={{ color: 'rgba(139,92,246,0.55)' }}>
+              SAGE ANALYSES ({invAnalyses.length})
+            </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            {invAnalyses.map(a => <AnalysisRow key={a.id} analysis={a} />)}
           </div>
         </div>
       )}
