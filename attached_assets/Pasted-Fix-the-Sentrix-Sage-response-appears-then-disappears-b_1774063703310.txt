@@ -1,0 +1,133 @@
+Fix the Sentrix Sage “response appears then disappears” bug.
+
+CURRENT BEHAVIOR:
+- Sage response streams in
+- text becomes visible
+- then the rendered response disappears / clears / crashes
+
+This means the API is now working, but the frontend state/render pipeline is broken after or during completion.
+
+MISSION:
+Find and fix the frontend bug that causes Sage output to vanish after rendering.
+
+GOAL:
+Once Sage responds, the final response must remain visible and stable in the analysis panel.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. DEBUG THE FULL RESPONSE LIFECYCLE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Audit the full path:
+
+- request starts
+- stream chunks arrive
+- partial content renders
+- final completion event arrives
+- parsed response is stored
+- UI renders final structured output
+
+Add console logs for each stage:
+- stream chunk received
+- partial text length
+- final raw text
+- parsed object
+- state set
+- render success
+- render error
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. CHECK FOR STATE RESET
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Look for any effect or handler that clears/replaces the Sage output after completion.
+
+Specifically inspect:
+- useEffect hooks triggered by query changes
+- stream completion handlers
+- error fallback handlers
+- panel reset / clear actions
+- auto-analysis re-run logic
+
+Fix any code that:
+- overwrites the final response with empty state
+- resets parsed output after success
+- reinitializes Sage state after stream end
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. HARDEN THE PARSER
+━━━━━━━━━━━━━━━━━━━━━━━
+
+The parser must never crash if a section is missing or malformed.
+
+If Sage returns partial or imperfect formatting:
+- keep raw answer visible
+- do not blank the panel
+- do not throw
+
+Use safe defaults for missing fields:
+- answer: raw text fallback
+- signal/agreement/risk: optional
+- evidence sections: optional arrays
+- sources: optional
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. ADD RAW FALLBACK RENDER
+━━━━━━━━━━━━━━━━━━━━━━━
+
+If structured parsing fails for any reason:
+- render the full raw response text in the Sage panel
+- do not show an empty card
+- do not clear the output
+
+Rule:
+Raw output is always better than disappearing output.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. WRAP SAGE OUTPUT RENDER IN SAFE GUARDS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Anywhere the UI renders:
+- parsed.answer
+- parsed.signal
+- parsed.confirmingEvidence
+- parsed.contradictingEvidence
+- parsed.sources
+- parsed.whatMatters
+- parsed.whatToQuestion
+
+Use null-safe guards.
+
+No component should throw because one section is undefined.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. DO NOT CLEAR ON COMPLETE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+When the stream finishes:
+- keep the final response mounted
+- preserve the final parsed state
+- do not reset “thinking”
+- do not clear temporary content before final content is committed
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. ADD RENDER ERROR LOGGING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+If render fails, log:
+- raw response
+- parsed response
+- exact exception
+
+This is critical to identify whether the crash is parser-side or UI-side.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. FINAL BEHAVIOR
+━━━━━━━━━━━━━━━━━━━━━━━
+
+After the fix:
+- Sage response streams in
+- final response remains visible
+- no disappearing content
+- no panel clearing
+- no crash after completion
+- if structured parse fails, raw response still stays on screen

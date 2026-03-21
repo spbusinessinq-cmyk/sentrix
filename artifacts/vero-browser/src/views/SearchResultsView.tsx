@@ -765,24 +765,50 @@ function IntelligenceBrief({ report, expanded, onToggle, sageOpen, onToggleSage 
   );
 }
 
+// ── Error boundary — prevents render crash from blanking the panel ────────────
+interface EBState { hasError: boolean; rawText: string }
+class SageErrorBoundary extends React.Component<{ rawText: string; children: React.ReactNode }, EBState> {
+  constructor(props: { rawText: string; children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, rawText: props.rawText };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(err: unknown, info: React.ErrorInfo) {
+    console.error('[Sentrix] SageAnswerBlock render error — falling back to raw text', err, info);
+    console.error('[Sentrix] Raw response that caused render error:', this.props.rawText?.slice(0, 200));
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap"
+          style={{ color: 'rgba(200,200,212,0.80)', lineHeight: '1.78', fontFamily: "'Inter', sans-serif" }}>
+          {this.props.rawText || '(no response text)'}
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ── Structured Sage message ───────────────────────────────────────────────────
 function SageAnswerBlock({ msg }: { msg: RichSageMessage }) {
   const p = msg.parsed;
+  const rawContent = msg.content ?? '';
 
   if (!p || !p.answer) {
     return (
       <div className="text-[14px] leading-relaxed whitespace-pre-wrap" style={{ color: 'rgba(200,200,212,0.80)', lineHeight: '1.78' }}>
-        {msg.content}
+        {rawContent || '(no response received)'}
       </div>
     );
   }
 
-  const signalRating    = extractRating(p.signal);
-  const signalDetail    = extractDetail(p.signal);
-  const agreementRating = extractRating(p.agreement);
-  const agreementDetail = extractDetail(p.agreement);
-  const riskRating      = extractRating(p.risk);
-  const riskDetail      = extractDetail(p.risk);
+  const signalRating    = extractRating(p.signal ?? '');
+  const signalDetail    = extractDetail(p.signal ?? '');
+  const agreementRating = extractRating(p.agreement ?? '');
+  const agreementDetail = extractDetail(p.agreement ?? '');
+  const riskRating      = extractRating(p.risk ?? '');
+  const riskDetail      = extractDetail(p.risk ?? '');
 
   const hasSignalBar = signalRating || agreementRating || riskRating;
 
@@ -960,6 +986,10 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
   useEffect(() => { saveSageAnalysisRef.current = saveSageAnalysis; }, [saveSageAnalysis]);
 
   useEffect(() => {
+    // Abort any in-flight Sage stream before resetting state for a new query
+    abortRef.current?.abort();
+    abortRef.current = undefined;
+    console.log('[Sentrix] SageChat query changed → resetting panel. query:', query?.slice(0, 60));
     setHistory([]); setStreaming(''); setInput(''); setLoading(false);
     didAutoSend.current = false;
   }, [query]);
@@ -1004,16 +1034,29 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
 
     const userMsg2 = msg.trim();
     let full = '';
+    console.log('[Sentrix] Sage send starting —', userMsg2.slice(0, 60));
     await streamSageQuery({
       query, results, context,
       messages: history as SageMessage[],
       userMessage: userMsg2,
       signal: abortRef.current.signal,
-      onChunk: (text) => { full += text; setStreaming(full); },
+      onChunk: (text) => {
+        full += text;
+        setStreaming(full);
+      },
       onDone: () => {
-        const parsed = parseSageResponse(full);
+        console.log('[Sentrix] Sage onDone fired — full.length:', full.length, 'full[:80]:', full.slice(0, 80));
+        let parsed;
+        try {
+          parsed = parseSageResponse(full);
+          console.log('[Sentrix] Sage parseSageResponse OK — answer[:60]:', parsed.answer?.slice(0, 60));
+        } catch (parseErr) {
+          console.error('[Sentrix] parseSageResponse threw:', parseErr);
+          parsed = { answer: full, verificationStatus: '', signal: '', agreement: '', risk: '', confirmingEvidence: '', contradictingEvidence: '', whatMatters: '', whatToQuestion: '', whatToVerify: '', sources: '', sourceWeight: '', intelligence: '' };
+        }
         setHistory(h => [...h, { role: 'assistant', content: full, parsed }]);
         setStreaming(''); setLoading(false);
+        console.log('[Sentrix] Sage state committed to history');
         // Auto-capture into investigation when mode is active
         if (investigationModeRef.current && activeInvIdRef.current) {
           saveSageAnalysisRef.current({
@@ -1026,10 +1069,12 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
         }
       },
       onError: (errMsg) => {
+        console.error('[Sentrix] Sage onError:', errMsg, '— full.length at error:', full.length);
         setHistory(h => [...h, { role: 'assistant', content: `⚠ ${errMsg}` }]);
         setStreaming(''); setLoading(false);
       },
     });
+    console.log('[Sentrix] Sage streamSageQuery resolved (send complete)');
   }, [query, results, context, history, loading]);
 
   // Auto-send initial message (from homepage navigation) — only when real content exists
@@ -1123,7 +1168,9 @@ function SageChat({ open, query, results, context, onClose, initialMessage, onCl
               )}
               {msg.role === 'assistant'
                 ? <>
-                    <SageAnswerBlock msg={msg} />
+                    <SageErrorBoundary rawText={msg.content ?? ''}>
+                      <SageAnswerBlock msg={msg} />
+                    </SageErrorBoundary>
                     <SageActionBar query={query} msg={msg} isLatest={i === history.length - 1} />
                   </>
                 : <p className="text-[12px] font-mono leading-relaxed" style={{ color: 'rgba(139,92,246,0.9)' }}>{msg.content}</p>

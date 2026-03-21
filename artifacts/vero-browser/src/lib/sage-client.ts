@@ -70,6 +70,30 @@ export async function streamSageQuery(opts: SageQueryOptions): Promise<void> {
 
   const decoder = new TextDecoder();
   let buffer = '';
+  let doneCalled = false;
+
+  const processLine = (line: string): boolean => {
+    if (!line.startsWith('data: ')) return false;
+    const rawJson = line.slice(6).trim();
+    if (!rawJson) return false;
+    try {
+      const parsed = JSON.parse(rawJson) as { content?: string; done?: boolean; error?: string };
+      if (parsed.error) { onError(parsed.error); return true; }
+      if (parsed.content) {
+        console.log('[Sentrix] Sage chunk received, length:', parsed.content.length);
+        onChunk(parsed.content);
+      }
+      if (parsed.done) {
+        console.log('[Sentrix] Sage stream done event received');
+        doneCalled = true;
+        onDone();
+        return true;
+      }
+    } catch {
+      // ignore malformed SSE lines
+    }
+    return false;
+  };
 
   try {
     while (true) {
@@ -81,22 +105,30 @@ export async function streamSageQuery(opts: SageQueryOptions): Promise<void> {
       buffer = lines.pop() ?? '';
 
       for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const rawJson = line.slice(6).trim();
-        if (!rawJson) continue;
-
-        try {
-          const parsed = JSON.parse(rawJson) as { content?: string; done?: boolean; error?: string };
-          if (parsed.error) { onError(parsed.error); return; }
-          if (parsed.content) onChunk(parsed.content);
-          if (parsed.done) { onDone(); return; }
-        } catch {
-          // ignore malformed SSE lines
-        }
+        const shouldReturn = processLine(line);
+        if (shouldReturn) return;
       }
+    }
+
+    // ── Flush remaining buffer ────────────────────────────────────────────────
+    // If the stream ended (reader.done=true) before the final \n of the SSE
+    // double-newline was processed, the done event may still be in the buffer.
+    if (buffer.trim()) {
+      console.log('[Sentrix] Sage flushing remaining buffer:', buffer.trim().slice(0, 80));
+      const shouldReturn = processLine(buffer.trim());
+      if (shouldReturn) return;
+    }
+
+    // ── Fallback: stream ended without an explicit done event ─────────────────
+    // This happens when the server closes the connection before we receive the
+    // done flag (e.g. EdgeOne timeout, network cut, or malformed SSE payload).
+    if (!doneCalled) {
+      console.warn('[Sentrix] Sage stream ended without a done event — calling onDone as fallback');
+      onDone();
     }
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') return;
+    console.error('[Sentrix] Sage stream read error:', err);
     onError('Stream interrupted — please try again');
   } finally {
     reader.releaseLock();
