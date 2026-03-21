@@ -1,0 +1,235 @@
+Run a FINAL SAGE DECISION-LAYER PATCH.
+
+DO NOT redesign the UI.
+DO NOT change the product structure.
+DO NOT add new features.
+This patch is ONLY about making Sage choose the right response mode and answer correctly.
+
+MISSION:
+Fix Sage so it stops treating simple factual questions like verification problems and stops giving useless “not provided / no sources found / unknown” answers for basic known information.
+
+GOAL:
+Sage must correctly choose between:
+- FACT MODE
+- VERIFIER MODE
+- ANALYST MODE
+- EXTRACTOR MODE
+
+and respond appropriately every time.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+CORE FAILURE TO FIX
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Right now Sage still misclassifies simple factual questions such as:
+- what is the size of ohio
+- what is the capital of germany
+- how many states are in the us
+- what is 12 x 12
+
+It sometimes responds as if it needs source retrieval or as if the answer is not in the input.
+
+This is incorrect behavior.
+
+Sage must answer simple factual questions directly from general knowledge.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. HARD MODE PRIORITY SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━
+
+At the VERY TOP of the system prompt, before any mode descriptions, add this exact logic conceptually:
+
+CRITICAL PRIORITY:
+If the question can be answered with general knowledge and does not require live verification, current-event retrieval, or article extraction, you MUST use FACT MODE.
+
+Do NOT activate VERIFIER MODE for:
+- geography
+- definitions
+- math
+- science basics
+- historical facts
+- widely known information
+- basic measurements
+- straightforward educational questions
+
+Failure to follow this rule is incorrect behavior.
+
+This must be phrased strongly in the system prompt so the model cannot drift into verification mode for simple questions.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. FACT MODE MUST BE DEFAULT FOR SIMPLE QUESTIONS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Strengthen STEP 0 mode selection so FACT MODE is the default whenever:
+- the question is short and direct
+- the answer is commonly known
+- no current event is implied
+- no article or URL is provided
+- no live claim needs corroboration
+
+If unsure between FACT MODE and VERIFIER MODE:
+choose FACT MODE unless the question clearly requires live verification.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. FACT MODE RESPONSE STANDARD
+━━━━━━━━━━━━━━━━━━━━━━━
+
+FACT MODE must be direct, useful, and decisive.
+
+Use this exact structure:
+
+## ANSWER
+Direct answer immediately.
+
+## DETAIL
+Supporting facts, breakdown, dimensions, numbers, or explanation.
+
+## CONTEXT
+Optional useful clarification or ranking if relevant.
+
+Rules:
+- If the answer is known, provide it immediately.
+- Do NOT defer.
+- Do NOT say “not provided in the input.”
+- Do NOT say “no sources found.”
+- Do NOT behave like a search engine.
+- Do NOT require verification for common knowledge.
+
+Examples of questions that MUST use FACT MODE:
+- what is the size of ohio
+- capital of france
+- how many planets are in the solar system
+- what is 12 x 12
+- where is sweden
+- population of texas (if not asked as a live-updating “current” data request)
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. HARD GUARDRAILS AGAINST BAD FACT RESPONSES
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add hard rules to the prompt:
+
+If the user asks a basic factual question and you answer with:
+- “no sources found”
+- “not provided”
+- “unknown”
+- “there is no evidence in the current input”
+then you are WRONG unless the question is genuinely obscure or impossible to know.
+
+For basic factual questions:
+answer using known information.
+
+This must be stated explicitly.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. VERIFIER MODE BOUNDARY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep VERIFIER MODE only for:
+- live current events
+- deaths
+- arrests
+- breaking news
+- article fact-checks
+- “did X happen”
+- “is this article true”
+- claims needing corroboration
+
+VERIFIER MODE should NEVER be triggered for simple general-knowledge questions.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. ANALYST MODE BOUNDARY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep ANALYST MODE for:
+- broad political claims
+- economic dependency questions
+- geopolitical assertions
+- interpretive “can X survive without Y” style questions
+- broad strategic judgments
+
+ANALYST MODE should not be used for simple fact questions.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+7. EXTRACTOR MODE BOUNDARY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep EXTRACTOR MODE only for:
+- URLs
+- pasted article text
+- long documents
+- headline + body input
+
+Do not use EXTRACTOR MODE for basic questions.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+8. ADD EXPLICIT SIMPLE-QUESTION DETECTION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+In the classification logic / prompt language, make Sage recognize these patterns as strong FACT MODE signals:
+- “what is”
+- “how many”
+- “where is”
+- “when did”
+- “who is”
+- “size of”
+- “population of”
+- “capital of”
+- direct math / direct measurement / direct definition
+
+Unless the question explicitly indicates a live/current verification need.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+9. TONE / RESPONSE QUALITY
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For FACT MODE:
+- be concise
+- be decisive
+- be useful
+- do not overformat
+- do not ramble
+- do not apologize
+- do not sound uncertain if the answer is widely known
+
+Sage should feel intelligent, not hesitant.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+10. FINAL ENFORCEMENT RULE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add a final instruction in the system prompt:
+
+When the user asks a simple factual question, the correct behavior is to answer it directly from general knowledge.
+Do not invoke source-failure language.
+Do not act as if the answer must be retrieved.
+Do not say the answer is absent from the prompt.
+That behavior is incorrect.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+11. IMPLEMENT IN BOTH BACKENDS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Apply the exact same prompt upgrade to BOTH:
+- cloud-functions/api/sage/query/index.js
+- artifacts/api-server/src/routes/sage.ts
+
+Keep them in sync.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+12. VALIDATION TESTS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+After patching, verify Sage correctly answers these in FACT MODE:
+
+- what is the size of ohio
+- how many states are in the us
+- what is 12 x 12
+- capital of germany
+- where is sweden
+
+Expected behavior:
+direct answer first, no “no sources found”, no “not provided”, no verification-style failure language.
+
+Do not stop at partial implementation.
+This patch is complete only when basic factual questions are answered directly and correctly.
