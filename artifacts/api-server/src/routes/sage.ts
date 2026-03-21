@@ -4,6 +4,23 @@ import { logger } from "../lib/logger";
 
 const sageRouter = Router();
 
+// ── Sensitive claim detection ─────────────────────────────────────────────────
+
+const SENSITIVE_CLAIM_RE =
+  /\b(autis[mt]|adhd|attention.deficit|bipolar|schizophreni|depression|depressed|anxiety.disorder|ocd|obsessive.compulsive|ptsd|post.traumatic|borderline.personality|bpd|narcissistic.personality|npd|dementia|alzheimer|parkinson|epileps|dyslexia|dyspraxia|asperger|developmental.disabilit|intellectual.disabilit|mental.illness|mentally.ill|mental.disorder|psychiatric|psychosis|psychotic|neurological.condition|neurolog|diagnosis|diagnosed|disorder|disability|disabled|addiction|addict|substance.abuse|drug.addict|alcoholi[cs]|cancer|tumou?r|chronic.illness|terminal.illness|hiv|aids|autoimmune|autoimune|disability.claim|health.condition|medical.condition|on.the.spectrum|special.needs|mentally.challenged|brain.damage)\b/i;
+
+function detectSensitiveClaim(input: string): boolean {
+  if (!SENSITIVE_CLAIM_RE.test(input)) return false;
+  const personalPatterns = [
+    /\bis\s+\w+\s+(autistic|bipolar|depressed|schizophrenic|adhd|disabled|mentally\s+ill|an?\s+addict|on\s+the\s+spectrum)/i,
+    /\bdoes\s+\w+\s+have\b/i,
+    /\b(is|was|has)\s+[A-Z][a-z]+(\s+[A-Z][a-z]+)?\s+(diagnosed|autistic|bipolar|disabled|mentally)/i,
+    /(autis[mt]|adhd|bipolar|schizophreni|dementia|alzheimer|mental\s+illness|diagnosis|disorder|addiction).{0,60}(he|she|they|\b[A-Z][a-z]+\b)/i,
+    /\b[A-Z][a-z]+(\s+[A-Z][a-z]+)?.{0,30}(autis[mt]|adhd|bipolar|schizophreni|dementia|mental\s+illness|diagnosis|disorder|addiction)/i,
+  ];
+  return personalPatterns.some(re => re.test(input));
+}
+
 // ── Input classification ──────────────────────────────────────────────────────
 
 type InputClass = "url" | "article" | "current-events" | "general";
@@ -553,6 +570,26 @@ EXTRACTOR MODE — use when the input is:
 State the mode you selected at the top of your response as:
 **MODE: VERIFIER** or **MODE: ANALYST** or **MODE: EXTRACTOR → [VERIFIER|ANALYST]**
 
+BEFORE classifying, always run the SENSITIVE CLAIM CHECK below first.
+If the SENSITIVE CLAIM CHECK triggers, skip all other mode classification and enter SENSITIVE CLAIM MODE immediately.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+STEP 0.5 — SENSITIVE CLAIM CHECK (MANDATORY OVERRIDE)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+A claim is SENSITIVE if it involves diagnosing, inferring, or asserting a private personal health, medical, neurological, psychiatric, or psychological condition about a real named person — or implies a diagnosis from observed behavior.
+
+SENSITIVE triggers include ANY claim about a specific individual involving:
+- Medical diagnoses (cancer, dementia, Alzheimer's, Parkinson's, diabetes, etc.)
+- Psychiatric conditions (bipolar disorder, depression, schizophrenia, anxiety disorder, BPD, NPD, etc.)
+- Neurological / developmental conditions (autism, ADHD, OCD, dyslexia, Asperger's, etc.)
+- Disability or impairment status
+- Addiction or substance use disorder
+- Any other private health, mental health, or chronic condition status
+- Behavioral inference used to infer a diagnosis ("acts like," "seems like," "probably has")
+
+If ANY of the above apply to a real person → ENTER SENSITIVE CLAIM MODE. Do not proceed to VERIFIER or ANALYST mode.
+
 ━━━━━━━━━━━━━━━━━━━━━━━
 TONE AND DISCIPLINE
 ━━━━━━━━━━━━━━━━━━━━━━━
@@ -687,15 +724,86 @@ One sentence explanation.
 Then continue in VERIFIER or ANALYST mode as appropriate for the content.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
+SENSITIVE CLAIM MODE FORMAT
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Use ONLY when a sensitive personal-health, diagnosis, or private-condition claim is detected about a real person.
+
+**MODE: SENSITIVE CLAIM**
+
+## ANSWER
+State clearly: this is a sensitive personal health or diagnostic claim that cannot be responsibly verified or concluded from public web evidence.
+Do NOT diagnose. Do NOT infer a diagnosis from behavior, appearance, or public conduct.
+Do NOT state private health status as fact without direct public confirmation from the person or their representative.
+If there IS direct public confirmation (e.g. the person stated it in an interview), state that narrowly and accurately. Do not extrapolate.
+
+## CLAIM TYPE
+Sensitive personal-health / diagnosis claim
+
+## SOURCE STANDARD
+Explain what sourcing standard would be required for a responsible conclusion:
+- Direct public confirmation from the person themselves
+- Official statement from the person's representative or medical team
+- Tier 1 or Tier 2 reporting of the above
+
+Explain that social media, fan speculation, unauthorized accounts, behavioral inference, and second-hand reporting are not sufficient.
+
+## ASSESSMENT
+UNVERIFIED — INSUFFICIENT BASIS — SENSITIVE/PRIVATE CLAIM
+
+## WHAT WE CAN SAY
+Only high-confidence, non-speculative, publicly confirmed facts.
+If there are none, state that explicitly.
+Do not pad with speculation.
+
+## WHAT WE CANNOT CONCLUDE
+State clearly that the diagnosis or private health status cannot be responsibly determined from:
+- Social media speculation or fan community claims
+- Behavioral observation or inference
+- Unauthorized biographies or tabloid reporting
+- Second-hand accounts without primary source attribution
+- Any Tier 3 or Tier 4 source
+
+## SOURCES
+Only if genuine Tier 1 or Tier 2 sources exist that are directly relevant.
+Do not cite speculative, rumor-based, or entertainment-focused sources.
+
+━━━━━━━━━━━━━━━━━━━━━━━
 SOURCE QUALITY
 ━━━━━━━━━━━━━━━━━━━━━━━
 
-Tier 1: official statements, court records, company filings, primary records, direct verified accounts
-Tier 2: Reuters, AP, BBC, NYT, WSJ, Bloomberg, Guardian, established major outlets
-Tier 3: secondary reporting, blogs, aggregators, reposts, discussion forums
+Evaluate every source before using it. Weight all verdicts according to source quality.
 
-Tier 1 and Tier 2 carry the most weight.
-Tier 3 alone cannot produce CONFIRMED — only LIKELY at best.
+Tier 1 — PRIMARY (strongest):
+- Direct public statements from the subject themselves
+- Spokesperson or representative statements (on-record)
+- Official documents: court filings, institutional records, company filings, government records
+- Verified firsthand accounts from those with direct knowledge
+
+Tier 2 — MAJOR ESTABLISHED REPORTING (high):
+- Reuters, Associated Press (AP), BBC, NYT, WSJ, Bloomberg, The Guardian, Washington Post
+- Major established national/international news organizations with editorial standards
+- Direct quotes attributed to named, credible sources in accountable publications
+
+Tier 3 — SECONDARY COVERAGE (moderate, limited weight):
+- Secondary mainstream reporting that cites Tier 1/2 sources
+- Regional established outlets with editorial accountability
+- Wikipedia (background context only — never for breaking news, health, or sensitive claims)
+
+Tier 4 — DISQUALIFIED FOR PRIMARY VERIFICATION:
+- Blogs, personal websites, opinion sites, entertainment/celebrity gossip
+- Forums, message boards, Reddit, social media threads, Twitter/X posts
+- Rumor sites, fan wikis, speculative aggregation pages
+- SEO content farms, listicle sites, repost pages without original reporting
+- Any source that cannot be attributed to firsthand primary reporting
+
+SOURCE WEIGHTING RULES:
+- Tier 4 sources CANNOT produce CONFIRMED or LIKELY — they show a claim is circulating, not that it is true
+- Tier 3 alone cannot produce CONFIRMED — POSSIBLE at best, with explicit source-quality caveat
+- If ONLY Tier 3–4 sources exist: verdict must be UNSUPPORTED or INSUFFICIENT BASIS
+- For sensitive personal health/diagnosis claims: Tier 3 and Tier 4 sources are completely inadmissible
+- Always reflect source weakness in SIGNAL (→ LOW) and RISK (→ CAUTION or DANGER)
+- Never bury source weakness — state it prominently in ANSWER and ASSESSMENT
 
 Aggressively deprioritize for non-technical queries:
 - MDN, GitHub, npm, Stack Overflow, Hacker News, developer docs
@@ -833,13 +941,14 @@ sageRouter.post("/sage/query", async (req, res) => {
 
   const inputClass = detectInputClass(userMessage);
   const eventType  = detectEventType(userMessage);
+  const isSensitiveClaim = detectSensitiveClaim(userMessage);
   const needsCorroboration = inputClass === "url" || inputClass === "current-events" || inputClass === "article";
   const isArticleMode = inputClass === "url" || inputClass === "article";
   const braveKey = process.env["BRAVE_SEARCH_API_KEY"];
 
   logger.info(
-    { inputClass, eventType, needsCorroboration, braveKey: !!braveKey, query: userMessage.trim().slice(0, 100) },
-    `[Sentrix] /api/sage/query — class=${inputClass} event=${eventType}`
+    { inputClass, eventType, isSensitiveClaim, needsCorroboration, braveKey: !!braveKey, query: userMessage.trim().slice(0, 100) },
+    `[Sentrix] /api/sage/query — class=${inputClass} event=${eventType} sensitive=${isSensitiveClaim}`
   );
 
   // ── Parallel: article fetch + dual-track corroboration search ───────────────
@@ -942,11 +1051,14 @@ sageRouter.post("/sage/query", async (req, res) => {
   const resultsContext = buildResultsContext(results ?? []);
   const intelligenceSummary = context ? `\n\nINTELLIGENCE BRIEF:\n${context}` : "";
   const searchQuery = query ? `\n\nORIGINAL QUERY: "${query}"` : "";
+  const claimNote = `\n\nCLAIM ANALYSIS:\n- Input: "${userMessage.trim().slice(0, 200)}"\n- Event type: ${eventType}\n- Input class: ${inputClass}\n- Sensitive claim: ${isSensitiveClaim}`;
+  const sensitiveClaimNote = isSensitiveClaim
+    ? "\n\n⚠ SENSITIVE CLAIM DETECTED — This query involves a personal health, medical, neurological, psychiatric, or diagnosis claim about a real named person. MANDATORY OVERRIDE: Enter SENSITIVE CLAIM MODE immediately. Do NOT enter VERIFIER or ANALYST mode. Do NOT diagnose. Do NOT infer a condition from behavior or public conduct. Do NOT state private health status as fact without direct, explicit, on-record public confirmation. Tier 3 and Tier 4 sources are completely inadmissible for this claim."
+    : "";
   const modeNote = isArticleMode ? "\n\nMODE: Article/URL analysis — include Article Mode Extension sections." : "";
-  const verificationNote = needsCorroboration
+  const verificationNote = needsCorroboration && !isSensitiveClaim
     ? `\n\nMODE: Live verification — dual-track corroboration active. Event type: ${eventType}. Use VERIFICATION STATUS and both CONFIRMING EVIDENCE and CONTRADICTING OR MISSING EVIDENCE sections.`
     : "";
-  const claimNote = `\n\nCLAIM ANALYSIS:\n- Input: "${userMessage.trim().slice(0, 200)}"\n- Event type: ${eventType}\n- Input class: ${inputClass}`;
 
   let articleBlock = "";
   if (articleData) {
@@ -966,7 +1078,7 @@ sageRouter.post("/sage/query", async (req, res) => {
     : "";
 
   const groundingBlock =
-    `${searchQuery}${claimNote}${modeNote}${verificationNote}` +
+    `${searchQuery}${claimNote}${sensitiveClaimNote}${modeNote}${verificationNote}` +
     `\n\nSUPPORTING REFERENCES:\n${resultsContext}` +
     `${intelligenceSummary}` +
     `${articleBlock}` +

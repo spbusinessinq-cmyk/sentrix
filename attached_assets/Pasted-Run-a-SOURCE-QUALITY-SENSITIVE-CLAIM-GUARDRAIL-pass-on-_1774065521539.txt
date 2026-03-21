@@ -1,0 +1,144 @@
+Run a SOURCE QUALITY + SENSITIVE CLAIM GUARDRAIL pass on Sentrix.
+
+CRITICAL:
+Sage is still producing low-quality verification on trash sources and making hard judgments on claims that should not be treated like ordinary factual event checks.
+
+Example class of failure:
+claims about whether a real person has a medical / neurological / developmental condition.
+
+MISSION:
+Upgrade Sage so it:
+1. sharply improves source quality weighting
+2. blocks low-grade rumor verification
+3. handles sensitive personal-health claims with strict guardrails
+
+GOAL:
+Sentrix should stop producing confident garbage on weak sources.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+1. SOURCE QUALITY HARDENING
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For verification mode, prioritize sources in this order:
+
+Tier 1:
+- official/public statements
+- direct spokesperson/family statements
+- primary documents
+- direct institutional records
+
+Tier 2:
+- Reuters
+- AP
+- BBC
+- major established reporting
+
+Tier 3:
+- mainstream secondary coverage
+
+Tier 4:
+- blogs
+- forums
+- rumor sites
+- speculative entertainment sites
+- repost/aggregation pages
+- SEO junk
+
+Rules:
+- heavily down-rank Tier 4
+- do not use Tier 4 for hard verification if stronger sources are absent
+- if only weak sources exist, verdict must reflect weak evidence
+
+━━━━━━━━━━━━━━━━━━━━━━━
+2. SENSITIVE CLAIM CLASSIFIER
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Add a classifier for sensitive-personal claims, including:
+- medical claims
+- psychiatric claims
+- neurological/developmental diagnosis claims
+- disability claims
+- addiction/substance claims
+- other private-condition claims about a real person
+
+If matched:
+- enter SENSITIVE CLAIM MODE
+
+━━━━━━━━━━━━━━━━━━━━━━━
+3. SENSITIVE CLAIM MODE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+In SENSITIVE CLAIM MODE, Sage must NOT:
+- diagnose
+- infer diagnosis from behavior
+- verify rumors from low-quality reporting
+- state private health status as fact without strong direct public basis
+
+Allowed outcome structure:
+
+## ANSWER
+This claim is unverified / not appropriate to conclude from rumor-level sourcing
+
+## CLAIM TYPE
+Sensitive personal-health / diagnosis claim
+
+## SOURCE STANDARD
+Explain that only direct public confirmation or very strong primary sourcing would justify a firm conclusion
+
+## ASSESSMENT
+- UNVERIFIED
+- INSUFFICIENT BASIS
+- PRIVATE / SENSITIVE CLAIM
+
+## WHAT WE CAN SAY
+Only high-confidence, non-speculative context
+
+## WHAT WE CANNOT CONCLUDE
+Make clear that diagnosis/status cannot be responsibly determined from weak public web evidence
+
+## SOURCES
+Only if actually relevant and high quality
+
+━━━━━━━━━━━━━━━━━━━━━━━
+4. NO HARD YES/NO ON SENSITIVE DIAGNOSIS CLAIMS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+For claims like:
+- “is X autistic”
+- “does X have bipolar”
+- “is X mentally ill”
+- “does X have dementia”
+- etc.
+
+Sage must not return a hard yes/no based on weak sourcing.
+
+Default to:
+- Unverified
+- Insufficient basis
+- Sensitive/private claim
+
+unless there is direct, strong, public confirmation.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+5. VERDICT DISCIPLINE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+If source quality is weak:
+- do not return CONFIRMED
+- do not return confident denial either
+
+Sage must explicitly reflect:
+- source weakness
+- sensitivity of the claim
+- inability to responsibly conclude
+
+━━━━━━━━━━━━━━━━━━━━━━━
+6. UI / TRUST GOAL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Sentrix should feel more disciplined, not more reckless.
+
+If a claim is low-quality or ethically weak to verify, Sage should say so clearly and cleanly instead of pretending to know.
+
+FINAL GOAL:
+Make Sentrix smarter by making it more selective, more skeptical, and less willing to make hard claims from junk evidence.
